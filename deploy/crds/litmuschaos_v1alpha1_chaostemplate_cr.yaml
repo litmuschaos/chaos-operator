@@ -1,0 +1,7 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosTemplate
+metadata:
+  name: example-chaostemplate
+spec:
+  # Add fields here
+  size: 3

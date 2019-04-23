@@ -1,0 +1,7 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: example-chaosengine
+spec:
+  # Add fields here
+  size: 3
