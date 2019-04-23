@@ -1,7 +1,101 @@
+---
+## This is the chaos engine profile requested by dev for the nginx 
+## app, i.e., the user facing custom resource. Mapped to a dedicated
+## contrller which triggers the actual chaos experiments as per 
+## defined schedule. The app developer is expected to annotate the
+## application with litmuschaos.io/engine: <engine-name>
+
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: example-chaosengine
+  ## Eventually launched chaos (cron) jobs will bear <engine>-<exp></reference>-<hash>
+  name: engine-nginx
+  namespace: litmus 
 spec:
-  # Add fields here
-  size: 3
+
+  ## This will be used to identify AUT (Application-Under-Test) 
+  ## This app will be value of probed for annotation "litmuschaos.io/chaos"
+  ## to check whether it can be subjected to chaos. 
+
+  appinfo: 
+    appns: default
+    applabel: "app=nginx"
+  
+  ## The chaos experiments themselves will be "pulled" via
+  ## downloadable litmus charts and versioned against it
+  ## The chaos operator comes with a default set of experiments
+
+  experiments:
+    - name: disappearing-pods 
+      spec:
+
+        # The experiments can be ranked on execution priority
+        rank: 1
+
+        # An experiment may need additional data points
+        # "apart" from the "chaos-specific params" defined
+        # in the template. See spec of flaky-networks for
+        # case-in-point
+
+        # The same will be available in experiment spec as
+        # well, this definition here will override that.
+ 
+        components: 
+         
+    - name: flaky-networks
+      spec:
+        rank: 2 
+        component:
+          nwinterface: ""
+
+    - name: filled-disks
+      spec: 
+        rank: 4
+        component:
+          disk: ""
+        
+        # Individual experiments can also have schedule
+
+        schedule: 
+          interval: ""
+          excluded-times: ""
+          excluded-days: ""
+          concurrencyPolicy: "" 
+
+    - name: crashing-containers
+      spec: 
+        ranks: 3
+        component:
+          container: ""
+
+  schedule:
+    # quarter-hourly, half-hourly, hourly, bi-hourly, trihoral, daily
+    interval: "half-hourly"
+    excluded-times: ""
+    excluded-days: ""
+    concurrencyPolicy: "" 
+
+  ## Hold status of experiments - traceback from chaos experiment 
+  ## results. In case of scheduled experiments, the status, verdict 
+  ## and lastUpdateTime keep getting updated  
+  status:
+    experiments: 
+      - name: disappearing-pods
+        status: completed
+        verdict: pass
+        lastUpdateTime: "2019-04-23T09:10:50Z"
+        
+      - name: flaky-networks 
+        status: completed
+        verdict: pass
+        lastUpdateTime: "2019-04-23T09:13:50Z"
+        
+      - name: filled-disks
+        status: completed
+        verdict: fail
+        lastUpdateTime: "2019-04-23T09:16:50Z"
+
+      - name: crashing-containers
+        status: progressing
+        verdict: ""
+        lastUpdateTime: "2019-04-23T09:23:50Z"

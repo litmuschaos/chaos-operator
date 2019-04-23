@@ -1,7 +1,43 @@
-apiVersion: litmuschaos.io/v1alpha1
+---
+## An experiment is the definition of a chaos test and is listed as an item 
+## in the chaos engine to be run against a given app. Consists of reference
+## to chaosGraph (which has chaos param details and executor spec) and also
+## component information for the Object-Under-Test. The results upon running
+## this experiment is relayed back to the chaos engine which invoked it.
+
+## Experiments can be pulled from litmus charts and are versioned based on 
+## chart.
+
+## Charts should (not?) be auto-upgraded
+
+apiVersion: litmus.io/v1alpha1
 kind: ChaosExperiment
 metadata:
-  name: example-chaosexperiment
+
+  ## Eventually launched chaos litmusbook/job will bear <name>-<hash>
+  name: disappearing-pods
+  namespace: nginx
+
 spec:
-  # Add fields here
-  size: 3
+
+  chart: 
+    - name: kubernetes
+      version: 2.0
+  
+  ## A predefined Chaos template type. Analogy: *Similar* in function to storage 
+  ## classes. Will contain params "specific" to that chaos operation w/ default values.
+ 
+  chaostype: simple-pod-failrue
+
+  ## Some experiments need more info on the "object of chaos". For example, in case 
+  ## of container crash tests in a multi-container app, it is necessary to know both 
+  ## general app info (namespace, labels) as well as container name which has to undergo
+  ## failures. Component list can be kept to a minimum. 
+
+  components:
+    container: ""    
+    nwinterface: ""
+    node: ""        
+    pvc: ""         
+    disk: ""        
+

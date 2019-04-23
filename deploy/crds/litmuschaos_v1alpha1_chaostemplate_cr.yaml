@@ -1,7 +1,36 @@
-apiVersion: litmuschaos.io/v1alpha1
-kind: ChaosTemplate
-metadata:
-  name: example-chaostemplate
+---
+
+## The resource that contains the actual/low-level chaos params.
+## Consists of executor definition in its spec, with ENV default
+## values and entrypoint scripts (playbooks). The chaosGraph is
+## referenced in the chaostype parameter of the chaosExperiment
+## resource. Consists of default values for chaos-specific params
+## which are expected to be overridden from the chaosExperiment  
+
+apiVersion: litmus.io/v1alpha1
+kind: ChaosGraph
+metadata: 
+  name: simple-pod-failure
+  namespace: 
 spec:
-  # Add fields here
-  size: 3
+  definition:
+    labels: 
+      name: simple-pod-failure
+    env:
+      - name: ANSIBLE_STDOUT_CALLBACK
+        value: default
+
+      - name: APP_NAMESPACE     # override from c.engine
+        value: ""
+
+      - name: APP_LABEL         # override from c.engine 
+        value: ""
+
+      - name: CHAOS_TYPE
+        value: "pod-delete"
+            
+      - name: TARGET_CONTAINER
+        value: "nginx"          # override from c.experiment
+
+    command: ["/bin/bash"]
+    args: ["-c", "ansible-playbook ./experiments/chaos/simple_pod_failure/test.yml -i /etc/ansible/hosts -vv; exit 0"]
