@@ -8,7 +8,7 @@
 ## which are expected to be overridden from the chaosExperiment  
 
 apiVersion: litmus.io/v1alpha1
-kind: ChaosGraph
+kind: ChaosTemplate
 metadata: 
   name: simple-pod-failure
   namespace: 
