@@ -1,7 +1,7 @@
 ---
-## This is the chaos engine profile requested by dev for the nginx 
+## This is the chaos engine resource requested by dev for the nginx 
 ## app, i.e., the user facing custom resource. Mapped to a dedicated
-## contrller which triggers the actual chaos experiments as per 
+## controller which triggers the actual chaos experiments as per 
 ## defined schedule. The app developer is expected to annotate the
 ## application with litmuschaos.io/engine: <engine-name>
 
@@ -26,7 +26,7 @@ spec:
   ## The chaos operator comes with a default set of experiments
 
   experiments:
-    - name: disappearing-pods 
+    - name: pod-delete 
       spec:
 
         # The experiments can be ranked on execution priority
@@ -42,13 +42,13 @@ spec:
  
         components: 
          
-    - name: flaky-networks
+    - name: network-delay
       spec:
         rank: 2 
         component:
           nwinterface: ""
 
-    - name: filled-disks
+    - name: disk-fill
       spec: 
         rank: 4
         component:
@@ -62,7 +62,7 @@ spec:
           excluded-days: ""
           concurrencyPolicy: "" 
 
-    - name: crashing-containers
+    - name: container-kill
       spec: 
         ranks: 3
         component:
@@ -80,22 +80,22 @@ spec:
   ## and lastUpdateTime keep getting updated  
   status:
     experiments: 
-      - name: disappearing-pods
+      - name: pod-delete 
         status: completed
         verdict: pass
         lastUpdateTime: "2019-04-23T09:10:50Z"
         
-      - name: flaky-networks 
+      - name: network-delay
         status: completed
         verdict: pass
         lastUpdateTime: "2019-04-23T09:13:50Z"
         
-      - name: filled-disks
+      - name: disk-fill
         status: completed
         verdict: fail
         lastUpdateTime: "2019-04-23T09:16:50Z"
 
-      - name: crashing-containers
+      - name: container-kill
         status: progressing
         verdict: ""
         lastUpdateTime: "2019-04-23T09:23:50Z"
