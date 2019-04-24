@@ -1,7 +1,0 @@
-apiVersion: litmuschaos.io/v1alpha1
-kind: ChaosExperiment
-metadata:
-  name: example-chaosexperiment
-spec:
-  # Add fields here
-  size: 3
