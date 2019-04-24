@@ -113,6 +113,9 @@ func main() {
 		log.Info(err.Error())
 	}
 
+	// Strating event listener
+	go controller.EventListner()
+
 	log.Info("Starting the Cmd.")
 
 	// Start the Cmd
