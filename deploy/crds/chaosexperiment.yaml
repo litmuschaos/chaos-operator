@@ -22,7 +22,7 @@ metadata:
     chart/version: 0.9
 
 description:
-  data: |
+  message: |
     Deletes a pod belonging to a deployment/statefulset/daemonset
     a specified number of times 
 spec:

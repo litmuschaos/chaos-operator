@@ -58,8 +58,8 @@ spec:
 
         schedule: 
           interval: ""
-          excluded-times: ""
-          excluded-days: ""
+          excludedTimes: ""
+          excludedDays: ""
           concurrencyPolicy: "" 
 
     - name: container-kill
@@ -71,8 +71,8 @@ spec:
   schedule:
     # quarter-hourly, half-hourly, hourly, bi-hourly, trihoral, daily
     interval: "half-hourly"
-    excluded-times: ""
-    excluded-days: ""
+    excludedTimes: ""
+    excludedDays: ""
     concurrencyPolicy: "" 
 
   ## Hold status of experiments - traceback from chaos experiment 
