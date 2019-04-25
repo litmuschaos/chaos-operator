@@ -1,5 +1,7 @@
 # Litmus chaos-operator for injecting chaos experiments on Kubernetes
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/37a504603d624d8ea871200aa3658159)](https://app.codacy.com/app/chandan.kumar/chaos-operator?utm_source=github.com&utm_medium=referral&utm_content=litmuschaos/chaos-operator&utm_campaign=Badge_Grade_Settings)
+
 <This is a WIP> 
   
 Litmus chaos operator is used by Kubernetes application developers and SREs to inject chaos experiments into the applications and Kubernetes infrastructure in a managed fashion. It is easy to validate and harden the stateful applications and Kubernetes infrastructure. The chaos injection workflow is simple to use:
