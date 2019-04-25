@@ -2,6 +2,7 @@ package chaosengine
 
 import (
 	"context"
+	"fmt"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 
@@ -10,7 +11,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/informers"
+	k8s "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -18,6 +23,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+)
+
+const (
+	chaosAnnotation  = "litmuschaos.io/chaos"
+	engineAnnotation = "litmuschaos.io/engine"
 )
 
 var log = logf.Log.WithName("controller_chaosengine")
@@ -61,6 +71,33 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+
+	// Watch on the POD event and look for the chaos related annoation
+	go func() {
+		config, err := config.GetConfig()
+		if err != nil {
+			log.Info(err.Error())
+		}
+		clientset, err := k8s.NewForConfig(config)
+		if err != nil {
+			log.Info(err.Error())
+		}
+		factory := informers.NewSharedInformerFactory(clientset, 0)
+		informer := factory.Core().V1().Pods().Informer()
+		stopper := make(chan struct{})
+		defer close(stopper)
+		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				mObj := obj.(metav1.Object)
+				_, chaos := mObj.GetAnnotations()[chaosAnnotation]
+				_, engine := mObj.GetAnnotations()[engineAnnotation]
+				if chaos && engine {
+					log.Info(fmt.Sprintf("Annotation present: %s", mObj.GetAnnotations()))
+				}
+			},
+		})
+		informer.Run(stopper)
+	}()
 
 	return nil
 }
