@@ -19,7 +19,7 @@ type ChaosEngineSpec struct {
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
 // +k8s:openapi-gen=true
-// Derived information about status of experiments listed in the chaos engine
+// ChaosEngineStatus derives information about status of individual experiments 
 type ChaosEngineStatus struct {
         //Detailed status of individual experiments
         Experiments    []ExperimentStatuses   `json:"experiments"`
