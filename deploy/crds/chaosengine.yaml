@@ -78,24 +78,24 @@ spec:
   ## Hold status of experiments - traceback from chaos experiment 
   ## results. In case of scheduled experiments, the status, verdict 
   ## and lastUpdateTime keep getting updated  
-  status:
-    experiments: 
-      - name: pod-delete 
-        status: completed
-        verdict: pass
-        lastUpdateTime: "2019-04-23T09:10:50Z"
+status:
+  experiments: 
+    - name: pod-delete 
+      status: completed
+      verdict: pass
+      lastUpdateTime: "2019-04-23T09:10:50Z"
         
-      - name: network-delay
-        status: completed
-        verdict: pass
-        lastUpdateTime: "2019-04-23T09:13:50Z"
+    - name: network-delay
+      status: completed
+      verdict: pass
+      lastUpdateTime: "2019-04-23T09:13:50Z"
         
-      - name: disk-fill
-        status: completed
-        verdict: fail
-        lastUpdateTime: "2019-04-23T09:16:50Z"
+    - name: disk-fill
+      status: completed
+      verdict: fail
+      lastUpdateTime: "2019-04-23T09:16:50Z"
 
-      - name: container-kill
-        status: progressing
-        verdict: ""
-        lastUpdateTime: "2019-04-23T09:23:50Z"
+    - name: container-kill
+      status: progressing
+      verdict: ""
+      lastUpdateTime: "2019-04-23T09:23:50Z"

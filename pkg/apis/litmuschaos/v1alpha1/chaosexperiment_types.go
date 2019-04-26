@@ -4,15 +4,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // ChaosExperimentSpec defines the desired state of ChaosExperiment
 // +k8s:openapi-gen=true
+// An experiment is the definition of a chaos test and is listed as an item
+// in the chaos engine to be run against a given app.
 type ChaosExperimentSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+        // ChaosGraph refers to the resource carrying low-level chaos options 
+        Chaosgraph    string                `json:"chaosgraph"`
+        Components    ComponentUnderTest    `json:"components"` 
 }
 
 // ChaosExperimentStatus defines the observed state of ChaosExperiment
@@ -21,6 +20,20 @@ type ChaosExperimentStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+}
+
+// ComponentUnderTest defines information about component subjected to chaos in an experiment
+type ComponentUnderTest struct {
+        //Name of container under test in a pod
+        Container      string               `json:"container"`
+        //Name of interface under test in a container 
+        NWinterface    string               `json:"nwinterface"`
+        //Name of node under test in a K8s cluster
+        Node           string               `json:"node"`
+        //Name of persistent volume claim used by app
+        PVC            string               `json:"pvc"`
+        //Name of backend disk under test on a node
+        Disk           string               `json:"disk"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
