@@ -6,7 +6,7 @@ import (
 
 // ChaosGraphSpec defines the desired state of ChaosGraph
 // +k8s:openapi-gen=true
-// ChaosGraph defines the low-level chaos-params and the executor infrastructure
+// ChaosGraph defines the low-level chaos options and the executor infrastructure
 type ChaosGraphSpec struct {
         // Defines the chaos executor framework/infrastructure to run the experiment
         Executor     string              `json:"executor"`
@@ -21,7 +21,7 @@ type ChaosRunDefinition struct {
         // +optional
         Labels       map[string]string   `json:"labels"`
         // List of ENV vars passed to executor pod
-        Env          []EnvList           `json:"env"`
+        ENVList      []ENVPair           `json:"env"`
         // Defines command to invoke experiment
         Command	     []string            `json:"command"`
         // Defines arguments to executor's entrypoint command 
@@ -29,7 +29,7 @@ type ChaosRunDefinition struct {
 }
 
 // EnvList defines env var list to hold chaos params
-type EnvList struct {
+type ENVPair struct {
         Name         string              `json:"name"`
         Value        string              `json:"value"`
 }

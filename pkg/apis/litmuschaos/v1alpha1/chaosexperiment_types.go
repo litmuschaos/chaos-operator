@@ -9,7 +9,7 @@ import (
 // An experiment is the definition of a chaos test and is listed as an item
 // in the chaos engine to be run against a given app.
 type ChaosExperimentSpec struct {
-        // ChaosGraph refers to the resource carrying low-level chaos params
+        // ChaosGraph refers to the resource carrying low-level chaos options 
         Chaosgraph    string                `json:"chaosgraph"`
         Components    ComponentUnderTest    `json:"components"` 
 }
