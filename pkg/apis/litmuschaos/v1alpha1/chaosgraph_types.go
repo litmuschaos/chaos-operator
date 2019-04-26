@@ -28,7 +28,7 @@ type ChaosRunDefinition struct {
         Args         []string            `json:"args"`
 }
 
-// EnvPair defines env var list to hold chaos params
+// ENVPair defines env var list to hold chaos params
 type ENVPair struct {
         Name         string              `json:"name"`
         Value        string              `json:"value"`
