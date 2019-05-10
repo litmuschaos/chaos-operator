@@ -1,0 +1,12 @@
+---
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosResult
+metadata:
+  # name defined as <chaosengine_name>-<chaosexperiment_name>
+  name: engine-nginx-pod-failure
+spec:
+  # holds the state of testcase,  manually updated by json merge patch
+  # result is the useful value today, but anticipate phase use in future 
+  experimentstatus: 
+    phase: completed
+    verdict: pass
