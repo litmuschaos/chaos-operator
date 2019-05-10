@@ -9,9 +9,8 @@ import (
 // An experiment is the definition of a chaos test and is listed as an item
 // in the chaos engine to be run against a given app.
 type ChaosExperimentSpec struct {
-        // ChaosGraph refers to the resource carrying low-level chaos options 
-        Chaosgraph    string                `json:"chaosgraph"`
-        Components    ComponentUnderTest    `json:"components"` 
+        // Definition carries low-level chaos options 
+        Definition    ExperimentDef         `json:"definition"`
 }
 
 // ChaosExperimentStatus defines the observed state of ChaosExperiment
@@ -22,18 +21,25 @@ type ChaosExperimentStatus struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
 
-// ComponentUnderTest defines information about component subjected to chaos in an experiment
-type ComponentUnderTest struct {
-        //Name of container under test in a pod
-        Container      string               `json:"container"`
-        //Name of interface under test in a container 
-        NWinterface    string               `json:"nwinterface"`
-        //Name of node under test in a K8s cluster
-        Node           string               `json:"node"`
-        //Name of persistent volume claim used by app
-        PVC            string               `json:"pvc"`
-        //Name of backend disk under test on a node
-        Disk           string               `json:"disk"`
+// ExperimentDef defines information about nature of chaos & components subjected to it
+type ExperimentDef struct {
+        // Default labels of the executor pod
+        // +optional
+        Labels       map[string]string   `json:"labels"`
+        // Image of the chaos executor 
+        Image        string              `json:"image"`
+        // List of ENV vars passed to executor pod
+        ENVList      []ENVPair           `json:"env"`
+        // Defines command to invoke experiment
+        Command      []string            `json:"command"`
+        // Defines arguments to executor's entrypoint command
+        Args         []string            `json:"args"`
+}
+
+// ENVPair defines env var list to hold chaos params
+type ENVPair struct {
+        Name         string              `json:"name"`
+        Value        string              `json:"value"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -43,7 +49,7 @@ type ComponentUnderTest struct {
 type ChaosExperiment struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
+        
 	Spec   ChaosExperimentSpec   `json:"spec,omitempty"`
 	Status ChaosExperimentStatus `json:"status,omitempty"`
 }

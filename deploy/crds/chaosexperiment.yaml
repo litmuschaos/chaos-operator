@@ -16,33 +16,54 @@ metadata:
 
   ## Eventually launched chaos litmusbook/job will bear <name>-<hash>
   name: pod-delete
-  namespace: nginx
   labels:
-    chart/type: kubernetes
-    chart/version: 0.9
+    litmuschaos.io/name: 
+    litmuschaos.io/instance: 
+    helm.sh/chart: 
 
 description:
   message: |
     Deletes a pod belonging to a deployment/statefulset/daemonset
-    a specified number of times 
+
 spec:
-  
-  ## A predefined Chaos template type. Analogy: *Similar* in function to storage 
-  ## classes. Will contain params "specific" to that chaos operation w/ default values.
-  ## By default, the experiment is mapped to a chaosgraph of the same name, unless 
-  ## explicitly specified
- 
-  # chaosgraph: 
+
+  ## A low-level definition of chaos parameters which is fed to the executor
+  ## for running the experiment.
 
   ## Some experiments need more info on the "object of chaos". For example, in case 
   ## of container crash tests in a multi-container app, it is necessary to know both 
   ## general app info (namespace, labels) as well as container name which has to undergo
-  ## failures. Component list can be kept to a minimum. 
+  ## failures. This Component info is generally kept to a minimum and passed as ENV to 
+  ## the actual chaos-runner/executor pod/container.  
 
-  components:
-    container: ""    
-    nwinterface: ""
-    node: ""        
-    pvc: ""         
-    disk: ""        
+  definition:
 
+    labels: 
+      name: pod-delete
+
+    image: 
+
+    env:
+      - name: ANSIBLE_STDOUT_CALLBACK
+        value: ""
+
+      ## Injected by chaosengine 
+      - name: APP_NAMESPACE
+        value: ""              
+
+      ## Injected by chaosengine 
+      - name: APP_LABEL         
+        value: ""
+
+      - name: FORCE_DELETE
+        value: ""
+
+      ## The chaos operator can use different execution frameworks to achieve
+      ## to achieve a certain chaos operation. It could use Litmus or Chaostoolkit
+      ## etc..,
+
+      - name: LIB
+        value: ""
+
+    command: ["/bin/bash"]
+    args: ["-c", "ansible-playbook ./experiments/chaos/pod_delete/test.yml -i /etc/ansible/hosts -vv; exit 0"]
