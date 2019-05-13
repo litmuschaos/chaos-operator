@@ -100,16 +100,23 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	// Define a new Pod object
-	pod := newPodForCR(instance)
+	// Define a new Pod object (OrigComment)
+	//pod := newPodForCR(instance) // 
+        /* @ksatchit: define an engine(ansible?)-runner pod which is secondary-resource #1 */
+        engine-runner := newRunnerPodForCR(instance)
+        engine-monitor := newMonitorPodForCR(instance)
 
-	// Set ChaosEngine instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
+	// Set ChaosEngine instance as the owner and controller (OrigComment)
+	if err := controllerutil.SetControllerReference(instance, engine-runner, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
+	if err := controllerutil.SetControllerReference(instance, engine-monitor, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// Check if this Pod already exists (OrigComment)
+	/*found := &corev1.Pod{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
@@ -126,11 +133,51 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	// Pod already exists - don't requeue
 	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
+	return reconcile.Result{}, nil */
+
+        /* @ksatchit: Check if the engine-runner pod already exists */
+	found_s1 := &corev1.Pod{} //secondary resource #1
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engine-runner.Name, Namespace: engine-runner.Namespace}, found_s1)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new engine-runner Pod", "Pod.Namespace", engine-runner.Namespace, "Pod.Name", engine-runner.Name)
+		err = r.client.Create(context.TODO(), engine-runner)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		// Pod created successfully - don't requeue
+		return reconcile.Result{}, nil
+	} else if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// Pod already exists - don't requeue
+	reqLogger.Info("Skip reconcile: engine-runner Pod already exists", "Pod.Namespace", found_s1.Namespace, "Pod.Name", found_s1.Name)
+	return reconcile.Result{}, nil
+
+        /* @ksatchit: Check if the engine-monitor pod already exists */
+	found_s2 := &corev1.Pod{} //secondary resource #2
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engine-monitor.Name, Namespace: engine-monitor.Namespace}, found_s2)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new engine-monitor Pod", "Pod.Namespace", engine-monitor.Namespace, "Pod.Name", engine-monitor.Name)
+		err = r.client.Create(context.TODO(), engine-monitor)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		// Pod created successfully - don't requeue
+		return reconcile.Result{}, nil
+	} else if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// Pod already exists - don't requeue
+	reqLogger.Info("Skip reconcile: engine-monitor Pod already exists", "Pod.Namespace", found_s2.Namespace, "Pod.Name", found_s2.Name)
 	return reconcile.Result{}, nil
 }
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *litmuschaosv1alpha1.ChaosEngine) *corev1.Pod {
+// newPodForCR returns a busybox pod with the same name/namespace as the cr (OrigComment)
+/*func newPodForCR(cr *litmuschaosv1alpha1.ChaosEngine) *corev1.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -145,6 +192,54 @@ func newPodForCR(cr *litmuschaosv1alpha1.ChaosEngine) *corev1.Pod {
 				{
 					Name:    "busybox",
 					Image:   "busybox",
+					Command: []string{"sleep", "3600"},
+				},
+			},
+		},
+	}
+}*/
+
+/* @ksatchit: function defining yaml for secondary resource #1 */
+func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine) *corev1.Pod {
+	labels := map[string]string{
+		"app": cr.Name,
+	}
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name + "-pod",
+			Namespace: cr.Namespace,
+			Labels:    labels,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:    "chaos-runner",
+					Image:   "openebs/ansible-runner:ci",
+                                        //TODO: Get exp list - stage#1
+					Command: []string{"sleep", "3600"},
+				},
+			},
+		},
+	}
+}
+
+/* @ksatchit: function defining yaml for secondary resource #1 */
+func newMonitorPodForCR(cr *litmuschaosv1alpha1.ChaosEngine) *corev1.Pod {
+	labels := map[string]string{
+		"app": cr.Name,
+	}
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name + "-pod",
+			Namespace: cr.Namespace,
+			Labels:    labels,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:    "chaos-exporter",
+					Image:   "ksatchit/sample-chaos-exporter:ci",
+                                        //TODO: Have chaosresults w/ verdict: not-executed - stage#1
 					Command: []string{"sleep", "3600"},
 				},
 			},
