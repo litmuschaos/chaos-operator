@@ -5,8 +5,6 @@ import (
 	"context"
         "fmt"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-        //appsv1 "k8s.io/api/apps/v1"
-        //"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	corev1 "k8s.io/api/core/v1"
         "k8s.io/client-go/kubernetes"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -23,13 +21,13 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-        // @ksatchit: temp test purposes
+        // Temp test purposes
         "github.com/Sirupsen/logrus"
 )
 
 var log = logf.Log.WithName("controller_chaosengine")
 
-// @ksatchit: Annotations on app to enable chaos on it 
+// Annotations on app to enable chaos on it 
 const (
       chaosAnnotation  = "litmuschaos.io/chaos"
 )
@@ -89,8 +87,6 @@ type ReconcileChaosEngine struct {
 
 // Reconcile reads that state of the cluster for a ChaosEngine object and makes changes based on the state read
 // and what is in the ChaosEngine.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
@@ -112,9 +108,10 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	// Fetch the app details from ChaosEngine instance. Check if app is present, else fail
+	// Fetch the app details from ChaosEngine instance. Check if app is present
+        // Also check, if the app is annotated for chaos & that the labels are unique
         // TODO: Get app kind from chaosengine spec as well. Using "deploy" for now
-        // TODO: Establish label format in chaosengine OR "=" as a const 
+        // TODO: Freeze label format in chaosengine( "=" as a const)
 
         a_labelKeyValue := strings.Split(instance.Spec.Appinfo.Applabel, "=")
         a_label := make(map[string]string)
@@ -122,12 +119,9 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
         a_label[lkey] = lvalue
         a_namespace := instance.Spec.Appinfo.Appns
 
-        // @ksatchit: temp test purposes
+        // Temp test purposes
         logrus.Info("App Label derived from Chaosengine is ", a_label)
         logrus.Info("App NS derived from Chaosengine is ", a_namespace)
-
-        //found_a1 := &appsv1.DeploymentList{}
-        //err = r.client.List(context.TODO(), client.InNamespace(a_namespace).MatchingLabels(a_label), found_a1)
 
         config, err := config.GetConfig()
         if err != nil {
@@ -144,12 +138,14 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
           logrus.Fatal("Failed to list deployments. Error is ", err)
         }
 
-        var app_uuid string
+        var app_name string
+        var app_uuid types.UID
+
         chaos_candidates := 0
         if len(c_app.Items) > 0 {
           for _, app := range c_app.Items {
-            app_name := app.ObjectMeta.Name
-            app_uuid := app.ObjectMeta.UID
+            app_name = app.ObjectMeta.Name
+            app_uuid = app.ObjectMeta.UID
             app_ca_sts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
             if app_ca_sts == true {
               logrus.Info ("chaos candidate app: ", app_name, app_uuid)
@@ -169,22 +165,23 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
           return reconcile.Result{}, nil
         }
 
-	// Define a new Pod object (OrigComment)
-	//pod := newPodForCR(instance) // 
-        /* @ksatchit: define an engine(ansible?)-runner pod which is secondary-resource #1 */
+        // Define an engine(ansible?)-runner pod which is secondary-resource #1 
         engineRunner := newRunnerPodForCR(instance, app_uuid)
+
+        // Define the engine-monitor service which is secondary-resource #2
         engineMonitor := newMonitorServiceForCR(instance)
 
-	// Set ChaosEngine instance as the owner and controller (OrigComment)
+	// Set ChaosEngine instance as the owner and controller of engine-runner pod 
 	if err := controllerutil.SetControllerReference(instance, engineRunner, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 
+	// Set ChaosEngine instance as the owner and controller of engine-monitor service
 	if err := controllerutil.SetControllerReference(instance, engineMonitor, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 
-        /* @ksatchit: Check if the engineRunner pod already exists */
+        // Check if the engineRunner pod already exists, else create
 	found_s1 := &corev1.Pod{} //secondary resource #1
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engineRunner.Name, Namespace: engineRunner.Namespace}, found_s1)
 	if err != nil && errors.IsNotFound(err) {
@@ -196,16 +193,14 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 		// Pod created successfully - don't requeue
                 reqLogger.Info("engineRunner Pod created successfully")
-		// @ksatchit: return reconcile.Result{}, nil /*Dont return, go to service check */ 
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Pod already exists - don't requeue
 	reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", found_s1.Namespace, "Pod.Name", found_s1.Name)
-	// @ksatchit: return reconcile.Result{}, nil / *Dont return, go to service check */
 
-        /* @ksatchit: Check if the engineMonitor pod already exists */
+        // Check if the engineMonitorservice already exists, else create
 	found_s2 := &corev1.Service{} //secondary resource #2
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, found_s2)
 	if err != nil && errors.IsNotFound(err) {
@@ -227,8 +222,8 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 }
 
 
-/* @ksatchit: function defining pod as secondary resource #1 in same namespace as cr */
-func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid string) *corev1.Pod {
+// newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
+func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID) *corev1.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -243,7 +238,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid string) *core
 				{
 					Name:    "chaos-runner",
 					Image:   "openebs/ansible-runner:ci",
-                                        //TODO: Get exp list - stage#1
+                                        //TODO: Pass Exp details here as well
 					Command: []string{"sleep", "3600"},
                                         Env:     []corev1.EnvVar{
                                              {
@@ -252,14 +247,13 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid string) *core
                                              },
                                              {
                                                  Name: "APP_UUID",
-                                                 Value: a_uuid,
+                                                 Value: string(a_uuid),
                                              },
 				         },
                                 },
 				{
 					Name:    "chaos-exporter",
 					Image:   "ksatchit/sample-chaos-exporter:ci",
-                                        //TODO: Get exp list - stage#1
 					Command: []string{"sleep", "3600"},
                                         Env:     []corev1.EnvVar{
                                             {
@@ -268,7 +262,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid string) *core
                                             },
                                             {
                                                  Name: "APP_UUID",
-                                                 Value: a_uuid,
+                                                 Value: string(a_uuid),
                                             },
                                         },
 				},
@@ -277,7 +271,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid string) *core
 	}
 }
 
-/* @ksatchit: function defining yaml for secondary resource #1 */
+// newMonitorServiceForCR defines secondary resource #2 in same namespace as CR */
 func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) *corev1.Service {
 	labels := map[string]string{
 		"app": cr.Name,
