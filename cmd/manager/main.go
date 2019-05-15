@@ -9,14 +9,8 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-        /* ksatchit: temp change to enable operator-sdk build cmd on fork*/
-	//"github.com/litmuschaos/chaos-operator/pkg/apis"
-	//"github.com/litmuschaos/chaos-operator/pkg/controller"
-
-	"github.com/ksatchit/chaos-operator/pkg/apis"
-	"github.com/ksatchit/chaos-operator/pkg/controller"
-
+	"github.com/litmuschaos/chaos-operator/pkg/apis"
+	"github.com/litmuschaos/chaos-operator/pkg/controller"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
@@ -43,6 +37,8 @@ func printVersion() {
 }
 
 func main() {
+
+        log.Info("-----------NEW RUN--------")
 	// Add the zap logger flag set to the CLI. The flag set must
 	// be added before calling pflag.Parse().
 	pflag.CommandLine.AddFlagSet(zap.FlagSet())

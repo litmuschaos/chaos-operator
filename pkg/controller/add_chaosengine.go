@@ -1,9 +1,7 @@
 package controller
 
 import (
-        /* @ksatchit: temp changes to facilitate operator-sdk build */
-	//"github.com/litmuschaos/chaos-operator/pkg/controller/chaosengine"
-	"github.com/ksatchit/chaos-operator/pkg/controller/chaosengine"
+	"github.com/litmuschaos/chaos-operator/pkg/controller/chaosengine"
 )
 
 func init() {

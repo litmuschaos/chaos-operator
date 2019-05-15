@@ -1,9 +1,7 @@
 package apis
 
 import (
-	/* @ksatchit: temp change to facilitate operator-sdk build */
-       //"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-       "github.com/ksatchit/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+       "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 )
 
 func init() {
