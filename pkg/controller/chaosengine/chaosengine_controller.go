@@ -114,14 +114,19 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
         // TODO: Freeze label format in chaosengine( "=" as a const)
 
         a_labelKeyValue := strings.Split(instance.Spec.Appinfo.Applabel, "=")
-        a_label := make(map[string]string)
-        lkey := a_labelKeyValue[0]; lvalue := a_labelKeyValue[1]
-        a_label[lkey] = lvalue
+        lKey := a_labelKeyValue[0]; lValue := a_labelKeyValue[1]
+        a_label := make(map[string]string); a_label[lKey] = lValue
         a_namespace := instance.Spec.Appinfo.Appns
+        var a_expList []litmuschaosv1alpha1.ExperimentList; a_expList = instance.Spec.Experiments
+        var app_experiments []string
+        for _, exp := range a_expList {
+          app_experiments = append(app_experiments, exp.Name)
+        }
 
         // Temp test purposes
         logrus.Info("App Label derived from Chaosengine is ", a_label)
         logrus.Info("App NS derived from Chaosengine is ", a_namespace)
+        logrus.Info("Exp list derived from chaosengine is ", app_experiments)
 
         config, err := config.GetConfig()
         if err != nil {
@@ -133,7 +138,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	  logrus.Fatal(err.Error())
 	}
 
-        c_app, err := clientset.AppsV1().Deployments(a_namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", lkey, lvalue), FieldSelector: ""})
+        c_app, err := clientset.AppsV1().Deployments(a_namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", lKey, lValue), FieldSelector: ""})
         if err != nil {
           logrus.Fatal("Failed to list deployments. Error is ", err)
         }
@@ -166,7 +171,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
         }
 
         // Define an engine(ansible?)-runner pod which is secondary-resource #1 
-        engineRunner := newRunnerPodForCR(instance, app_uuid)
+        engineRunner := newRunnerPodForCR(instance, app_uuid, app_experiments)
 
         // Define the engine-monitor service which is secondary-resource #2
         engineMonitor := newMonitorServiceForCR(instance)
@@ -223,7 +228,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
-func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID) *corev1.Pod {
+func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID, a_expList []string) *corev1.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -242,12 +247,16 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID) *c
 					Command: []string{"sleep", "3600"},
                                         Env:     []corev1.EnvVar{
                                              {
-                                                 Name: "CHAOSENGINE",
-                                                 Value: cr.Name,
+                                                 Name: "APP_LABEL",
+                                                 Value: cr.Spec.Appinfo.Applabel,
                                              },
                                              {
-                                                 Name: "APP_UUID",
-                                                 Value: string(a_uuid),
+                                                 Name: "APP_NAMESPACE",
+                                                 Value: cr.Namespace,
+                                             },
+                                             {
+                                                 Name: "EXPERIMENT_LIST",
+                                                 Value: fmt.Sprintf(strings.Join(a_expList,",")),
                                              },
 				         },
                                 },
