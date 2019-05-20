@@ -114,26 +114,29 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
         // TODO: Get app kind from chaosengine spec as well. Using "deploy" for now
         // TODO: Freeze label format in chaosengine( "=" as a const)
 
-        a_labelKeyValue := strings.Split(instance.Spec.Appinfo.Applabel, "=")
-        lKey := a_labelKeyValue[0]; lValue := a_labelKeyValue[1]
-        a_label := make(map[string]string); a_label[lKey] = lValue
-        a_namespace := instance.Spec.Appinfo.Appns
-        var a_expList []litmuschaosv1alpha1.ExperimentList; a_expList = instance.Spec.Experiments
-        var app_experiments []string
-        for _, exp := range a_expList {
-          app_experiments = append(app_experiments, exp.Name)
+        aLabelKeyValue := strings.Split(instance.Spec.Appinfo.Applabel, "=")
+        lKey := aLabelKeyValue[0]; lValue := aLabelKeyValue[1]
+        aLabel := make(map[string]string); aLabel[lKey] = lValue
+        aNamespace := instance.Spec.Appinfo.Appns
+
+        var aExpList []litmuschaosv1alpha1.ExperimentList
+        aExpList = instance.Spec.Experiments
+
+        var appExperiments []string
+        for _, exp := range aExpList {
+          appExperiments = append(appExperiments, exp.Name)
         }
 
         // Temp test purposes
         /*
-        logrus.Info("App Label derived from Chaosengine is ", a_label)
-        logrus.Info("App NS derived from Chaosengine is ", a_namespace)
-        logrus.Info("Exp list derived from chaosengine is ", app_experiments)
+        logrus.Info("App Label derived from Chaosengine is ", aLabel)
+        logrus.Info("App NS derived from Chaosengine is ", aNamespace)
+        logrus.Info("Exp list derived from chaosengine is ", appExperiments)
         */
 
-        log.Info("App Label derived from Chaosengine is ", a_label)
-        log.Info("App NS derived from Chaosengine is ", a_namespace)
-        log.Info("Exp list derived from chaosengine is ", app_experiments)
+        log.Info("App Label derived from Chaosengine is ", aLabel)
+        log.Info("App NS derived from Chaosengine is ", aNamespace)
+        log.Info("Exp list derived from chaosengine is ", appExperiments)
 
         // Use client-Go to obtain a list of apps w/ specified labels 
         config, err := config.GetConfig()
@@ -150,34 +153,35 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
           return reconcile.Result{}, err
 	}
 
-        c_app, err := clientset.AppsV1().Deployments(a_namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", lKey, lValue), FieldSelector: ""})
+        cApp, err := clientset.AppsV1().Deployments(aNamespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", lKey, lValue), FieldSelector: ""})
         if err != nil {
           //logrus.Fatal("Failed to list deployments. Error is ", err)
           log.Error(err, "unable to list apps matching labels")
           return reconcile.Result{}, err
         }
 
-        var app_name string
-        var app_uuid types.UID
+        var appName string
+        var appUUID types.UID
 
         // Determine whether apps with matching labels have chaos annotation set to true
-        chaos_candidates := 0
-        if len(c_app.Items) > 0 {
-          for _, app := range c_app.Items {
-            app_name = app.ObjectMeta.Name
-            app_uuid = app.ObjectMeta.UID
-            app_ca_sts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
-            if app_ca_sts == true {
-              //logrus.Info ("chaos candidate app: ", app_name, app_uuid)
-              log.Info ("chaos candidate app: ", app_name, app_uuid)
-              chaos_candidates++
+        chaosCandidates := 0
+        if len(cApp.Items) > 0 {
+          for _, app := range cApp.Items {
+            appName = app.ObjectMeta.Name
+            appUUID = app.ObjectMeta.UID
+            appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
+            //if appCaSts == true {
+            if appCaSts {
+              //logrus.Info ("chaos candidate app: ", appName, appUUID)
+              log.Info ("chaos candidate app: ", appName, appUUID)
+              chaosCandidates++
             }
           }
-          if chaos_candidates == 0 {
+          if chaosCandidates == 0 {
             //logrus.Info("No chaos candidates found")
             log.Info("No chaos candidates found")
             return reconcile.Result{}, nil
-          } else if chaos_candidates > 1 {
+          } else if chaosCandidates > 1 {
             //logrus.Info ("Too many chaos candidates with same label",
             log.Info ("Too many chaos candidates with same label",
               "either provide unique labels or annotate only desired app for chaos",)
@@ -190,7 +194,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
         }
 
         // Define an engine(ansible?)-runner pod which is secondary-resource #1 
-        engineRunner := newRunnerPodForCR(instance, app_uuid, app_experiments)
+        engineRunner := newRunnerPodForCR(instance, appUUID, appExperiments)
 
         // Define the engine-monitor service which is secondary-resource #2
         engineMonitor := newMonitorServiceForCR(instance)
@@ -206,8 +210,8 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
         // Check if the engineRunner pod already exists, else create
-	found_s1 := &corev1.Pod{} //secondary resource #1
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engineRunner.Name, Namespace: engineRunner.Namespace}, found_s1)
+	foundS1 := &corev1.Pod{} //secondary resource #1
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engineRunner.Name, Namespace: engineRunner.Namespace}, foundS1)
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating a new engineRunner Pod", "Pod.Namespace", engineRunner.Namespace, "Pod.Name", engineRunner.Name)
 		err = r.client.Create(context.TODO(), engineRunner)
@@ -222,11 +226,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", found_s1.Namespace, "Pod.Name", found_s1.Name)
+	reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", foundS1.Namespace, "Pod.Name", foundS1.Name)
 
         // Check if the engineMonitorservice already exists, else create
-	found_s2 := &corev1.Service{} //secondary resource #2
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, found_s2)
+	foundS2 := &corev1.Service{} //secondary resource #2
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, foundS2)
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", engineMonitor.Namespace, "Service.Name", engineMonitor.Name)
 		err = r.client.Create(context.TODO(), engineMonitor)
@@ -241,13 +245,13 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Service already exists - don't requeue
-	reqLogger.Info("Skip reconcile: engineMonitor Service already exists", "Service.Namespace", found_s2.Namespace, "Service.Name", found_s2.Name)
+	reqLogger.Info("Skip reconcile: engineMonitor Service already exists", "Service.Namespace", foundS2.Namespace, "Service.Name", foundS2.Name)
 	return reconcile.Result{}, nil /*You can return now, both sec resources are existing */
 }
 
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
-func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID, a_expList []string) *corev1.Pod {
+func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) *corev1.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -281,7 +285,8 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID, a_
                                              },
                                              {
                                                  Name: "EXPERIMENT_LIST",
-                                                 Value: fmt.Sprintf(strings.Join(a_expList,",")),
+                                                 //Value: fmt.Sprintf(strings.Join(aExList,",")),
+                                                 Value: fmt.Sprint(strings.Join(aExList,",")),
                                              },
 				         },
                                 },
@@ -295,7 +300,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID, a_
                                             },
                                             {
                                                  Name: "APP_UUID",
-                                                 Value: string(a_uuid),
+                                                 Value: string(aUUID),
                                             },
                                         },
 				},
