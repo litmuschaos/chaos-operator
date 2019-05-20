@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
         // Temp test purposes
-        "github.com/Sirupsen/logrus"
+        //"github.com/Sirupsen/logrus"
 )
 
 var log = logf.Log.WithName("controller_chaosengine")
@@ -110,6 +110,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	// Fetch the app details from ChaosEngine instance. Check if app is present
         // Also check, if the app is annotated for chaos & that the labels are unique
+
         // TODO: Get app kind from chaosengine spec as well. Using "deploy" for now
         // TODO: Freeze label format in chaosengine( "=" as a const)
 
@@ -124,28 +125,42 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
         }
 
         // Temp test purposes
+        /*
         logrus.Info("App Label derived from Chaosengine is ", a_label)
         logrus.Info("App NS derived from Chaosengine is ", a_namespace)
         logrus.Info("Exp list derived from chaosengine is ", app_experiments)
+        */
 
+        log.Info("App Label derived from Chaosengine is ", a_label)
+        log.Info("App NS derived from Chaosengine is ", a_namespace)
+        log.Info("Exp list derived from chaosengine is ", app_experiments)
+
+        // Use client-Go to obtain a list of apps w/ specified labels 
         config, err := config.GetConfig()
         if err != nil {
-	  logrus.Fatal(err.Error())
+	  //logrus.Fatal(err.Error())
+	  log.Error(err, "unable to get kube config")
+          return reconcile.Result{}, err
 	}
 
         clientset, err := kubernetes.NewForConfig(config)
         if err != nil {
-	  logrus.Fatal(err.Error())
+	  //logrus.Fatal(err.Error())
+          log.Error(err, "unable to create clientset using kubeconfig")
+          return reconcile.Result{}, err
 	}
 
         c_app, err := clientset.AppsV1().Deployments(a_namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", lKey, lValue), FieldSelector: ""})
         if err != nil {
-          logrus.Fatal("Failed to list deployments. Error is ", err)
+          //logrus.Fatal("Failed to list deployments. Error is ", err)
+          log.Error(err, "unable to list apps matching labels")
+          return reconcile.Result{}, err
         }
 
         var app_name string
         var app_uuid types.UID
 
+        // Determine whether apps with matching labels have chaos annotation set to true
         chaos_candidates := 0
         if len(c_app.Items) > 0 {
           for _, app := range c_app.Items {
@@ -153,20 +168,24 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
             app_uuid = app.ObjectMeta.UID
             app_ca_sts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
             if app_ca_sts == true {
-              logrus.Info ("chaos candidate app: ", app_name, app_uuid)
+              //logrus.Info ("chaos candidate app: ", app_name, app_uuid)
+              log.Info ("chaos candidate app: ", app_name, app_uuid)
               chaos_candidates++
             }
           }
           if chaos_candidates == 0 {
-            logrus.Info("No chaos candidates found")
+            //logrus.Info("No chaos candidates found")
+            log.Info("No chaos candidates found")
             return reconcile.Result{}, nil
           } else if chaos_candidates > 1 {
-            logrus.Info ("Too many chaos candidates with same label",
+            //logrus.Info ("Too many chaos candidates with same label",
+            log.Info ("Too many chaos candidates with same label",
               "either provide unique labels or annotate only desired app for chaos",)
             return reconcile.Result{}, nil
           }
         } else {
-          logrus.Info("No app deployments with matching labels")
+          //logrus.Info("No app deployments with matching labels")
+          log.Info("No app deployments with matching labels")
           return reconcile.Result{}, nil
         }
 
@@ -239,13 +258,19 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID, a_
 			Labels:    labels,
 		},
 		Spec: corev1.PodSpec{
+                        ServiceAccountName: "chaos-operator",
 			Containers: []corev1.Container{
 				{
 					Name:    "chaos-runner",
 					Image:   "openebs/ansible-runner:ci",
-                                        //TODO: Pass Exp details here as well
-					Command: []string{"sleep", "3600"},
+					Command: []string{"/bin/bash"},
+                                        //TODO: Reconcile will restart tests. This has to be addressed 
+                                        Args:    []string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts -vv; exit 0"},
                                         Env:     []corev1.EnvVar{
+                                             {
+                                                 Name: "CHAOSENGINE",
+                                                 Value: cr.Name,
+                                             },
                                              {
                                                  Name: "APP_LABEL",
                                                  Value: cr.Spec.Appinfo.Applabel,
@@ -262,8 +287,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, a_uuid types.UID, a_
                                 },
 				{
 					Name:    "chaos-exporter",
-					Image:   "ksatchit/sample-chaos-exporter:ci",
-					Command: []string{"sleep", "3600"},
+					Image:   "litmuschaos/chaos-exporter:ci",
                                         Env:     []corev1.EnvVar{
                                             {
                                                  Name: "CHAOSENGINE",
