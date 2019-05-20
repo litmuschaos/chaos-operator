@@ -118,9 +118,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
         lKey := aLabelKeyValue[0]; lValue := aLabelKeyValue[1]
         aLabel := make(map[string]string); aLabel[lKey] = lValue
         aNamespace := instance.Spec.Appinfo.Appns
-
-        var aExpList []litmuschaosv1alpha1.ExperimentList
-        aExpList = instance.Spec.Experiments
+        aExpList := instance.Spec.Experiments 
 
         var appExperiments []string
         for _, exp := range aExpList {
