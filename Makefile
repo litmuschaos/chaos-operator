@@ -6,23 +6,22 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 # list only our namespaced directories
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
-# stable release version of operator-sdk 
-OPERATOR_SDK_VERSION ?= "v0.8.0"
-
-# docker image details 
-DOCKER_REPO ?= "litmuschaos"
-DOCKER_IMAGE ?= "chaos-operator"
-DOCKER_TAG ?= "ci"
-
-.PHONY: all
-all: format lint build test push 
+# docker info
+DOCKER_REPO ?= litmuschaos
+DOCKER_IMAGE ?= chaos-operator
+DOCKER_TAG ?= ci
 
 .PHONY: help
 help:
 	@echo ""
 	@echo "Usage:-"
-	@echo "\tmake all   -- [default] builds the chaos exporter container"
+	@echo "\tmake deps      -- sets up dependencies for image build"
+	@echo "\tmake gotasks   -- builds the chaos operator binary"
+	@echo "\tmake dockerops -- builds & pushes the chaos operator image"
 	@echo ""
+
+.PHONY: deps
+deps: _build_check_docker godeps 
 
 .PHONY: godeps
 godeps:
@@ -41,20 +40,9 @@ _build_check_docker:
 		&& exit 1; \
 		fi;
 
-.PHONY: _install_operator_sdk
-_install_operator_sdk:
-	@echo "------------------"
-	@echo "Installing Operator SDK Stable Release Binary"
-	curl -OJL https://github.com/operator-framework/operator-sdk/releases/download/\
-        ${OPERATOR_SDK_VERSION}/operator-sdk-${OPERATOR_SDK_VERSION}-x86_64-linux-gnu
-	chmod +x operator-sdk-${OPERATOR_SDK_VERSION}-x86_64-linux-gnu && \
-        sudo cp operator-sdk-${OPERATOR_SDK_VERSION}-x86_64-linux-gnu /usr/local/bin/operator-sdk && \
-        rm operator-sdk-${OPERATOR_SDK_VERSION}-x86_64-linux-gnu
-          
-
-.PHONY: deps
-deps: _build_check_docker _install_operator_sdk godeps
-
+.PHONY: gotasks
+gotasks: format lint build test
+ 
 .PHONY: format
 format:
 	@echo "------------------"
@@ -78,7 +66,7 @@ build:
 	@echo "------------------"
 	@echo "--> Build Chaos Operator"
 	@echo "------------------"
-	operator-sdk build $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+	@go build -o ${GOPATH}/src/github.com/litmuschaos/chaos-operator/build/_output/bin/chaos-operator -gcflags all=-trimpath=${GOPATH} -asmflags all=-trimpath=${GOPATH} github.com/litmuschaos/chaos-operator/cmd/manager 
 
 .PHONY: test
 test:
@@ -87,9 +75,10 @@ test:
 	@echo "------------------"
 	@go test ./... -v 
 
-.PHONY: push
+.PHONY: dockerops 
 dockerops: 
 	@echo "------------------"
-	@echo "--> Push chaos-operator docker image" 
+	@echo "--> Build & Push chaos-operator docker image" 
 	@echo "------------------"
+	sudo docker build . -f build/Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	REPONAME=$(DOCKER_REPO) IMGNAME=$(DOCKER_IMAGE) IMGTAG=$(DOCKER_TAG) ./buildscripts/push
