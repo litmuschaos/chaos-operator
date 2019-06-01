@@ -32,6 +32,8 @@ type ApplicationParams struct {
         Appns          string               `json:"appns"`
         //Unique label of the AUT
         Applabel       string               `json:"applabel"`
+        //Kubernetes resource type of AUT
+        Appkind        string               `json:"appkind"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine

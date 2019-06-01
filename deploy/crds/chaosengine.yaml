@@ -20,6 +20,7 @@ spec:
   appinfo: 
     appns: default
     applabel: "app=nginx"
+    appkind: deployment
   
   ## The chaos experiments themselves will be "pulled" via
   ## downloadable litmus charts and versioned against it
