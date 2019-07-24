@@ -61,15 +61,10 @@ Here is a sample ChaosEngineSpec for reference:
     experiments:
       - name: pod-delete 
         spec:
-          rank: 1
+          rank: 
       - name: container-kill
         spec:
-          rank: 2 
-    schedule:
-      interval: "half-hourly"
-      excludedTimes: ""
-      excludedDays: ""
-      concurrencyPolicy: "" 
+          rank:  
   ```
 
 ## What is a litmus chaos chart and how can I use it?
@@ -120,18 +115,12 @@ spec:
 
 ## What are the steps to get started?
 
-- Install Litmus infrastructure (RBAC, CRD) components 
+- Install Litmus infrastructure (RBAC, CRD, Operator) components 
 
   ```
   helm repo add https://litmuschaos.github.io/chaos-charts
   helm repo update
   helm install litmuschaos/litmusInfra --namespace=litmus
-  ```
-
-- Deploy the Chaos Operator 
-
-  ```
-  helm install litmuschaos/chaosOperator
   ```
 
 - Download the desired Chaos Experiment bundles, say, general Kubernetes chaos
@@ -143,7 +132,7 @@ spec:
 - Annotate your application to enable chaos. For ex:
 
   ```
-  kubectl annotate deploy nginx-deployment `litmuschaos.io/chaos:"true"`
+  kubectl annotate deploy/nginx-deployment litmuschaos.io/chaos="true"
   ```
 
 - Create a ChaosEngine CR with application information & chaos experiment list with their respective attributes
@@ -157,7 +146,26 @@ spec:
   changing to _pass_ or _fail_.
 
   ```
-  kubectl describe chaosresult pod-delete
+  kubectl describe chaosresult engine-nginx-pod-delete
+
+  Name:         engine-nginx-pod-delete
+  Namespace:    default
+  Labels:       <none>
+  Annotations:  kubectl.kubernetes.io/last-applied-configuration:
+                {"apiVersion":"litmuschaos.io/v1alpha1","kind":"ChaosResult","metadata":{"annotations":{},"name":"engine-nginx-pod-delete","namespace":"de...
+  API Version:  litmuschaos.io/v1alpha1
+  Kind:         ChaosResult
+  Metadata:
+    Creation Timestamp:  2019-05-22T12:10:19Z
+    Generation:          9
+    Resource Version:    8898730
+    Self Link:           /apis/litmuschaos.io/v1alpha1/namespaces/default/chaosresults/engine-nginx-pod-delete
+    UID:                 911ada69-7c8a-11e9-b37f-42010a80019f
+  Spec:
+    Experimentstatus:
+      Phase:    <nil>
+      Verdict:  pass
+  Events:       <none>
   ```
 
 ## Where are the docs?
