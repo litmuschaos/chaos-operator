@@ -8,8 +8,3 @@ import (
 type Pod struct {
 	object *corev1.Pod
 }
-
-// PodList holds the list of API pod instances
-type PodList struct {
-	items []*Pod
-}
