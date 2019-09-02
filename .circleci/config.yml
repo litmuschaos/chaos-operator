@@ -18,9 +18,61 @@ jobs:
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=ci' >> $BASH_ENV
       - run: make deps
+      - run: make bdddeps
       - run: make gotasks
       - setup_remote_docker:
           docker_layer_caching: true 
       - run: |
           docker build . -f build/Dockerfile -t ${REPONAME}/${IMGNAME}:${IMGTAG}
           ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push 
+  test:
+    machine:
+      image: circleci/classic:201808-01
+    environment:
+      K8S_VERSION: v1.10.0
+      KUBECONFIG: /home/circleci/.kube/config
+      MINIKUBE_VERSION: v0.30.0
+      MINIKUBE_WANTUPDATENOTIFICATION: false
+      MINIKUBE_WANTREPORTERRORPROMPT: false
+      MINIKUBE_HOME: /home/circleci
+      CHANGE_MINIKUBE_NONE_USER: true
+    steps:
+      - checkout
+      - run:
+          name: setup kubectl
+          command: |
+            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+            mkdir -p ${HOME}/.kube
+            touch ${HOME}/.kube/config
+      - run:
+          name: setup minikube
+          command: |
+            curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+      - run:
+          name: setup helm
+          command: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
+      - run:
+          name: start minikube
+          command: |
+            sudo -E minikube start --vm-driver=none --cpus 2 --memory 2048 --kubernetes-version=${K8S_VERSION} &> $HOME/minikube.log 2>&1 < /dev/null
+      - run:
+          name: wait for minikube
+          command: |
+            JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}';
+            until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do
+              sleep 1;
+            done
+      - run:
+          name: Installing BDD Dependencies 
+          command: |
+            make bdddeps
+      - run:
+          name: Running BDD test
+          command: |
+            go test ./... -v
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - test
+      - build

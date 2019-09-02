@@ -82,3 +82,11 @@ dockerops:
 	@echo "------------------"
 	sudo docker build . -f build/Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	REPONAME=$(DOCKER_REPO) IMGNAME=$(DOCKER_IMAGE) IMGTAG=$(DOCKER_TAG) ./buildscripts/push
+
+.PHONY: bdddeps 
+bdddeps: 
+	@echo "------------------"
+	@echo "--> Install BDD dependencies"
+	@echo "------------------"
+	@go get github.com/onsi/ginkgo
+	@go get github.com/onsi/gomega
