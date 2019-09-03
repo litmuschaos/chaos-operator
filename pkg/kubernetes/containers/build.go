@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// Builder is the builder object for container
 type Builder struct {
 	con    *container // container instance
 	errors []error    // errors found while building the container instance
