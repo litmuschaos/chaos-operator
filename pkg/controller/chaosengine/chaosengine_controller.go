@@ -272,8 +272,7 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []
 			Value: cr.Namespace,
 		},
 		{
-			Name: "EXPERIMENT_LIST",
-			//Value: fmt.Sprintf(strings.Join(aExList,",")),
+			Name:  "EXPERIMENT_LIST",
 			Value: fmt.Sprint(strings.Join(aExList, ",")),
 		},
 	}
