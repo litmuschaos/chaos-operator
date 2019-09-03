@@ -256,6 +256,53 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	return reconcile.Result{}, nil /*You can return now, both sec resources are existing */
 }
 
+// getChaosRunnerENV return the env required for chaos-runner
+func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  "CHAOSENGINE",
+			Value: cr.Name,
+		},
+		{
+			Name:  "APP_LABEL",
+			Value: cr.Spec.Appinfo.Applabel,
+		},
+		{
+			Name:  "APP_NAMESPACE",
+			Value: cr.Namespace,
+		},
+		{
+			Name: "EXPERIMENT_LIST",
+			//Value: fmt.Sprintf(strings.Join(aExList,",")),
+			Value: fmt.Sprint(strings.Join(aExList, ",")),
+		},
+	}
+}
+
+// getChaosExporterENV return the env required for chaos-exporter
+func getChaosExporterENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  "CHAOSENGINE",
+			Value: cr.Name,
+		},
+		{
+			Name:  "APP_UUID",
+			Value: string(aUUID),
+		},
+	}
+}
+
+// getMonitoring return env required for metrics
+func getMonitoringENV() []corev1.ServicePort {
+	return []corev1.ServicePort{
+		{
+			Name: "metrics",
+			Port: 8080,
+		},
+	}
+}
+
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
 func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
 	labels := map[string]string{
@@ -272,44 +319,13 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 				WithImage("ksatchit/ansible-runner:trial8").
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts -vv; exit 0"}).
-				WithEnvsNew(
-					[]corev1.EnvVar{
-						{
-							Name:  "CHAOSENGINE",
-							Value: cr.Name,
-						},
-						{
-							Name:  "APP_LABEL",
-							Value: cr.Spec.Appinfo.Applabel,
-						},
-						{
-							Name:  "APP_NAMESPACE",
-							Value: cr.Namespace,
-						},
-						{
-							Name: "EXPERIMENT_LIST",
-							//Value: fmt.Sprintf(strings.Join(aExList,",")),
-							Value: fmt.Sprint(strings.Join(aExList, ",")),
-						},
-					},
-				),
+				WithEnvsNew(getChaosRunnerENV(cr, aExList)),
 		).
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-exporter").
 				WithImage("litmuschaos/chaos-exporter:ci").
-				WithEnvsNew(
-					[]corev1.EnvVar{
-						{
-							Name:  "CHAOSENGINE",
-							Value: cr.Name,
-						},
-						{
-							Name:  "APP_UUID",
-							Value: string(aUUID),
-						},
-					},
-				),
+				WithEnvsNew(getChaosExporterENV(cr, aUUID)),
 		).
 		Build()
 	if err != nil {
@@ -327,14 +343,7 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 		WithName(cr.Name + "-monitor").
 		WithNamespace(cr.Namespace).
 		WithLabels(labels).
-		WithPorts(
-			[]corev1.ServicePort{
-				{
-					Name: "metrics",
-					Port: 8080,
-				},
-			},
-		).
+		WithPorts(getMonitoringENV()).
 		WithSelectorsNew(
 			map[string]string{
 				"app": cr.Name,
