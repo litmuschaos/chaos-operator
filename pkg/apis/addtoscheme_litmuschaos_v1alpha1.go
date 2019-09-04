@@ -1,7 +1,7 @@
 package apis
 
 import (
-       "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 )
 
 func init() {

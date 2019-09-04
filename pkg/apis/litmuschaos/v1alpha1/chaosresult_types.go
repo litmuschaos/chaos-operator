@@ -9,8 +9,8 @@ import (
 // The chaosresult holds the status of a chaos experiment that is listed as an item
 // in the chaos engine to be run against a given app.
 type ChaosResultSpec struct {
-        // Definition carries low-level chaos options 
-        ExperimentStatus    TestStatus     `json:"experimentstatus"`
+	// Definition carries low-level chaos options
+	ExperimentStatus TestStatus `json:"experimentstatus"`
 }
 
 // ChaosResultStatus defines the observed state of ChaosResult
@@ -23,10 +23,10 @@ type ChaosResultStatus struct {
 
 // TestStatus defines information about the status and results of a chaos experiment
 type TestStatus struct {
-        // Phase defines whether an experiment is running or completed
-        Phase       string                 `json:"phase"`
-        // Verdict defines whether an experiment result is pass or fail
-        Verdict     string                 `json:"verdict"`
+	// Phase defines whether an experiment is running or completed
+	Phase string `json:"phase"`
+	// Verdict defines whether an experiment result is pass or fail
+	Verdict string `json:"verdict"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -36,7 +36,7 @@ type TestStatus struct {
 type ChaosResult struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-        
+
 	Spec   ChaosResultSpec   `json:"spec,omitempty"`
 	Status ChaosResultStatus `json:"status,omitempty"`
 }
