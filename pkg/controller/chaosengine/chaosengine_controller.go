@@ -185,7 +185,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	chaosAppList, err := clientset.AppsV1().Deployments(appInfo.namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", appLabelKey, appLabelValue), FieldSelector: ""})
+	chaosAppList, err := clientset.AppsV1().Deployments(appInfo.namespace).List(metav1.ListOptions{LabelSelector: instance.Spec.Appinfo.Applabel, FieldSelector: ""})
 	if err != nil {
 		//logrus.Fatal("Failed to list deployments. Error is ", err)
 		log.Error(err, "unable to list apps matching labels")
