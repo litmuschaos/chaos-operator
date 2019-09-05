@@ -110,7 +110,7 @@ type applicationInfo struct {
 var appLabelKey string
 var appLabelValue string
 
-func (appInfo *applicationInfo) InitializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) *applicationInfo {
+func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) *applicationInfo {
 	appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
 	appLabelKey = appLabel[0]
 	appLabelValue = appLabel[1]
@@ -151,7 +151,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// TODO: Freeze label format in chaosengine( "=" as a const)
 
 	appInfo := &applicationInfo{}
-	appInfo = appInfo.InitializeApplicationInfo(instance)
+	appInfo = appInfo.initializeApplicationInfo(instance)
 
 	var appExperiments []string
 	for _, exp := range appInfo.experimentList {
@@ -185,7 +185,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	cApp, err := clientset.AppsV1().Deployments(appInfo.namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", appLabelKey, appLabelValue), FieldSelector: ""})
+	chaosAppList, err := clientset.AppsV1().Deployments(appInfo.namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", appLabelKey, appLabelValue), FieldSelector: ""})
 	if err != nil {
 		//logrus.Fatal("Failed to list deployments. Error is ", err)
 		log.Error(err, "unable to list apps matching labels")
@@ -197,8 +197,8 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	// Determine whether apps with matching labels have chaos annotation set to true
 	chaosCandidates := 0
-	if len(cApp.Items) > 0 {
-		for _, app := range cApp.Items {
+	if len(chaosAppList.Items) > 0 {
+		for _, app := range chaosAppList.Items {
 			appName = app.ObjectMeta.Name
 			appUUID = app.ObjectMeta.UID
 			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
