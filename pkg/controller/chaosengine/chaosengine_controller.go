@@ -9,6 +9,7 @@ import (
 	container "github.com/litmuschaos/chaos-operator/pkg/kubernetes/containers"
 	pod "github.com/litmuschaos/chaos-operator/pkg/kubernetes/pod"
 	service "github.com/litmuschaos/chaos-operator/pkg/kubernetes/service"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,6 +122,40 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 	return appInfo
 }
 
+// Determine whether apps with matching labels have chaos annotation set to true
+func checkChaosAnnotation(chaosAppList *appsv1.DeploymentList) types.UID {
+	chaosCandidates := 0
+	var appUUID types.UID
+	if len(chaosAppList.Items) > 0 {
+
+		for _, app := range chaosAppList.Items {
+			appName := app.ObjectMeta.Name
+			appUUID = app.ObjectMeta.UID
+			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
+			//if appCaSts == true {
+			if appCaSts {
+				//logrus.Info ("chaos candidate app: ", appName, appUUID)
+				log.Info("chaos candidate : ", "appName", appName, "appUUID", appUUID)
+				chaosCandidates++
+			}
+		}
+		if chaosCandidates == 0 {
+			//logrus.Info("No chaos candidates found")
+			log.Info("No chaos candidates found")
+			return ""
+		} else if chaosCandidates > 1 {
+			//logrus.Info ("Too many chaos candidates with same label",
+			log.Info("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
+			return ""
+		}
+	} else {
+		//logrus.Info("No app deployments with matching labels")
+		log.Info("No app deployments with matching labels")
+		return ""
+	}
+	return appUUID
+}
+
 // Reconcile reads that state of the cluster for a ChaosEngine object and makes changes based on the state read
 // and what is in the ChaosEngine.Spec
 // Note:
@@ -192,35 +227,8 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	var appName string
-	var appUUID types.UID
-
-	// Determine whether apps with matching labels have chaos annotation set to true
-	chaosCandidates := 0
-	if len(chaosAppList.Items) > 0 {
-		for _, app := range chaosAppList.Items {
-			appName = app.ObjectMeta.Name
-			appUUID = app.ObjectMeta.UID
-			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
-			//if appCaSts == true {
-			if appCaSts {
-				//logrus.Info ("chaos candidate app: ", appName, appUUID)
-				log.Info("chaos candidate : ", "appName", appName, "appUUID", appUUID)
-				chaosCandidates++
-			}
-		}
-		if chaosCandidates == 0 {
-			//logrus.Info("No chaos candidates found")
-			log.Info("No chaos candidates found")
-			return reconcile.Result{}, nil
-		} else if chaosCandidates > 1 {
-			//logrus.Info ("Too many chaos candidates with same label",
-			log.Info("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
-			return reconcile.Result{}, nil
-		}
-	} else {
-		//logrus.Info("No app deployments with matching labels")
-		log.Info("No app deployments with matching labels")
+	appUUID := checkChaosAnnotation(chaosAppList)
+	if appUUID == "" {
 		return reconcile.Result{}, nil
 	}
 
