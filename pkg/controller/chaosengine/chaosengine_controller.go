@@ -107,18 +107,18 @@ type applicationInfo struct {
 	experimentList []litmuschaosv1alpha1.ExperimentList
 }
 
-var labelKey string
-var labelValue string
+var appLabelKey string
+var appLabelValue string
 
-func (a *applicationInfo) Initialize(instance *litmuschaosv1alpha1.ChaosEngine) *applicationInfo {
-	aLabelKeyValue := strings.Split(instance.Spec.Appinfo.Applabel, "=")
-	labelKey = aLabelKeyValue[0]
-	labelValue = aLabelKeyValue[1]
-	a.label = make(map[string]string)
-	a.label[labelKey] = labelValue
-	a.namespace = instance.Spec.Appinfo.Appns
-	a.experimentList = instance.Spec.Experiments
-	return a
+func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) *applicationInfo {
+	appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
+	appLabelKey = appLabel[0]
+	appLabelValue = appLabel[1]
+	appInfo.label = make(map[string]string)
+	appInfo.label[appLabelKey] = appLabelValue
+	appInfo.namespace = instance.Spec.Appinfo.Appns
+	appInfo.experimentList = instance.Spec.Experiments
+	return appInfo
 }
 
 // Reconcile reads that state of the cluster for a ChaosEngine object and makes changes based on the state read
@@ -150,11 +150,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// TODO: Get app kind from chaosengine spec as well. Using "deploy" for now
 	// TODO: Freeze label format in chaosengine( "=" as a const)
 
-	a := &applicationInfo{}
-	a = a.Initialize(instance)
+	appInfo := &applicationInfo{}
+	appInfo = appInfo.initializeApplicationInfo(instance)
 
 	var appExperiments []string
-	for _, exp := range a.experimentList {
+	for _, exp := range appInfo.experimentList {
 		appExperiments = append(appExperiments, exp.Name)
 	}
 
@@ -165,9 +165,9 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	   logrus.Info("Exp list derived from chaosengine is ", appExperiments)
 	*/
 
-	log.Info("App key derived from chaosengine is ", "appLabelKey", labelKey)
-	log.Info("App Label derived from Chaosengine is ", "appLabelValue", labelValue)
-	log.Info("App NS derived from Chaosengine is ", "appNamespace", a.namespace)
+	log.Info("App key derived from chaosengine is ", "appLabelKey", appLabelKey)
+	log.Info("App Label derived from Chaosengine is ", "appLabelValue", appLabelValue)
+	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
 	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
 
 	// Use client-Go to obtain a list of apps w/ specified labels
@@ -185,7 +185,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	cApp, err := clientset.AppsV1().Deployments(a.namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", labelKey, labelValue), FieldSelector: ""})
+	chaosAppList, err := clientset.AppsV1().Deployments(appInfo.namespace).List(metav1.ListOptions{LabelSelector: instance.Spec.Appinfo.Applabel, FieldSelector: ""})
 	if err != nil {
 		//logrus.Fatal("Failed to list deployments. Error is ", err)
 		log.Error(err, "unable to list apps matching labels")
@@ -197,8 +197,8 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	// Determine whether apps with matching labels have chaos annotation set to true
 	chaosCandidates := 0
-	if len(cApp.Items) > 0 {
-		for _, app := range cApp.Items {
+	if len(chaosAppList.Items) > 0 {
+		for _, app := range chaosAppList.Items {
 			appName = app.ObjectMeta.Name
 			appUUID = app.ObjectMeta.UID
 			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
