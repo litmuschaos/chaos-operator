@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"strconv"
 	// Temp test purposes
 	//"github.com/Sirupsen/logrus"
 )
@@ -205,8 +206,16 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 			//if appCaSts == true {
 			if appCaSts {
 				//logrus.Info ("chaos candidate app: ", appName, appUUID)
-				log.Info("chaos candidate : ", "appName", appName, "appUUID", appUUID)
-				chaosCandidates++
+				//Checks if the annotation is "true" / "false"
+				var annotationFlag bool
+				annotationFlag, _ = strconv.ParseBool(app.ObjectMeta.GetAnnotations()["litmuschaos.io/chaos"])
+				//log.Info("Annotaion Flag", "aflag", annotationCheck)
+				if annotationFlag {
+					// If annotationFlag is true
+					// Add it to the Chaos Candidates, and log the details
+					log.Info("chaos candidate : ", "appName", appName, "appUUID", appUUID)
+					chaosCandidates++
+				}
 			}
 		}
 		if chaosCandidates == 0 {
