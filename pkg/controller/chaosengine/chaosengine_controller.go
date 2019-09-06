@@ -195,8 +195,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 			if appCaSts {
 				//Checks if the annotation is "true" / "false"
 				var annotationFlag bool
-				annotationFlag, _ = strconv.ParseBool(app.ObjectMeta.GetAnnotations()[chaosAnnotation])
+				annotationFlag, err = strconv.ParseBool(app.ObjectMeta.GetAnnotations()[chaosAnnotation])
 				//log.Info("Annotaion Flag", "aflag", annotationFlag)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
 
 				if annotationFlag {
 					// If annotationFlag is true
