@@ -106,6 +106,8 @@ type ExperimentStatuses struct {
 	LastUpdateTime metav1.Time `json:"lastUpdateTime"`
 }
 
+// +genclient
+// +resource:path=chaosengine
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ChaosEngine is the Schema for the chaosengines API

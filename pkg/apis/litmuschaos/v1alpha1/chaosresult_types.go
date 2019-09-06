@@ -29,6 +29,8 @@ type TestStatus struct {
 	Verdict string `json:"verdict"`
 }
 
+// +genclient
+// +resource:path=chaosresult
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ChaosResult is the Schema for the chaosresults API
