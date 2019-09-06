@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"strings"
 
+	"strconv"
+
+	"github.com/go-logr/logr"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	container "github.com/litmuschaos/chaos-operator/pkg/kubernetes/containers"
 	pod "github.com/litmuschaos/chaos-operator/pkg/kubernetes/pod"
 	service "github.com/litmuschaos/chaos-operator/pkg/kubernetes/service"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"strconv"
 )
 
 // To create logs for debugging or detailing, please follow this syntax.
@@ -108,17 +111,6 @@ type applicationInfo struct {
 
 var appLabelKey string
 var appLabelValue string
-
-func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) *applicationInfo {
-	appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
-	appLabelKey = appLabel[0]
-	appLabelValue = appLabel[1]
-	appInfo.label = make(map[string]string)
-	appInfo.label[appLabelKey] = appLabelValue
-	appInfo.namespace = instance.Spec.Appinfo.Appns
-	appInfo.experimentList = instance.Spec.Experiments
-	return appInfo
-}
 
 // Reconcile reads that state of the cluster for a ChaosEngine object and makes changes based on the state read
 // and what is in the ChaosEngine.Spec
@@ -245,43 +237,18 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Check if the engineRunner pod already exists, else create
-	foundS1 := &corev1.Pod{} //secondary resource #1
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engineRunner.Name, Namespace: engineRunner.Namespace}, foundS1)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new engineRunner Pod", "Pod.Namespace", engineRunner.Namespace, "Pod.Name", engineRunner.Name)
-		err = r.client.Create(context.TODO(), engineRunner)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		// Pod created successfully - don't requeue
-		reqLogger.Info("engineRunner Pod created successfully")
-	} else if err != nil {
+	err = engineRunnerPod(engineRunner, r, reqLogger, &corev1.Pod{})
+	if err != nil {
 		return reconcile.Result{}, err
 	}
-
-	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", foundS1.Namespace, "Pod.Name", foundS1.Name)
 
 	// Check if the engineMonitorservice already exists, else create
-	foundS2 := &corev1.Service{} //secondary resource #2
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, foundS2)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", engineMonitor.Namespace, "Service.Name", engineMonitor.Name)
-		err = r.client.Create(context.TODO(), engineMonitor)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		// Service created successfully - don't requeue
-		return reconcile.Result{}, nil /*You can return now, both sec resources are created */
-	} else if err != nil {
+	err = engineMonitorservice(engineMonitor, r, reqLogger, &corev1.Service{})
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Service already exists - don't requeue
-	reqLogger.Info("Skip reconcile: engineMonitor Service already exists", "Service.Namespace", foundS2.Namespace, "Service.Name", foundS2.Name)
-	return reconcile.Result{}, nil /*You can return now, both sec resources are existing */
+	return reconcile.Result{}, nil
 }
 
 // getChaosRunnerENV return the env required for chaos-runner
@@ -380,4 +347,53 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 		return nil, err
 	}
 	return serviceObj, nil
+}
+
+// initializeApplicationInfo to initialize application info
+func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) *applicationInfo {
+	appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
+	appLabelKey = appLabel[0]
+	appLabelValue = appLabel[1]
+	appInfo.label = make(map[string]string)
+	appInfo.label[appLabelKey] = appLabelValue
+	appInfo.namespace = instance.Spec.Appinfo.Appns
+	appInfo.experimentList = instance.Spec.Experiments
+	return appInfo
+}
+
+// engineRunnerPod to Check if the engineRunner pod already exists, else create
+func engineRunnerPod(engineRunner *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger, pod *v1.Pod) error {
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineRunner.Name, Namespace: engineRunner.Namespace}, pod)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new engineRunner Pod", "Pod.Namespace", engineRunner.Namespace, "Pod.Name", engineRunner.Name)
+		err = r.client.Create(context.TODO(), engineRunner)
+		if err != nil {
+			return err
+		}
+
+		// Pod created successfully - don't requeue
+		reqLogger.Info("engineRunner Pod created successfully")
+	} else if err != nil {
+		return err
+	}
+	reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+	return nil
+}
+
+// Check if the engineMonitorservice already exists, else create
+func engineMonitorservice(engineMonitor *v1.Service, r *ReconcileChaosEngine, reqLogger logr.Logger, service *v1.Service) error {
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, service)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", engineMonitor.Namespace, "Service.Name", engineMonitor.Name)
+		err = r.client.Create(context.TODO(), engineMonitor)
+		if err != nil {
+			return err
+		}
+
+		// Service created successfully - don't requeue
+	} else if err != nil {
+		return err
+	}
+	reqLogger.Info("Skip reconcile: engineMonitor Service already exists", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
+	return nil /*You can return now, both sec resources are existing */
 }
