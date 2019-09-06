@@ -25,8 +25,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"strconv"
-	// Temp test purposes
-	//"github.com/Sirupsen/logrus"
 )
 
 // To create logs for debugging or detailing, please follow this syntax.
@@ -159,13 +157,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		appExperiments = append(appExperiments, exp.Name)
 	}
 
-	// Temp test purposes
-	/*
-	   logrus.Info("App Label derived from Chaosengine is ", aLabel)
-	   logrus.Info("App NS derived from Chaosengine is ", aNamespace)
-	   logrus.Info("Exp list derived from chaosengine is ", appExperiments)
-	*/
-
 	log.Info("App key derived from chaosengine is ", "appLabelKey", appLabelKey)
 	log.Info("App Label derived from Chaosengine is ", "appLabelValue", appLabelValue)
 	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
@@ -174,21 +165,18 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Use client-Go to obtain a list of apps w/ specified labels
 	config, err := config.GetConfig()
 	if err != nil {
-		//logrus.Fatal(err.Error())
 		log.Error(err, "unable to get kube config")
 		return reconcile.Result{}, err
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		//logrus.Fatal(err.Error())
 		log.Error(err, "unable to create clientset using kubeconfig")
 		return reconcile.Result{}, err
 	}
 
 	chaosAppList, err := clientset.AppsV1().Deployments(appInfo.namespace).List(metav1.ListOptions{LabelSelector: instance.Spec.Appinfo.Applabel, FieldSelector: ""})
 	if err != nil {
-		//logrus.Fatal("Failed to list deployments. Error is ", err)
 		log.Error(err, "unable to list apps matching labels")
 		return reconcile.Result{}, err
 	}
@@ -205,11 +193,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
 			//if appCaSts == true {
 			if appCaSts {
-				//logrus.Info ("chaos candidate app: ", appName, appUUID)
 				//Checks if the annotation is "true" / "false"
 				var annotationFlag bool
-				annotationFlag, _ = strconv.ParseBool(app.ObjectMeta.GetAnnotations()["litmuschaos.io/chaos"])
-				//log.Info("Annotaion Flag", "aflag", annotationCheck)
+				annotationFlag, _ = strconv.ParseBool(app.ObjectMeta.GetAnnotations()[chaosAnnotation])
+				//log.Info("Annotaion Flag", "aflag", annotationFlag)
+
 				if annotationFlag {
 					// If annotationFlag is true
 					// Add it to the Chaos Candidates, and log the details
@@ -219,22 +207,22 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 			}
 		}
 		if chaosCandidates == 0 {
-			//logrus.Info("No chaos candidates found")
 			log.Info("No chaos candidates found")
 			return reconcile.Result{}, nil
+
 		} else if chaosCandidates > 1 {
-			//logrus.Info ("Too many chaos candidates with same label",
 			log.Info("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
 			return reconcile.Result{}, nil
 		}
 	} else {
-		//logrus.Info("No app deployments with matching labels")
 		log.Info("No app deployments with matching labels")
 		return reconcile.Result{}, nil
 	}
 
 	// Define an engine(ansible?)-runner pod which is secondary-resource #1
+	log.Info("Before the enginerunner")
 	engineRunner, err := newRunnerPodForCR(instance, appUUID, appExperiments)
+	log.Info("creating enginerunner", "engine", engineRunner)
 	if err != nil {
 		return reconcile.Result{}, nil
 	}
