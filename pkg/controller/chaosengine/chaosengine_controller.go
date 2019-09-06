@@ -220,9 +220,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Define an engine(ansible?)-runner pod which is secondary-resource #1
-	log.Info("Before the enginerunner")
 	engineRunner, err := newRunnerPodForCR(instance, appUUID, appExperiments)
-	log.Info("creating enginerunner", "engine", engineRunner)
 	if err != nil {
 		return reconcile.Result{}, nil
 	}
