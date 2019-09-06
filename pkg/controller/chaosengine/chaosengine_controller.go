@@ -198,14 +198,16 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 				annotationFlag, err = strconv.ParseBool(app.ObjectMeta.GetAnnotations()[chaosAnnotation])
 				//log.Info("Annotaion Flag", "aflag", annotationFlag)
 				if err != nil {
-					return reconcile.Result{}, err
-				}
-
-				if annotationFlag {
-					// If annotationFlag is true
-					// Add it to the Chaos Candidates, and log the details
-					log.Info("chaos candidate : ", "appName", appName, "appUUID", appUUID)
-					chaosCandidates++
+					// Unable to check the annotation
+					// Would not add in the chaosCandidates
+					log.Info("Unable to check the annotationFlag", "annotationFlag", annotationFlag)
+				} else {
+					if annotationFlag {
+						// If annotationFlag is true
+						// Add it to the Chaos Candidates, and log the details
+						log.Info("chaos candidate : ", "appName", appName, "appUUID", appUUID)
+						chaosCandidates++
+					}
 				}
 			}
 		}
