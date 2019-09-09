@@ -33,7 +33,8 @@ type ExperimentDef struct {
 	// Defines command to invoke experiment
 	Command []string `json:"command"`
 	// Defines arguments to executor's entrypoint command
-	Args []string `json:"args"`
+	Args       []string `json:"args"`
+	Litmusbook string   `json:"litmusbook"`
 }
 
 // ENVPair defines env var list to hold chaos params

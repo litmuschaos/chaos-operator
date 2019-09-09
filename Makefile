@@ -7,9 +7,9 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 # docker info
-DOCKER_REPO ?= litmuschaos
+DOCKER_REPO ?= shubh214
 DOCKER_IMAGE ?= chaos-operator
-DOCKER_TAG ?= ci
+DOCKER_TAG ?= 2
 
 .PHONY: help
 help:
@@ -41,7 +41,7 @@ _build_check_docker:
 		fi;
 
 .PHONY: gotasks
-gotasks: format lint build test
+gotasks: format lint build
  
 .PHONY: format
 format:

@@ -24,3 +24,5 @@ jobs:
       - run: |
           docker build . -f build/Dockerfile -t ${REPONAME}/${IMGNAME}:${IMGTAG}
           ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push 
+      - run: docker push ${REPONAME}/${IMGNAME}:${IMGTAG}
+      - run: make test
