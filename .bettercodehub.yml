@@ -7,3 +7,4 @@ exclude:
 test:
     include:
       - .*/test/.*\.go
+      - /tests/bdd/bdd_test.go
