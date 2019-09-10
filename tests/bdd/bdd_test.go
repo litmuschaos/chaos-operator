@@ -174,7 +174,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Labels: map[string]string{
 							"name": "pod-delete",
 						},
-						Litmusbook: "/experiments/chaos/kubernetes/pod_delete/run_litmus_test.yml",
+						//Litmusbook: "/experiments/chaos/kubernetes/pod_delete/run_litmus_test.yml",
 					},
 				},
 			}
@@ -214,7 +214,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			}
 
 			fmt.Println("Chaosengine created successfully...")
-			time.Sleep(20 * time.Second)
+			time.Sleep(100 * time.Second)
 
 			_, err = client.CoreV1().Pods("default").Get("engine-nginx-runner", metav1.GetOptions{})
 			Expect(err).To(BeNil())
