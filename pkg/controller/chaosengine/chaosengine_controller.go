@@ -2,6 +2,7 @@ package chaosengine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 	service "github.com/litmuschaos/chaos-operator/pkg/kubernetes/service"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -125,7 +126,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	instance := &litmuschaosv1alpha1.ChaosEngine{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
@@ -299,6 +300,9 @@ func getMonitoringENV() []corev1.ServicePort {
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
 func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
+	if len(aExList) == 0 || aUUID == "" {
+		return nil, errors.New("expeced aExList not found")
+	}
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -330,6 +334,9 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 
 // newMonitorServiceForCR defines secondary resource #2 in same namespace as CR */
 func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Service, error) {
+	if cr == nil {
+		return nil, errors.New("nil chaosengine object")
+	}
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -364,7 +371,7 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 // engineRunnerPod to Check if the engineRunner pod already exists, else create
 func engineRunnerPod(engineRunner *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger, pod *v1.Pod) error {
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineRunner.Name, Namespace: engineRunner.Namespace}, pod)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		reqLogger.Info("Creating a new engineRunner Pod", "Pod.Namespace", engineRunner.Namespace, "Pod.Name", engineRunner.Name)
 		err = r.client.Create(context.TODO(), engineRunner)
 		if err != nil {
@@ -383,7 +390,7 @@ func engineRunnerPod(engineRunner *v1.Pod, r *ReconcileChaosEngine, reqLogger lo
 // Check if the engineMonitorservice already exists, else create
 func engineMonitorservice(engineMonitor *v1.Service, r *ReconcileChaosEngine, reqLogger logr.Logger, service *v1.Service) error {
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, service)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", engineMonitor.Namespace, "Service.Name", engineMonitor.Name)
 		err = r.client.Create(context.TODO(), engineMonitor)
 		if err != nil {
