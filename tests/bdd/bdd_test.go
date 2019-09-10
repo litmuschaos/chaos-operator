@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
 	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
