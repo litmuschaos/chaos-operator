@@ -16,7 +16,7 @@ jobs:
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true 
 
-    working_directory: go/src/github.com/litmuschaos/chaos-operator
+    working_directory: /go/src/github.com/litmuschaos/chaos-operator
     
     steps:
       - checkout
