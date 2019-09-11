@@ -208,7 +208,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			fmt.Println("Chaosengine created successfully...")
 
 			//Wait till the creation of runner pod and monitor svc
-			time.Sleep(500 * time.Second)
+			time.Sleep(120 * time.Second)
 
 			// Fetching engine-nginx-runner pod
 			runner, err := client.CoreV1().Pods("default").Get("engine-nginx-runner", metav1.GetOptions{})
