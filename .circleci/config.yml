@@ -20,7 +20,7 @@ jobs:
     
     steps:
       - checkout
-      - run:
+      - run:/home/circleci/.go_workspace:/usr/local/go_workspace
          name: Setup kubectl
          command: | 
            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -42,11 +42,12 @@ jobs:
       - run: 
           name: Setup ENV
           command: |
-            echo $GOPATH
+            echo 'export GOPATH=/go' >> $BASH_ENV
             echo 'export PATH="$GOPATH/bin:$PATH"' >> $BASH_ENV
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=latest' >> $BASH_ENV
+            echo $GOPATH
             
   
       - run: make deps
