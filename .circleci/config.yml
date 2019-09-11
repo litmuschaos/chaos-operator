@@ -42,9 +42,9 @@ jobs:
       - run:
           name: setup golang
           command: |
-            wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz
-            sudo tar -xvf go1.12.7.linux-amd64.tar.gz
-            sudo mv go /usr/local  
+            # wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz
+            # sudo tar -xvf go1.12.7.linux-amd64.tar.gz
+            # sudo mv go /usr/local  
             go version
 
       - run: 
