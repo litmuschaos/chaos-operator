@@ -37,6 +37,7 @@ jobs:
       - run:
           name: Start minikube
           command: |
+            sudo ls /usr/local/bin/ 
             sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}    
 
       - run: 
