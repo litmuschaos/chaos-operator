@@ -107,6 +107,7 @@ type applicationInfo struct {
 	namespace      string
 	label          map[string]string
 	experimentList []litmuschaosv1alpha1.ExperimentList
+	serviceAccountName     string
 }
 
 var appLabelKey string
@@ -270,6 +271,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []
 			Name:  "EXPERIMENT_LIST",
 			Value: fmt.Sprint(strings.Join(aExList, ",")),
 		},
+		{
+			Name:  "CHAOS_SVC_ACC",
+			Value: cr.Spec.ChaosServiceAccount,
+		},
 	}
 }
 
@@ -306,11 +311,11 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 		WithName(cr.Name + "-runner").
 		WithNamespace(cr.Namespace).
 		WithLabels(labels).
-		WithServiceAccountName("chaos-operator").
+		WithServiceAccountName(cr.Spec.ChaosServiceAccount).
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
-				WithImage("ksatchit/ansible-runner:trial8").
+				WithImage("ksatchit/ansible-runner:trial7").
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts -vv; exit 0"}).
 				WithEnvsNew(getChaosRunnerENV(cr, aExList)),
@@ -358,6 +363,7 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 	appInfo.label[appLabelKey] = appLabelValue
 	appInfo.namespace = instance.Spec.Appinfo.Appns
 	appInfo.experimentList = instance.Spec.Experiments
+	appInfo.serviceAccountName = instance.Spec.ChaosServiceAccount
 	return appInfo
 }
 
