@@ -4,8 +4,9 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: circleci/golang:1.11
+    machine:
+        image: circleci/classic:201808-01
+        docker_layer_caching: true
     environment:
       K8S_VERSION: v1.12.0
       KUBECONFIG: /home/circleci/.kube/config
@@ -20,8 +21,6 @@ jobs:
     
     steps:
       - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true 
       - run:
          name: Setup kubectl
          command: | 
@@ -40,6 +39,13 @@ jobs:
           name: Start minikube
           command: |
             sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}    
+      - run:
+          name: setup golang
+          command: |
+            wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz
+            sudo tar -xvf go1.12.7.linux-amd64.tar.gz
+            sudo mv go /usr/local  
+            go version
 
       - run: 
           name: Setup ENV
