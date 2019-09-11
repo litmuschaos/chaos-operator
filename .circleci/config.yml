@@ -5,7 +5,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11
+      - image: docker:17.05.0-ce-git
     environment:
       K8S_VERSION: v1.12.0
       KUBECONFIG: /home/circleci/.kube/config
