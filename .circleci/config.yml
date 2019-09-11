@@ -21,8 +21,9 @@ jobs:
       - run: make gotasks
       - setup_remote_docker:
           docker_layer_caching: true 
-      - run: make dockerops
-      - run: make test
+      - run: |
+          docker build . -f build/Dockerfile -t litmuschaos/chaos-operator:commit-hash
+      - run: make test  
       - run: |
           docker tag litmuschaos/chaos-operator:commit-hash ${REPONAME}/${IMGNAME}:${IMGTAG}
           ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push 
