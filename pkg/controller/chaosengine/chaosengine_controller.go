@@ -301,7 +301,7 @@ func getMonitoringENV() []corev1.ServicePort {
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
 func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
 	if len(aExList) == 0 || aUUID == "" {
-		return nil, errors.New("expeced aExList not found")
+		return nil, errors.New("expected aExList not found")
 	}
 	labels := map[string]string{
 		"app": cr.Name,
