@@ -2,7 +2,6 @@ package bdd
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -22,7 +21,7 @@ import (
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 )
 
-var kubeconfig = string(os.Getenv("HOME") + "/.kube/config")
+var kubeconfig = "home/circleci/.kube/config"
 var config, _ = clientcmd.BuildConfigFromFlags("", kubeconfig)
 var client, _ = kubernetes.NewForConfig(config)
 var clientSet, _ = clientV1alpha1.NewForConfig(config)
