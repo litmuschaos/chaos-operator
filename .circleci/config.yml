@@ -20,7 +20,7 @@ jobs:
     
     steps:
       - checkout
-      - run:/home/circleci/.go_workspace:/usr/local/go_workspace
+      - run:
          name: Setup kubectl
          command: | 
            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
