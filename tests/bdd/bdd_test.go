@@ -22,11 +22,7 @@ import (
 )
 
 var kubeconfig = "/home/circleci/.kube/config"
-
 var config, _ = clientcmd.BuildConfigFromFlags("", kubeconfig)
-
-//var restConfig, _ = rest.InClusterConfig()
-
 var client, _ = kubernetes.NewForConfig(config)
 var clientSet, _ = clientV1alpha1.NewForConfig(config)
 
