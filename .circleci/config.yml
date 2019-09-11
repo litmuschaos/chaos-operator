@@ -40,12 +40,10 @@ jobs:
           command: |
             sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}    
   
-      - run: $GOPATH
-      - run: $GOPATH
       - run: 
           name: Setup ENV
           command: |
-            echo 'export GOPATH=/go' >> $BASH_ENV
+            echo 'export GOPATH=/home/circleci/go' >> $BASH_ENV
             echo 'export PATH="$GOPATH/bin:$PATH"' >> $BASH_ENV
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
