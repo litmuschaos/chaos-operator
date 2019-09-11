@@ -33,6 +33,8 @@ jobs:
       - run:
           name: Start minikube
           command: |
+            sudo docker version
+            sudo systemctl status docker
             sudo minikube start --vm-driver=none
 
       - run: 
