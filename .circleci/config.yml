@@ -36,7 +36,6 @@ jobs:
           name: Start minikube
           command: |
             sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}
-            ll /home/circleci
             cat /home/circleci/.kube/config
   
       - run: 
