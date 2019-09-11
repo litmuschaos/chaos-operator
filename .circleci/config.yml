@@ -4,25 +4,23 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: docker:17.05.0-ce-git
+    machine:
+        image: circleci/classic:201808-01
+        docker_layer_caching: true
     environment:
       K8S_VERSION: v1.12.0
       KUBECONFIG: /home/circleci/.kube/config
-      MINIKUBE_VERSION: v1.3.1
+      MINIKUBE_VERSION: v0.31.1
       MINIKUBE_WANTUPDATENOTIFICATION: false
       MINIKUBE_WANTREPORTERRORPROMPT: false
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
       GOPATH: /home/circleci/go
 
-    working_directory: /go/src/github.com/litmuschaos/chaos-operator
+    working_directory: home/circleci/go/src/github.com/litmuschaos/chaos-operator
     
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 18.06.0-ce
-      
       - run:
          name: Setup kubectl
          command: |
@@ -36,9 +34,8 @@ jobs:
       - run:
           name: Start minikube
           command: |
-            sleep 90
-            sudo docker version
-            sudo minikube start --vm-driver=none
+            sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}
+42      
 
       - run: 
           name: Setup ENV
