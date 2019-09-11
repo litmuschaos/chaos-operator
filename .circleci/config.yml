@@ -39,14 +39,9 @@ jobs:
           name: Start minikube
           command: |
             sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}    
-      - run:
-          name: setup golang
-          command: |
-            # wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz
-            # sudo tar -xvf go1.12.7.linux-amd64.tar.gz
-            # sudo mv go /usr/local  
-            go version
-
+  
+      - run: $GOPATH
+      - run: $GOPATH
       - run: 
           name: Setup ENV
           command: |
@@ -55,6 +50,7 @@ jobs:
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=latest' >> $BASH_ENV
+  
       - run: make deps
       - run: make gotasks
       - run: |
