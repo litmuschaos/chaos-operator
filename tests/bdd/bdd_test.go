@@ -14,19 +14,21 @@ import (
 	"k8s.io/client-go/kubernetes"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/tools/clientcmd"
 
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
 	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 )
 
-var restConfig = "/home/circleci/.kube/config"
+var kubeconfig = "/home/circleci/.kube/config"
 
-// var config, _ = clientcmd.BuildConfigFromFlags("", kubeconfig)
+var config, _ = clientcmd.BuildConfigFromFlags("", kubeconfig)
+
 //var restConfig, _ = rest.InClusterConfig()
 
-var client, _ = kubernetes.NewForConfig(restConfig)
-var clientSet, _ = clientV1alpha1.NewForConfig(restConfig)
+var client, _ = kubernetes.NewForConfig(config)
+var clientSet, _ = clientV1alpha1.NewForConfig(config)
 
 func TestChaos(t *testing.T) {
 
