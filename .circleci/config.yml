@@ -34,10 +34,10 @@ jobs:
             sudo ls -lrt /usr/local/bin/
             sudo minikube version
             sudo docker version
-      # - run:
-      #     name: Start minikube
-      #     command: |
-      #       sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}    
+      - run:
+          name: Start minikube
+          command: |
+            sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}    
   
       - run: 
           name: Setup ENV
