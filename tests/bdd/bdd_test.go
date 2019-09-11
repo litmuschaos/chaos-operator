@@ -7,9 +7,6 @@ import (
 	"testing"
 	"time"
 
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
-	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
@@ -19,6 +16,10 @@ import (
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
+
+	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
+	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 )
 
 var kubeconfig = string(os.Getenv("HOME") + "/.kube/config")
@@ -39,13 +40,14 @@ var _ = BeforeSuite(func() {
 		fmt.Println(err)
 	}
 
-	//Creating crds
+	//Creating chaosEngine Crd
 	By("creating chaosengine crd")
 	err = exec.Command("kubectl", "create", "-f", "../../deploy/crds/chaosengine_crd.yaml").Run()
 	if err != nil {
 		fmt.Println(err)
 	}
 
+	//Creating chaosExperiments Crd
 	By("creating chaosexperiment crd")
 	err = exec.Command("kubectl", "create", "-f", "../../deploy/crds/chaosexperiment_crd.yaml").Run()
 
@@ -53,27 +55,20 @@ var _ = BeforeSuite(func() {
 		fmt.Println(err)
 	}
 
-	By("creating chaosresult crd")
-	err = exec.Command("kubectl", "create", "-f", "../../deploy/crds/chaosresults_crd.yaml").Run()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	//creating rbacs
+	//Creating rbacs
 	err = exec.Command("kubectl", "create", "-f", "../../deploy/rbac.yaml").Run()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	//creating opearator
-
+	//Creating Chaos-Operator
 	By("creating operator")
 	err = exec.Command("kubectl", "create", "-f", "../../deploy/operator.yaml").Run()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("operator created successfully")
+	fmt.Println("chaos-operator created successfully")
 
 })
 
@@ -81,13 +76,11 @@ var _ = BeforeSuite(func() {
 var _ = Describe("BDD on chaos-operator", func() {
 
 	// BDD TEST CASE 1
-
 	Context("Check for the custom resources", func() {
 
 		It("chaosengine Runner pod should present", func() {
 
 			//creating nginx deployment
-
 			deployment := &appv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nginx",
@@ -131,12 +124,10 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			_, err := client.AppsV1().Deployments("default").Create(deployment)
 			if err != nil {
-				panic(err)
+				fmt.Println("Deployment is not created and error is ", err)
 			}
-			fmt.Println("Deployment created successfully...")
 
 			// creating chaos-experiment for pod-delete
-
 			By("Creating ChaosExperiments")
 			ChaosExperiment := &chaosEngineV1alpha1.ChaosExperiment{
 				ObjectMeta: metav1.ObjectMeta{
@@ -174,7 +165,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Labels: map[string]string{
 							"name": "pod-delete",
 						},
-						//Litmusbook: "/experiments/chaos/kubernetes/pod_delete/run_litmus_test.yml",
 					},
 				},
 			}
@@ -187,7 +177,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 			fmt.Println("ChaosExperiment created successfully...")
 
 			//Creating chaosEngine
-
 			By("Creating ChaosEngine")
 			chaosEngine := &chaosEngineV1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{
@@ -214,30 +203,37 @@ var _ = Describe("BDD on chaos-operator", func() {
 			}
 
 			fmt.Println("Chaosengine created successfully...")
+
+			//Wait till the creation of runner pod and monitor svc
 			time.Sleep(100 * time.Second)
 
-			_, err = client.CoreV1().Pods("default").Get("engine-nginx-runner", metav1.GetOptions{})
+			// Fetching engine-nginx-runner pod
+			runner, err := client.CoreV1().Pods("default").Get("engine-nginx-runner", metav1.GetOptions{})
+
+			//Check for the Availabilty and status of the runner pod
 			Expect(err).To(BeNil())
+			Expect(string(runner.Status.Phase)).To(Equal("Running"))
+
 		})
 	})
 
 	// BDD TEST CASE 2
-
 	Context("check for the custom resources", func() {
 
 		It("engine-nginx-monitor service should present", func() {
 			_, err := client.CoreV1().Services("default").Get("engine-nginx-monitor", metav1.GetOptions{})
 			Expect(err).To(BeNil())
-		})
-	})
 
+		})
+
+	})
 })
 
 // deleting all unused resources
 var _ = AfterSuite(func() {
 
 	By("Deleting all CRDs")
-	crdDeletion := exec.Command("kubectl", "delete", "crds", "--all").Run()
+	crdDeletion := exec.Command("kubectl", "delete", "crds", "chaosengines.litmuschaos.io", "chaosexperiments.litmuschaos.io").Run()
 	Expect(crdDeletion).To(BeNil())
 
 	By("Deleting chaosengine")

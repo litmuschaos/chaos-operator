@@ -16,7 +16,7 @@ spec:
       containers:
         - name: chaos-operator
           # Replace this with the built image name
-          image: shubh214/chaos-operator:2
+          image: litmuschaos/chaos-operator:commit-hash
           command:
           - chaos-operator
           imagePullPolicy: Always
