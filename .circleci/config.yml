@@ -46,8 +46,9 @@ jobs:
             echo 'export PATH="$GOPATH/bin:$PATH"' >> $BASH_ENV
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
-            echo 'export IMGTAG=latest' >> $BASH_ENV
             echo $GOPATH
+            echo 'export IMGTAG=latest' >> $BASH_ENV
+            
             
   
       - run: make deps
