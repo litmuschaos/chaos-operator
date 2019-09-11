@@ -34,6 +34,7 @@ jobs:
             sudo install minikube /usr/local/bin
             sudo ls -lrt /usr/local/bin/
             sudo minikube version
+            sudo docker version
       - run:
           name: Start minikube
           command: |
