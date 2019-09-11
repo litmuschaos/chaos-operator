@@ -4,9 +4,8 @@
 version: 2
 jobs:
   build:
-    machine:
+    docker:
         image: circleci/golang:1.11
-        docker_layer_caching: true
     environment:
       K8S_VERSION: v1.12.0
       KUBECONFIG: /home/circleci/.kube/config
