@@ -52,9 +52,12 @@ jobs:
       - run: make deps
       - run: make gotasks
       - run: |
-          sudo minikube ssh docker build . -f build/Dockerfile -t litmuschaos/chaos-operator:commit-hash
+          eval $(minikube docker-env)
+          docker build . -f build/Dockerfile -t litmuschaos/chaos-operator:commit-hash
+          exit
       - run: make test  
       - run: |
           docker tag litmuschaos/chaos-operator:commit-hash ${REPONAME}/${IMGNAME}:${IMGTAG}
-          ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push 
+          ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push
+          exit
       
