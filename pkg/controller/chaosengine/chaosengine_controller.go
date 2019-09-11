@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	"strconv"
-
 	"github.com/go-logr/logr"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	container "github.com/litmuschaos/chaos-operator/pkg/kubernetes/containers"
+	job "github.com/litmuschaos/chaos-operator/pkg/kubernetes/job"
 	pod "github.com/litmuschaos/chaos-operator/pkg/kubernetes/pod"
+	podtemplatespec "github.com/litmuschaos/chaos-operator/pkg/kubernetes/podtemplatespec"
 	service "github.com/litmuschaos/chaos-operator/pkg/kubernetes/service"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -28,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"strconv"
 )
 
 // To create logs for debugging or detailing, please follow this syntax.
@@ -80,7 +82,21 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-
+	err = c.Watch(&source.Kind{Type: &batchv1.Job{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
+	})
+	if err != nil {
+		return err
+	}
+	// Watch for changes to secondary resource Services and requeue the owner ChaosEngine
+	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
+	})
+	if err != nil {
+		return err
+	}
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner ChaosEngine
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
@@ -215,19 +231,35 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		log.Info("No app deployments with matching labels")
 		return reconcile.Result{}, nil
 	}
+	var backoffpolicy int32
+	backoffpolicy = 2
 
-	// Define an engine(ansible?)-runner pod which is secondary-resource #1
-	engineRunner, err := newRunnerPodForCR(instance, appUUID, appExperiments)
+	podtemplateforJob, err := createPodtemplateSpecForJob(instance, appUUID, appExperiments)
 	if err != nil {
 		return reconcile.Result{}, nil
 	}
-	// Define the engine-monitor service which is secondary-resource #2
 	engineMonitor, err := newMonitorServiceForCR(instance)
 	if err != nil {
 		return reconcile.Result{}, nil
 	}
+	// Define an engine(ansible?)-runner pod which is secondary-resource #1
+	engineRunner, err := createjobforRunner(instance, appUUID, appExperiments, &backoffpolicy, podtemplateforJob)
+	if err != nil {
+		return reconcile.Result{}, nil
+	}
+	engineExporter, err := newExporterPodForCR(instance, appUUID, appExperiments)
+	if err != nil {
+		return reconcile.Result{}, nil
+	}
+	// Define the engine-monitor service which is secondary-resource #2
+
 	// Set ChaosEngine instance as the owner and controller of engine-runner pod
 	if err := controllerutil.SetControllerReference(instance, engineRunner, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// Set ChaosEngine Exporter Pod as the owner and controller of engine-exporter job
+	if err := controllerutil.SetControllerReference(instance, engineExporter, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -237,17 +269,22 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Check if the engineRunner pod already exists, else create
-	err = engineRunnerPod(engineRunner, r, reqLogger, &corev1.Pod{})
+	err = engineRunnerJob(engineRunner, r, reqLogger, &batchv1.Job{})
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
 	// Check if the engineMonitorservice already exists, else create
 	err = engineMonitorservice(engineMonitor, r, reqLogger, &corev1.Service{})
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
+	err = engineExporterPod(engineExporter, r, reqLogger, &v1.Pod{})
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	reqLogger.Info("Reconcile Function completed returning empty result, and error")
 	return reconcile.Result{}, nil
 }
 
@@ -296,25 +333,108 @@ func getMonitoringENV() []corev1.ServicePort {
 		},
 	}
 }
-
-// newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
-func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
+func createPodtemplateSpecForJob(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*podtemplatespec.Builder, error) {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
-	podObj, err := pod.NewBuilder().
-		WithName(cr.Name + "-runner").
+	podtemplate := podtemplatespec.NewBuilder().
+		WithName(cr.Name + "-runnerpod").
 		WithNamespace(cr.Namespace).
 		WithLabels(labels).
 		WithServiceAccountName("chaos-operator").
-		WithContainerBuilder(
+		WithContainerBuilders(
 			container.NewBuilder().
 				WithName("chaos-runner").
 				WithImage("ksatchit/ansible-runner:trial8").
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts -vv; exit 0"}).
 				WithEnvsNew(getChaosRunnerENV(cr, aExList)),
-		).
+		)
+
+	return podtemplate, nil
+}
+
+//Create new job for engine
+func createjobforRunner(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExlist []string, backoff *int32, podtemplate *podtemplatespec.Builder) (*batchv1.Job, error) {
+	labels := map[string]string{
+		"app": cr.Name,
+	}
+
+	/*return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name + "-runner",
+			Namespace: cr.Namespace,
+			Labels:    labels,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: "chaos-operator",
+					Containers: []corev1.Container{
+						{
+							Name:    "chaos-runner",
+							Image:   "ksatchit/ansible-runner:trial8",
+							Command: []string{"/bin/bash"},
+							Args:    []string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts -vv; exit 0"},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "CHAOSENGINE",
+									Value: cr.Name,
+								},
+								{
+									Name:  "APP_LABEL",
+									Value: cr.Spec.Appinfo.Applabel,
+								},
+								{
+									Name:  "APP_NAMESPACE",
+									Value: cr.Namespace,
+								},
+								{
+									Name:  "EXPERIMENT_LIST",
+									Value: fmt.Sprint(strings.Join(aExlist, ",")),
+								},
+							},
+						},
+					},
+					RestartPolicy: corev1.RestartPolicyOnFailure,
+				},
+			},
+			BackoffLimit: backoff,
+		},
+	}
+	*/
+	r := corev1.RestartPolicyNever
+	jobObj, err := job.NewBuilder().
+		WithName(cr.Name + "-runner").
+		WithNamespace(cr.Namespace).
+		WithLabels(labels).
+		WithPodTemplateSpecBuilder(podtemplate).
+		WithBackOffLimit(backoff).
+		WithRestartPolicy(r).
+		Build()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return jobObj, nil
+
+}
+
+// newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
+func newExporterPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
+	labels := map[string]string{
+		"app":  cr.Name,
+		"type": "exporter",
+	}
+	podObj, err := pod.NewBuilder().
+		WithName(cr.Name + "-exporter").
+		WithNamespace(cr.Namespace).
+		WithLabels(labels).
+		WithServiceAccountName("chaos-operator").
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-exporter").
@@ -340,7 +460,8 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 		WithPorts(getMonitoringENV()).
 		WithSelectorsNew(
 			map[string]string{
-				"app": cr.Name,
+				"app":  cr.Name,
+				"type": "exporter",
 			}).
 		Build()
 	if err != nil {
@@ -359,6 +480,41 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 	appInfo.namespace = instance.Spec.Appinfo.Appns
 	appInfo.experimentList = instance.Spec.Experiments
 	return appInfo
+}
+func engineExporterPod(enginePod *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger, pod *v1.Pod) error {
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: enginePod.Name, Namespace: enginePod.Namespace}, pod)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new engineExporter Pod", "Pod.Namespace", enginePod.Namespace, "Pod.Name", enginePod.Name)
+		err = r.client.Create(context.TODO(), enginePod)
+		if err != nil {
+			return err
+		}
+
+		// Pod created successfully - don't requeue
+		reqLogger.Info("engineExporter Pod created successfully")
+	} else if err != nil {
+		return err
+	}
+	reqLogger.Info("Skip reconcile: engineExporter Pod already exists", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+	return nil
+}
+
+func engineRunnerJob(engineJob *batchv1.Job, r *ReconcileChaosEngine, reqLogger logr.Logger, job *batchv1.Job) error {
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineJob.Name, Namespace: engineJob.Namespace}, job)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new engineRunner Job", "Job.Namespace", engineJob.Namespace, "Job.Name", engineJob.Name)
+		err = r.client.Create(context.TODO(), engineJob)
+		if err != nil {
+			return err
+		}
+
+		// Pod created successfully - don't requeue
+		reqLogger.Info("engineRunner Job created successfully")
+	} else if err != nil {
+		return err
+	}
+	reqLogger.Info("Skip reconcile: engineRunner Job already exists", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+	return nil
 }
 
 // engineRunnerPod to Check if the engineRunner pod already exists, else create
