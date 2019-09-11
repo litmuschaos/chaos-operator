@@ -1,7 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chaos-operator
+  name: litmus
+  namespace: litmus
 spec:
   replicas: 1
   selector:
@@ -12,19 +13,17 @@ spec:
       labels:
         name: chaos-operator
     spec:
-      serviceAccountName: chaos-operator
+      serviceAccountName: litmus
       containers:
         - name: chaos-operator
           # Replace this with the built image name
-          image: REPLACE_IMAGE
+          image: litmuschaos/chaos-operator:ci
           command:
           - chaos-operator
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+              value: 
             - name: POD_NAME
               valueFrom:
                 fieldRef:
