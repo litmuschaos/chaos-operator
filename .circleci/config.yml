@@ -49,8 +49,8 @@ jobs:
             echo 'export IMGTAG=latest' >> $BASH_ENV
             
   
-      - run: make -f deps
-      - run: make -f gotasks
+      - run: make deps
+      - run: make gotasks
       - run: |
           docker build . -f build/Dockerfile -t litmuschaos/chaos-operator:commit-hash
       - run: make test  
