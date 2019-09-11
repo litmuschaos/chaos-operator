@@ -84,7 +84,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 		It("chaosengine Runner pod should present", func() {
 
 			//creating nginx deployment
-			_ = &appv1.Deployment{
+			deployment := &appv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nginx",
 					Labels: map[string]string{
@@ -125,12 +125,12 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			// _, err := client.AppsV1().Deployments("default").Create(deployment)
-			// if err != nil {
-			// 	fmt.Println("Deployment is not created and error is ", err)
-			// }
+			_, err := client.AppsV1().Deployments("default").Create(deployment)
+			if err != nil {
+				fmt.Println("Deployment is not created and error is ", err)
+			}
 
-			// creating chaos-experiment for pod-delete
+			//creating chaos-experiment for pod-delete
 			By("Creating ChaosExperiments")
 			ChaosExperiment := &chaosEngineV1alpha1.ChaosExperiment{
 				ObjectMeta: metav1.ObjectMeta{
@@ -172,7 +172,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err := clientSet.ChaosExperiments("default").Create(ChaosExperiment)
+			_, err = clientSet.ChaosExperiments("default").Create(ChaosExperiment)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -211,11 +211,12 @@ var _ = Describe("BDD on chaos-operator", func() {
 			time.Sleep(100 * time.Second)
 
 			// Fetching engine-nginx-runner pod
-			//	runner, err := client.CoreV1().Pods("default").Get("engine-nginx-runner", metav1.GetOptions{})
+			runner, err := client.CoreV1().Pods("default").Get("engine-nginx-runner", metav1.GetOptions{})
 
 			//Check for the Availabilty and status of the runner pod
+			fmt.Println("name : ", runner.Name)
 			Expect(err).To(BeNil())
-			//Expect(string(runner.Status.Phase)).To(Equal("Running"))
+			Expect(string(runner.Status.Phase)).To(Equal("Running"))
 
 		})
 	})
@@ -224,8 +225,9 @@ var _ = Describe("BDD on chaos-operator", func() {
 	Context("check for the custom resources", func() {
 
 		It("engine-nginx-monitor service should present", func() {
-			//	_, err := client.CoreV1().Services("default").Get("engine-nginx-monitor", metav1.GetOptions{})
-			//	Expect(err).To(BeNil())
+			_, err := client.CoreV1().Services("default").Get("engine-nginx-monitor", metav1.GetOptions{})
+
+			Expect(err).To(BeNil())
 
 		})
 
