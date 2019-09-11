@@ -34,7 +34,7 @@ jobs:
       - run:
           name: Start minikube
           command: |
-            sudo minikube start --vm-driver=none
+            sudo minikube start --v=10
 
       - run: 
           name: Setup ENV
