@@ -16,7 +16,7 @@ jobs:
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true 
 
-    working_directory: home/circleci/go/src/github.com/litmuschaos/chaos-operator
+    working_directory: go/src/github.com/litmuschaos/chaos-operator
     
     steps:
       - checkout
@@ -42,8 +42,8 @@ jobs:
       - run: 
           name: Setup ENV
           command: |
-            mkdir go
-            echo 'export GOPATH=/go' >> $BASH_ENV
+            echo 'export GOPATH=/home/circleci/go' >> $BASH_ENV
+            echo $?
             echo 'export PATH="$GOPATH/bin:$PATH"' >> $BASH_ENV
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
