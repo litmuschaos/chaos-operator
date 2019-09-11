@@ -10,7 +10,7 @@ jobs:
     environment:
       K8S_VERSION: v1.12.0
       KUBECONFIG: /home/circleci/.kube/config
-      MINIKUBE_VERSION: v0.31.1
+      MINIKUBE_VERSION: v1.3.1
       MINIKUBE_WANTUPDATENOTIFICATION: false
       MINIKUBE_WANTREPORTERRORPROMPT: false
       MINIKUBE_HOME: /home/circleci
@@ -30,7 +30,7 @@ jobs:
       - run:
           name: Setup minikube
           command: |
-            curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube
+            curl -Lo minikube https://github.com/kubernetes/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
             sudo install minikube /usr/local/bin
             sudo ls -lrt /usr/local/bin/
             sudo minikube version
