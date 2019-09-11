@@ -4,8 +4,6 @@
 version: 2
 jobs:
   build:
-    steps:
-      - setup_remote_docker
     docker:
       - image: circleci/golang:1.11
     environment:
@@ -22,6 +20,7 @@ jobs:
     
     steps:
       - checkout
+      - setup_remote_docker
       - run:
           name: Setup kubectl
           command: |
