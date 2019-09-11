@@ -42,13 +42,15 @@ jobs:
       - run: 
           name: Setup ENV
           command: |
+            echo $GOPATH
+            echo " ---------"
+            echo $GOROOT
             echo 'export GOPATH=/home/circleci/go' >> $BASH_ENV
             echo 'export PATH="$GOPATH/bin:$PATH"' >> $BASH_ENV
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=latest' >> $BASH_ENV
-            echo $GOPATH
-            echo $GOROOT
+            
   
       - run: make deps
       - run: make gotasks
