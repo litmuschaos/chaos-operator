@@ -24,8 +24,6 @@ jobs:
          name: Setup kubectl
          command: | 
            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-           mkdir -p ${HOME}/.kube
-           touch ${HOME}/.kube/config
       - run:
           name: Setup minikube
           command: |
@@ -37,7 +35,9 @@ jobs:
       - run:
           name: Start minikube
           command: |
-            sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}    
+            sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}
+            ll /home/circleci
+            cat /home/circleci/.kube/config
   
       - run: 
           name: Setup ENV
