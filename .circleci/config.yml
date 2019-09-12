@@ -15,7 +15,7 @@ jobs:
       MINIKUBE_WANTREPORTERRORPROMPT: false
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
-      # SHORT_GIT_HASH: $(git rev-parse HEAD | cut -c1-5)
+      SHORT_GIT_HASH: $(echo ${CIRCLE_SHA1} | cut -c -7)
 
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     
