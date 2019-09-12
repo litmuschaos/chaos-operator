@@ -14,7 +14,8 @@ jobs:
       MINIKUBE_WANTUPDATENOTIFICATION: false
       MINIKUBE_WANTREPORTERRORPROMPT: false
       MINIKUBE_HOME: /home/circleci
-      CHANGE_MINIKUBE_NONE_USER: true 
+      CHANGE_MINIKUBE_NONE_USER: true
+      SHORT_GIT_HASH: $(echo $CIRCLE_SHA1 | cut -c -7)
 
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     
@@ -44,13 +45,14 @@ jobs:
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=latest' >> $BASH_ENV
             
-      - run: make deps
+      - run: |
+             make deps
       - run: make gotasks
+      - run: make dockerops
+      - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:${SHORT_GIT_HASH}
       - run: |
-          eval $(minikube docker-env)
-          docker build . -f build/Dockerfile -t litmuschaos/chaos-operator:commit-hash
-      - run: make test  
+          sed '/chaos-operator:latest/s/latest/${SHORT_GIT_HASH}/' -i ./deploy/operator.yaml 
+          make test  
       - run: |
-          docker tag litmuschaos/chaos-operator:commit-hash ${REPONAME}/${IMGNAME}:${IMGTAG}
           ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push
       

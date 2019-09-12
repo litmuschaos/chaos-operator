@@ -16,10 +16,10 @@ spec:
       containers:
         - name: chaos-operator
           # Replace this with the built image name
-          image: litmuschaos/chaos-operator:commit-hash
+          image: litmuschaos/chaos-operator:1234
           command:
           - chaos-operator
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
