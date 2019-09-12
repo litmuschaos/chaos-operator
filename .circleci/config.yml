@@ -15,7 +15,7 @@ jobs:
       MINIKUBE_WANTREPORTERRORPROMPT: false
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
-      SHORT_GIT_HASH: 1234
+      SHORT_GIT_HASH: $(CIRCLE_SHA1)
 
     
 
@@ -46,13 +46,15 @@ jobs:
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=latest' >> $BASH_ENV
-            sed '/chaos-operator:latest/s/latest/1234/' -i ./deploy/operator.yaml 
+            #echo 'export SHORT_GIT_HASH="$(echo ${CIRCLE_SHA1} | cut -b 5)"' >> $BASH_ENV
+            echo ${SHORT_GIT_HASH}
+            sed '/chaos-operator:latest/s/latest/${CIRCLE_SHA1}/' -i ./deploy/operator.yaml 
             cat ./deploy/operator.yaml
       - run: |
           make deps
       - run: make gotasks
       - run: make dockerops
-      - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:1234
+      - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:${SHORT_GIT_HASH}
       - run: |
           make test  
       - run: |
