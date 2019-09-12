@@ -1,6 +1,7 @@
 package chaosengine
 
 import (
+	"fmt"
 	"testing"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
@@ -100,6 +101,56 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
 			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+func TestInitializeApplicationInfo(t *testing.T) {
+	tests := map[string]struct {
+		instance       *litmuschaosv1alpha1.ChaosEngine
+		namespace      string
+		label          map[string]string
+		experimentList []litmuschaosv1alpha1.ExperimentList
+		isErr          bool
+	}{
+		"Test Positive": {
+			instance: &litmuschaosv1alpha1.ChaosEngine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-monitor",
+					Namespace: "test",
+				},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Applabel: "key=value",
+					},
+				},
+			},
+			isErr: false,
+		},
+		"Test Negative": {
+			instance: nil,
+			isErr:    true,
+		},
+	}
+	for name, mock := range tests {
+		name, mock := name, mock
+		t.Run(name, func(t *testing.T) {
+			appInfo := &applicationInfo{
+				namespace: "namespace",
+				label:     map[string]string{"fake_id": "aa"},
+				experimentList: []litmuschaosv1alpha1.ExperimentList{
+					{
+						Name: "fake_name",
+					},
+				},
+			}
+			_, err := appInfo.initializeApplicationInfo(mock.instance)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				fmt.Println(err)
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
 		})
