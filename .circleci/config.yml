@@ -32,10 +32,10 @@ jobs:
           command: |
             curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64  && chmod +x minikube
             sudo install minikube /usr/local/bin
-      # - run:
-      #     name: Start minikube
-      #     command: |
-      #       sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}
+      - run:
+          name: Start minikube
+          command: |
+            sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}
       - run: 
           name: Setup ENV
           command: |
@@ -47,7 +47,7 @@ jobs:
             echo 'export SHORT_GIT_HASH="$(echo $CIRCLE_SHA1 | cut -c -6)"'>> $BASH_ENV           
             source $BASH_ENV
             echo ${SHORT_GIT_HASH}
-            sed '/chaos-operator:latest/s/latest/${CIRCLE_SHA1}/' -i ./deploy/operator.yaml 
+            sed '/chaos-operator:latest/s/latest/"${SHORT_GIT_HASH}"' -i ./deploy/operator.yaml 
             cat ./deploy/operator.yaml
             echo ${SHORT_GIT_HASH}
             echo ${CIRCLE_SHA1}
@@ -55,7 +55,7 @@ jobs:
           make deps
       - run: make gotasks
       - run: make dockerops
-      - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:${SHORT_GIT_HASH}
+      - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:"${SHORT_GIT_HASH}"
       - run: |
           make test  
       - run: |
