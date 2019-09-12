@@ -11,7 +11,7 @@ jobs:
       K8S_VERSION: v1.12.0
       KUBECONFIG: /home/circleci/.kube/config
       MINIKUBE_VERSION: v1.3.1
-      MINIKUBE_HOME: /home/circleci
+      HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
 
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
@@ -34,7 +34,7 @@ jobs:
       - run: 
           name: Setup ENV
           command: |
-            echo 'export GOPATH="$Home/go"' >> $BASH_ENV
+            echo 'export GOPATH="$HOME/go"' >> $BASH_ENV
             echo 'export PATH="$GOPATH/bin:$PATH"' >> $BASH_ENV
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
