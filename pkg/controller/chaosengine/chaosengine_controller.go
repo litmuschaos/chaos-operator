@@ -303,6 +303,7 @@ func getMonitoringENV() []corev1.ServicePort {
 	}
 }
 
+
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
 func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
 	if len(aExList) == 0 || aUUID == "" {
@@ -316,6 +317,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 		WithNamespace(cr.Namespace).
 		WithLabels(labels).
 		WithServiceAccountName(cr.Spec.ChaosServiceAccount).
+		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
@@ -328,6 +330,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 			container.NewBuilder().
 				WithName("chaos-exporter").
 				WithImage("litmuschaos/chaos-exporter:ci").
+				WithPortsNew([]corev1.ContainerPort{{ContainerPort: 8080, Protocol: "TCP", Name: "metrics"}}).
 				WithEnvsNew(getChaosExporterENV(cr, aUUID)),
 		).
 		Build()
