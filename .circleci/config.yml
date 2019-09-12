@@ -9,6 +9,7 @@ jobs:
         docker_layer_caching: true
     environment:
       K8S_VERSION: v1.12.0
+      KUBECONFIG: /home/circleci/.kube/config
       MINIKUBE_VERSION: v1.3.1
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
@@ -44,9 +45,10 @@ jobs:
       - run: make deps
       - run: make gotasks
       - run: make dockerops
-      - run: docker tag ${REPONAME}/${IMGNAME}:${IMGTAG} ${REPONAME}/${IMGNAME}:"${SHORT_GIT_HASH}"
+      - run: docker tag "${REPONAME}"/"${IMGNAME}":"${IMGTAG}" "${REPONAME}"/"${IMGNAME}":"${SHORT_GIT_HASH}"
       - run: |
           make test  
       - run: |
           ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push
           sed '/chaos-operator:latest/s/'${SHORT_GIT_HASH}'/latest/' -i ./deploy/operator.yaml 
+      
