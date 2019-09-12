@@ -44,8 +44,7 @@ jobs:
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=latest' >> $BASH_ENV
-            #echo 'export SHORT_GIT_HASH=git log -n 1 --pretty=format:'%h'>> $BASH_ENV
-            echo 'export SHORT_GIT_HASH='$(echo $CIRCLE_SHA1 | cut -c -6)'>> $BASH_ENV
+            echo 'export SHORT_GIT_HASH='$(echo $CIRCLE_SHA1 | cut -b 6)'>> $BASH_ENV
             source $BASH_ENV
             echo ${SHORT_GIT_HASH}
             sed '/chaos-operator:latest/s/latest/${CIRCLE_SHA1}/' -i ./deploy/operator.yaml 
