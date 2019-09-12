@@ -49,9 +49,9 @@ jobs:
              make deps
       - run: make gotasks
       - run: make dockerops
-      - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:${SHORT_GIT_HASH}
+      # - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:${SHORT_GIT_HASH}
       - run: |
-          sed '/chaos-operator:latest/s/latest/${SHORT_GIT_HASH}/' -i ./deploy/operator.yaml 
+          # sed '/chaos-operator:latest/s/latest/${SHORT_GIT_HASH}/' -i ./deploy/operator.yaml 
           make test  
       - run: |
           ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push

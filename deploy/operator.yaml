@@ -16,7 +16,7 @@ spec:
       containers:
         - name: chaos-operator
           # Replace this with the built image name
-          image: litmuschaos/chaos-operator:1234
+          image: litmuschaos/chaos-operator:latest
           command:
           - chaos-operator
           imagePullPolicy: IfNotPresent
