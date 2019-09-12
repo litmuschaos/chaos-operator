@@ -105,10 +105,10 @@ type ReconcileChaosEngine struct {
 	scheme *runtime.Scheme
 }
 type applicationInfo struct {
-	namespace      string
-	label          map[string]string
-	experimentList []litmuschaosv1alpha1.ExperimentList
-	serviceAccountName     string
+	namespace          string
+	label              map[string]string
+	experimentList     []litmuschaosv1alpha1.ExperimentList
+	serviceAccountName string
 }
 
 var appLabelKey string
@@ -144,7 +144,10 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// TODO: Freeze label format in chaosengine( "=" as a const)
 
 	appInfo := &applicationInfo{}
-	appInfo = appInfo.initializeApplicationInfo(instance)
+	appInfo, err = appInfo.initializeApplicationInfo(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 
 	var appExperiments []string
 	for _, exp := range appInfo.experimentList {
@@ -362,7 +365,11 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 }
 
 // initializeApplicationInfo to initialize application info
-func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) *applicationInfo {
+
+func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) (*applicationInfo, error) {
+	if instance == nil {
+		return nil, errors.New("empty chaosengine")
+	}
 	appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
 	appLabelKey = appLabel[0]
 	appLabelValue = appLabel[1]
@@ -371,7 +378,7 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 	appInfo.namespace = instance.Spec.Appinfo.Appns
 	appInfo.experimentList = instance.Spec.Experiments
 	appInfo.serviceAccountName = instance.Spec.ChaosServiceAccount
-	return appInfo
+	return appInfo, nil
 }
 
 // engineRunnerPod to Check if the engineRunner pod already exists, else create
