@@ -236,9 +236,4 @@ var _ = AfterSuite(func() {
 	By("Deleting all CRDs")
 	crdDeletion := exec.Command("kubectl", "delete", "crds", "chaosengines.litmuschaos.io", "chaosexperiments.litmuschaos.io").Run()
 	Expect(crdDeletion).To(BeNil())
-
-	By("Deleting chaosengine")
-	cEngineDel := exec.Command("kubectl", "delete", "chaosengine", "nginx").Run()
-	Expect(cEngineDel).To(BeNil())
-
 })
