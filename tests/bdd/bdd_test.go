@@ -21,7 +21,7 @@ import (
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 )
 
-var kubeconfig = "/home/circleci/.kube/config"
+var kubeconfig = "/home/shubham/.kube/config"
 var config, _ = clientcmd.BuildConfigFromFlags("", kubeconfig)
 var client, _ = kubernetes.NewForConfig(config)
 var clientSet, _ = clientV1alpha1.NewForConfig(config)
@@ -81,7 +81,8 @@ var _ = Describe("BDD on chaos-operator", func() {
 			//creating nginx deployment
 			deployment := &appv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "nginx",
+					Name:      "nginx",
+					Namespace: "litmus",
 					Labels: map[string]string{
 						"app": "nginx",
 					},
@@ -120,7 +121,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err := client.AppsV1().Deployments("default").Create(deployment)
+			_, err := client.AppsV1().Deployments("litmus").Create(deployment)
 			if err != nil {
 				fmt.Println("Deployment is not created and error is ", err)
 			}
@@ -130,7 +131,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			ChaosExperiment := &chaosEngineV1alpha1.ChaosExperiment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod-delete",
-					Namespace: "default",
+					Namespace: "litmus",
 					Labels: map[string]string{
 						"litmuschaos.io/name": "kubernetes",
 					},
@@ -167,7 +168,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err = clientSet.ChaosExperiments("default").Create(ChaosExperiment)
+			_, err = clientSet.ChaosExperiments("litmus").Create(ChaosExperiment)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -179,13 +180,14 @@ var _ = Describe("BDD on chaos-operator", func() {
 			chaosEngine := &chaosEngineV1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "engine-nginx",
-					Namespace: "default",
+					Namespace: "litmus",
 				},
 				Spec: chaosEngineV1alpha1.ChaosEngineSpec{
 					Appinfo: chaosEngineV1alpha1.ApplicationParams{
-						Appns:    "default",
+						Appns:    "litmus",
 						Applabel: "app=nginx",
 					},
+					ChaosServiceAccount: "litmus",
 
 					Experiments: []chaosEngineV1alpha1.ExperimentList{
 						{
@@ -195,7 +197,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err = clientSet.ChaosEngines("default").Create(chaosEngine)
+			_, err = clientSet.ChaosEngines("litmus").Create(chaosEngine)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -203,13 +205,12 @@ var _ = Describe("BDD on chaos-operator", func() {
 			fmt.Println("Chaosengine created successfully...")
 
 			//Wait till the creation of runner pod and monitor svc
-			time.Sleep(120 * time.Second)
+			time.Sleep(300 * time.Second)
 
 			// Fetching engine-nginx-runner pod
-			runner, err := client.CoreV1().Pods("default").Get("engine-nginx-runner", metav1.GetOptions{})
+			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
 
 			//Check for the Availabilty and status of the runner pod
-			fmt.Println("name : ", runner.Name)
 			Expect(err).To(BeNil())
 			Expect(string(runner.Status.Phase)).To(Equal("Running"))
 
@@ -220,7 +221,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 	Context("check for the custom resources", func() {
 
 		It("engine-nginx-monitor service should present", func() {
-			_, err := client.CoreV1().Services("default").Get("engine-nginx-monitor", metav1.GetOptions{})
+			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
 
 			Expect(err).To(BeNil())
 
@@ -229,7 +230,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 	})
 })
 
-// deleting all unused resources
+//deleting all unused resources
 var _ = AfterSuite(func() {
 
 	By("Deleting all CRDs")
