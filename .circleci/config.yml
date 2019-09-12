@@ -15,7 +15,7 @@ jobs:
       MINIKUBE_WANTREPORTERRORPROMPT: false
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
-      SHORT_GIT_HASH: $(echo ${CIRCLE_SHA1} | cut -b 5)
+      SHORT_GIT_HASH: echo $(echo ${CIRCLE_SHA1} | cut -b 5)
 
     
 
