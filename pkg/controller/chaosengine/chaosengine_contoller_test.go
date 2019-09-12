@@ -23,7 +23,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 					Namespace: "test",
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					ChaosServiceAccount: "amit",
+					ChaosServiceAccount: "fake-serviceAccount",
 				},
 			},
 			aUUID:   "fake_id",
