@@ -140,15 +140,7 @@ func (b *Builder) WithEnvsNew(envs []corev1.EnvVar) *Builder {
 
 // WithPortsNew sets ports of the container
 func (b *Builder) WithPortsNew(ports []corev1.ContainerPort) *Builder {
-	if ports == nil {
-		b.errors = append(
-			b.errors,
-			errors.New("failed to build container object: nil ports"),
-		)
-		return b
-	}
-
-	if len(ports) == 0 {
+	if ports == nil || len(ports) == 0 {
 		b.errors = append(
 			b.errors,
 			errors.New("failed to build container object: missing ports"),
