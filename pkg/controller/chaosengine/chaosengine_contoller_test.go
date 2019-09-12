@@ -22,6 +22,9 @@ func TestNewRunnerPodForCR(t *testing.T) {
 					Name:      "test-runner",
 					Namespace: "test",
 				},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					ChaosServiceAccount: "amit",
+				},
 			},
 			aUUID:   "fake_id",
 			aExList: []string{"exp-1"},
@@ -41,6 +44,9 @@ func TestNewRunnerPodForCR(t *testing.T) {
 					Name:      "test-runner",
 					Namespace: "test",
 				},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					ChaosServiceAccount: "fake-serviceAccount",
+				},
 			},
 			aUUID:   "",
 			aExList: []string{"exp-1"},
@@ -51,6 +57,9 @@ func TestNewRunnerPodForCR(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-runner",
 					Namespace: "test",
+				},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					ChaosServiceAccount: "fake-serviceAccount",
 				},
 			},
 			aUUID:   "fake_id",
@@ -108,11 +117,8 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 }
 func TestInitializeApplicationInfo(t *testing.T) {
 	tests := map[string]struct {
-		instance       *litmuschaosv1alpha1.ChaosEngine
-		namespace      string
-		label          map[string]string
-		experimentList []litmuschaosv1alpha1.ExperimentList
-		isErr          bool
+		instance *litmuschaosv1alpha1.ChaosEngine
+		isErr    bool
 	}{
 		"Test Positive": {
 			instance: &litmuschaosv1alpha1.ChaosEngine{
@@ -144,6 +150,7 @@ func TestInitializeApplicationInfo(t *testing.T) {
 						Name: "fake_name",
 					},
 				},
+				serviceAccountName: "fake-serviceaccountname",
 			}
 			_, err := appInfo.initializeApplicationInfo(mock.instance)
 			if mock.isErr && err == nil {
