@@ -15,7 +15,7 @@ jobs:
       MINIKUBE_WANTREPORTERRORPROMPT: false
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
-      SHORT_GIT_HASH: $(echo ${CIRCLE_SHA1} | cut -b 5)
+      SHORT_GIT_HASH: echo ${CIRCLE_SHA1}
 
     
 
@@ -26,6 +26,8 @@ jobs:
       - run:
          name: Setup kubectl
          command: | 
+           echo ${SHORT_GIT_HASH}
+           echo ${CIRCLE_SHA1}
            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
       - run:
           name: Setup minikube
