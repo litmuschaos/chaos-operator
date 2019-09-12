@@ -68,7 +68,6 @@ var _ = BeforeSuite(func() {
 	}
 
 	fmt.Println("chaos-operator created successfully")
-
 })
 
 //BDD Tests

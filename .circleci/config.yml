@@ -15,13 +15,14 @@ jobs:
       MINIKUBE_WANTREPORTERRORPROMPT: false
       MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
-      SHORT_GIT_HASH: $(git rev-parse --short=5 HEAD)
+      # SHORT_GIT_HASH: $(git rev-parse HEAD | cut -c1-5)
 
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     
     steps:
       - checkout
       - run:
+         echo ${CIRCLE_SHA1}
          name: Setup kubectl
          command: | 
            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -34,8 +35,6 @@ jobs:
           name: Start minikube
           command: |
             sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}
-            cat /home/circleci/.kube/config
-  
       - run: 
           name: Setup ENV
           command: |
@@ -45,9 +44,8 @@ jobs:
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=latest' >> $BASH_ENV
             echo ${SHORT_GIT_HASH}
-            
       - run: |
-             make deps
+          make deps
       - run: make gotasks
       - run: make dockerops
       - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:${SHORT_GIT_HASH}
