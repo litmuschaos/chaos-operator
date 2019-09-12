@@ -46,13 +46,13 @@ jobs:
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
             echo 'export IMGTAG=latest' >> $BASH_ENV
-            sed '/chaos-operator:latest/s/latest/${SHORT_GIT_HASH}/' -i ./deploy/operator.yaml 
+            sed '/chaos-operator:latest/s/latest/1234/' -i ./deploy/operator.yaml 
             cat ./deploy/operator.yaml
       - run: |
           make deps
       - run: make gotasks
       - run: make dockerops
-      - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:${SHORT_GIT_HASH}
+      - run: docker tag litmuschaos/chaos-operator:latest litmuschaos/chaos-operator:1234
       - run: |
           make test  
       - run: |
