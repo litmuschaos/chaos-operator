@@ -4,25 +4,51 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: circleci/golang:1.11
-    working_directory: /go/src/github.com/litmuschaos/chaos-operator
+    machine:
+        image: circleci/classic:201808-01
+        docker_layer_caching: true
+    environment:
+      K8S_VERSION: v1.12.0
+      KUBECONFIG: /home/circleci/.kube/config
+      MINIKUBE_VERSION: v1.3.1
+      HOME: /home/circleci
+      CHANGE_MINIKUBE_NONE_USER: true
+
+    working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
+    
     steps:
       - checkout
+      - run:
+         name: Setup kubectl
+         command: | 
+           curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - run:
+          name: Setup minikube
+          command: |
+            curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64  && chmod +x minikube
+            sudo install minikube /usr/local/bin
+      - run:
+          name: Start minikube
+          command: |
+            sudo -E minikube start --vm-driver=none --cpus 2 --memory 4096 --kubernetes-version=${K8S_VERSION}
       - run: 
           name: Setup ENV
           command: |
-            echo 'export GOPATH=/go' >> $BASH_ENV
+            echo 'export GOPATH="$HOME/go"' >> $BASH_ENV
             echo 'export PATH="$GOPATH/bin:$PATH"' >> $BASH_ENV
             echo 'export REPONAME=litmuschaos' >> $BASH_ENV
             echo 'export IMGNAME=chaos-operator' >> $BASH_ENV
-            echo 'export IMGTAG=ci' >> $BASH_ENV
+            echo 'export IMGTAG=latest' >> $BASH_ENV
+            echo 'export SHORT_GIT_HASH="$(echo $CIRCLE_SHA1 | cut -c -6)"'>> $BASH_ENV           
+            source $BASH_ENV
+            sed '/chaos-operator:ci/s/ci/'${SHORT_GIT_HASH}'/' -i ./deploy/operator.yaml
       - run: make deps
       - run: make gotasks
-      - setup_remote_docker:
-          docker_layer_caching: true 
+      - run: make dockerops
+      - run: docker tag "${REPONAME}"/"${IMGNAME}":"${IMGTAG}" "${REPONAME}"/"${IMGNAME}":"${SHORT_GIT_HASH}"
       - run: |
-          docker build . -f build/Dockerfile -t ${REPONAME}/${IMGNAME}:${IMGTAG}
-          ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push 
-      - run: docker push ${REPONAME}/${IMGNAME}:${IMGTAG}
-      - run: make test
+          make test  
+      - run: |
+          ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push
+          sed '/chaos-operator:latest/s/'${SHORT_GIT_HASH}'/latest/' -i ./deploy/operator.yaml 
+      

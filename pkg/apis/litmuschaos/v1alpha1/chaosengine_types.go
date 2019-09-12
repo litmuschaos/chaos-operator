@@ -11,6 +11,8 @@ import (
 type ChaosEngineSpec struct {
 	//Appinfo contains deployment details of AUT
 	Appinfo ApplicationParams `json:"appinfo"`
+	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
+	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`
 	//Execution schedule of batch of chaos experiments

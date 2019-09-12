@@ -4,3 +4,7 @@ languages:
 exclude:
 - /vendor/.*
 - /pkg/client/.*
+test:
+    include:
+      - .*/test/.*\.go
+      - /tests/bdd/bdd_test.go

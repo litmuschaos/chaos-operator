@@ -2,6 +2,7 @@ package chaosengine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 	service "github.com/litmuschaos/chaos-operator/pkg/kubernetes/service"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -104,9 +105,10 @@ type ReconcileChaosEngine struct {
 	scheme *runtime.Scheme
 }
 type applicationInfo struct {
-	namespace      string
-	label          map[string]string
-	experimentList []litmuschaosv1alpha1.ExperimentList
+	namespace          string
+	label              map[string]string
+	experimentList     []litmuschaosv1alpha1.ExperimentList
+	serviceAccountName string
 }
 
 var appLabelKey string
@@ -125,7 +127,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	instance := &litmuschaosv1alpha1.ChaosEngine{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
@@ -142,7 +144,10 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// TODO: Freeze label format in chaosengine( "=" as a const)
 
 	appInfo := &applicationInfo{}
-	appInfo = appInfo.initializeApplicationInfo(instance)
+	appInfo, err = appInfo.initializeApplicationInfo(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 
 	var appExperiments []string
 	for _, exp := range appInfo.experimentList {
@@ -270,6 +275,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []
 			Name:  "EXPERIMENT_LIST",
 			Value: fmt.Sprint(strings.Join(aExList, ",")),
 		},
+		{
+			Name:  "CHAOS_SVC_ACC",
+			Value: cr.Spec.ChaosServiceAccount,
+		},
 	}
 }
 
@@ -299,6 +308,9 @@ func getMonitoringENV() []corev1.ServicePort {
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
 func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
+	if len(aExList) == 0 || aUUID == "" {
+		return nil, errors.New("expected aExList not found")
+	}
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -306,11 +318,11 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 		WithName(cr.Name + "-runner").
 		WithNamespace(cr.Namespace).
 		WithLabels(labels).
-		WithServiceAccountName("chaos-operator").
+		WithServiceAccountName(cr.Spec.ChaosServiceAccount).
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
-				WithImage("ksatchit/ansible-runner:trial8").
+				WithImage("ksatchit/ansible-runner:trial7").
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts -vv; exit 0"}).
 				WithEnvsNew(getChaosRunnerENV(cr, aExList)),
@@ -330,6 +342,9 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 
 // newMonitorServiceForCR defines secondary resource #2 in same namespace as CR */
 func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Service, error) {
+	if cr == nil {
+		return nil, errors.New("nil chaosengine object")
+	}
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -350,7 +365,11 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 }
 
 // initializeApplicationInfo to initialize application info
-func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) *applicationInfo {
+
+func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) (*applicationInfo, error) {
+	if instance == nil {
+		return nil, errors.New("empty chaosengine")
+	}
 	appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
 	appLabelKey = appLabel[0]
 	appLabelValue = appLabel[1]
@@ -358,13 +377,14 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 	appInfo.label[appLabelKey] = appLabelValue
 	appInfo.namespace = instance.Spec.Appinfo.Appns
 	appInfo.experimentList = instance.Spec.Experiments
-	return appInfo
+	appInfo.serviceAccountName = instance.Spec.ChaosServiceAccount
+	return appInfo, nil
 }
 
 // engineRunnerPod to Check if the engineRunner pod already exists, else create
 func engineRunnerPod(engineRunner *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger, pod *v1.Pod) error {
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineRunner.Name, Namespace: engineRunner.Namespace}, pod)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		reqLogger.Info("Creating a new engineRunner Pod", "Pod.Namespace", engineRunner.Namespace, "Pod.Name", engineRunner.Name)
 		err = r.client.Create(context.TODO(), engineRunner)
 		if err != nil {
@@ -383,7 +403,7 @@ func engineRunnerPod(engineRunner *v1.Pod, r *ReconcileChaosEngine, reqLogger lo
 // Check if the engineMonitorservice already exists, else create
 func engineMonitorservice(engineMonitor *v1.Service, r *ReconcileChaosEngine, reqLogger logr.Logger, service *v1.Service) error {
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, service)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", engineMonitor.Namespace, "Service.Name", engineMonitor.Name)
 		err = r.client.Create(context.TODO(), engineMonitor)
 		if err != nil {
