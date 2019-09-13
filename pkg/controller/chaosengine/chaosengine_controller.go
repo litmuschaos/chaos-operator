@@ -5,57 +5,28 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
 	"strconv"
 
 	"github.com/go-logr/logr"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	container "github.com/litmuschaos/chaos-operator/pkg/kubernetes/containers"
-	pod "github.com/litmuschaos/chaos-operator/pkg/kubernetes/pod"
-	service "github.com/litmuschaos/chaos-operator/pkg/kubernetes/service"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	container "github.com/litmuschaos/chaos-operator/pkg/kubernetes/containers"
+	"github.com/litmuschaos/chaos-operator/pkg/kubernetes/pod"
+	"github.com/litmuschaos/chaos-operator/pkg/kubernetes/service"
 )
-
-// To create logs for debugging or detailing, please follow this syntax.
-// use function log.Info
-// in parameters give the name of the log / error (string) ,
-// with the variable name for the value(string)
-// and then the value to log (any datatype)
-// All values should be in key : value pairs only
-// For eg. : log.Info("name_of_the_log","variable_name_for_the_value",value, ......)
-// For eg. : log.Error(err,"error_statement","variable_name",value)
-// For eg. : log.Printf
-//("error statement %q other variables %s/%s",targetValue, object.Namespace, object.Name)
-// For eg. : log.Errorf
-//("unable to reconcile object %s/%s: %v", object.Namespace, object.Name, err)
-// This logger uses a structured logging schema in JSON format, which will / can be used further
-// to access the values in the logger.
-var log = logf.Log.WithName("controller_chaosengine")
-
-// Annotations on app to enable chaos on it
-const (
-	chaosAnnotation = "litmuschaos.io/chaos"
-)
-
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
 
 // Add creates a new ChaosEngine Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -94,25 +65,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	return nil
 }
-
-var _ reconcile.Reconciler = &ReconcileChaosEngine{}
-
-// ReconcileChaosEngine reconciles a ChaosEngine object
-type ReconcileChaosEngine struct {
-	// This client, initialized using mgr.Client() above, is a split client
-	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
-}
-type applicationInfo struct {
-	namespace          string
-	label              map[string]string
-	experimentList     []litmuschaosv1alpha1.ExperimentList
-	serviceAccountName string
-}
-
-var appLabelKey string
-var appLabelValue string
 
 // Reconcile reads that state of the cluster for a ChaosEngine object and makes changes based on the state read
 // and what is in the ChaosEngine.Spec
@@ -160,15 +112,15 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
 
 	// Use client-Go to obtain a list of apps w/ specified labels
-	config, err := config.GetConfig()
+	restConfig, err := config.GetConfig()
 	if err != nil {
-		log.Error(err, "unable to get kube config")
+		log.Error(err, "unable to get rest kube config")
 		return reconcile.Result{}, err
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		log.Error(err, "unable to create clientset using kubeconfig")
+		log.Error(err, "unable to create clientset using restconfig")
 		return reconcile.Result{}, err
 	}
 
@@ -193,7 +145,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 				//Checks if the annotation is "true" / "false"
 				var annotationFlag bool
 				annotationFlag, err = strconv.ParseBool(app.ObjectMeta.GetAnnotations()[chaosAnnotation])
-				//log.Info("Annotaion Flag", "aflag", annotationFlag)
+				//log.Info("Annotation Flag", "aflag", annotationFlag)
 				if err != nil {
 					// Unable to check the annotation
 					// Would not add in the chaosCandidates
@@ -247,8 +199,8 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	// Check if the engineMonitorservice already exists, else create
-	err = engineMonitorservice(engineMonitor, r, reqLogger, &corev1.Service{})
+	// Check if the engineMonitorService already exists, else create
+	err = engineMonitorService(engineMonitor, r, reqLogger, &corev1.Service{})
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -365,7 +317,6 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 }
 
 // initializeApplicationInfo to initialize application info
-
 func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine) (*applicationInfo, error) {
 	if instance == nil {
 		return nil, errors.New("empty chaosengine")
@@ -400,8 +351,8 @@ func engineRunnerPod(engineRunner *v1.Pod, r *ReconcileChaosEngine, reqLogger lo
 	return nil
 }
 
-// Check if the engineMonitorservice already exists, else create
-func engineMonitorservice(engineMonitor *v1.Service, r *ReconcileChaosEngine, reqLogger logr.Logger, service *v1.Service) error {
+// Check if the engineMonitorService already exists, else create
+func engineMonitorService(engineMonitor *v1.Service, r *ReconcileChaosEngine, reqLogger logr.Logger, service *v1.Service) error {
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, service)
 	if err != nil && k8serrors.IsNotFound(err) {
 		reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", engineMonitor.Namespace, "Service.Name", engineMonitor.Name)
