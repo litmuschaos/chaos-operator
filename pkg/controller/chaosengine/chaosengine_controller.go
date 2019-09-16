@@ -325,6 +325,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 			container.NewBuilder().
 				WithName("chaos-runner").
 				WithImage("ksatchit/ansible-runner:trial7").
+				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
 				WithEnvsNew(getChaosRunnerENV(cr, aExList)),
