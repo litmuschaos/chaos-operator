@@ -6,13 +6,14 @@ then
   REPONAME="litmuschaos"
 fi
 
-if [ -z "${IMGNAME}" ] || [ -z "${IMGTAG}" ];
+if [ -z "${IMGNAME}" ] || [ -z "${IMGTAG}" ] || [ -z "${IMGSHATAG}" ]
 then
   echo "Image details are missing. Nothing to push.";
   exit 1
 fi
 
 IMAGEID=$( docker images -q ${REPONAME}/${IMGNAME}:${IMGTAG} )
+IMAGESHAID=$( docker images -q ${REPONAME}/${IMGNAME}:${IMGSHATAG} )
 
 if [ ! -z "${DNAME}" ] && [ ! -z "${DPASS}" ];
 then
@@ -20,6 +21,7 @@ then
   # Push image to docker hub
   echo "Pushing ${REPONAME}/${IMGNAME}:${IMGTAG} ...";
   docker push ${REPONAME}/${IMGNAME}:${IMGTAG} ;
+  docker push ${REPONAME}/${IMGNAME}:${IMGSHATAG} ;
   if [ ! -z "${TRAVIS_TAG}" ] ;
   then
     # Push with different tags if tagged as a release
