@@ -91,6 +91,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+	// Watch for changes to secondary resources Pods and requeue the owner ChaosEngine
+	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
+	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -231,6 +239,15 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcile.Result{}, nil
 	}
+	// Define an engine-exporter pod which is secondary-resource #3
+	engineExporter, err := newExporterPodForCR(instance, appUUID)
+	if err != nil {
+		return reconcile.Result{}, nil
+	}
+	// Set ChaosEngine instance as the owner and controller of engine-exporter pod
+	if err := controllerutil.SetControllerReference(instance, engineExporter, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
 	// Set ChaosEngine instance as the owner and controller of engine-runner pod
 	if err := controllerutil.SetControllerReference(instance, engineRunner, r.scheme); err != nil {
 		return reconcile.Result{}, err
@@ -253,6 +270,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
+	// Check if the engineExporter pod already exists, else create
+	err = engineExporterPod(engineExporter, r, reqLogger, &corev1.Pod{})
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	return reconcile.Result{}, nil
 }
 
@@ -306,7 +328,6 @@ func getMonitoringENV() []corev1.ServicePort {
 	}
 }
 
-
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
 func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
 	if len(aExList) == 0 || aUUID == "" {
@@ -329,6 +350,26 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
 				WithEnvsNew(getChaosRunnerENV(cr, aExList)),
 		).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+	return podObj, nil
+}
+func newExporterPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) (*corev1.Pod, error) {
+	if cr == nil {
+		return nil, errors.New("nil ChaosEngine Object")
+	}
+	labels := map[string]string{
+		"app":  cr.Name,
+		"type": "exporter",
+	}
+	exporterPod, err := pod.NewBuilder().
+		WithName(cr.Name + "-exporter").
+		WithNamespace(cr.Namespace).
+		WithLabels(labels).
+		WithServiceAccountName(cr.Spec.ChaosServiceAccount).
+		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-exporter").
@@ -337,10 +378,11 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 				WithEnvsNew(getChaosExporterENV(cr, aUUID)),
 		).
 		Build()
+
 	if err != nil {
 		return nil, err
 	}
-	return podObj, nil
+	return exporterPod, nil
 }
 
 // newMonitorServiceForCR defines secondary resource #2 in same namespace as CR */
@@ -358,7 +400,8 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 		WithPorts(getMonitoringENV()).
 		WithSelectorsNew(
 			map[string]string{
-				"app": cr.Name,
+				"app":  cr.Name,
+				"type": "exporter",
 			}).
 		Build()
 	if err != nil {
@@ -400,6 +443,25 @@ func engineRunnerPod(engineRunner *v1.Pod, r *ReconcileChaosEngine, reqLogger lo
 		return err
 	}
 	reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+	return nil
+}
+
+// engineExporterPod to Check if the engineExporter Pod is already exists, else create
+func engineExporterPod(engineExporter *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger, pod *v1.Pod) error {
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineExporter.Name, Namespace: engineExporter.Namespace}, pod)
+	if err != nil && k8serrors.IsNotFound(err) {
+		reqLogger.Info("Creating a new engineExporter Pod", "Pod.Namespace", engineExporter.Namespace, "Pod.Name", engineExporter.Name)
+		err = r.client.Create(context.TODO(), engineExporter)
+		if err != nil {
+			return err
+		}
+
+		// Pod created successfully - don't requeue
+		reqLogger.Info("engineExporter Pod created successfully")
+	} else if err != nil {
+		return err
+	}
+	reqLogger.Info("Skip reconcile: engineExporter Pod already exists", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
 	return nil
 }
 
