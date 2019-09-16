@@ -91,7 +91,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-	// Watch for changes to secondary resources Pods and requeue the owner ChaosEngine
+	// Watch for changes to secondary resources Services and requeue the owner ChaosEngine
 	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
@@ -336,7 +336,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 	labels := map[string]string{
 		"app": cr.Name,
 	}
-	podObj, err := pod.NewBuilder().
+	runnerPod, err := pod.NewBuilder().
 		WithName(cr.Name + "-runner").
 		WithNamespace(cr.Namespace).
 		WithLabels(labels).
@@ -354,7 +354,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 	if err != nil {
 		return nil, err
 	}
-	return podObj, nil
+	return runnerPod, nil
 }
 func newExporterPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) (*corev1.Pod, error) {
 	if cr == nil {
