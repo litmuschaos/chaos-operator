@@ -9,7 +9,7 @@ PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 # docker info
 DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-operator
-DOCKER_TAG ?= ci
+DOCKER_TAG ?= latest
 
 .PHONY: help
 help:
@@ -41,7 +41,7 @@ _build_check_docker:
 		fi;
 
 .PHONY: gotasks
-gotasks: format lint build test
+gotasks: format lint build
  
 .PHONY: format
 format:

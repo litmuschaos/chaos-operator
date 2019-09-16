@@ -16,11 +16,10 @@ spec:
       serviceAccountName: litmus
       containers:
         - name: chaos-operator
-          # Replace this with the built image name
-          image: litmuschaos/chaos-operator:ci
+          image: litmuschaos/chaos-operator:latest
           command:
           - chaos-operator
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               value: 
