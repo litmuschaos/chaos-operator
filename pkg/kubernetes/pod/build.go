@@ -79,6 +79,19 @@ func (b *Builder) WithServiceAccountName(serviceaccountname string) *Builder {
 	return b
 }
 
+// WithRestartPolicy sets the restartpolicy field of Pod spec with provided value
+func (b *Builder) WithRestartPolicy(restartpolicy corev1.RestartPolicy) *Builder {
+	if len(restartpolicy) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New("failed to build Pod object: missing Pod restartpolicy"),
+		)
+		return b
+	}
+	b.pod.object.Spec.RestartPolicy = restartpolicy
+	return b
+}
+
 // WithContainerBuilder adds a container to this pod object.
 //
 // NOTE:

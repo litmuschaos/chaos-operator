@@ -63,6 +63,22 @@ func (b *Builder) WithImage(img string) *Builder {
 	return b
 }
 
+// WithImagePullPolicy sets the image pull policy of the container
+func (b *Builder) WithImagePullPolicy(policy corev1.PullPolicy) *Builder {
+	if len(policy) == 0 {
+		b.errors = append(
+			b.errors,
+			errors.New(
+				"failed to build container object: missing imagepullpolicy",
+			),
+		)
+		return b
+	}
+
+	b.con.object.ImagePullPolicy = policy
+	return b
+}
+
 // WithCommandNew sets the command of the container
 func (b *Builder) WithCommandNew(cmd []string) *Builder {
 	if cmd == nil {
@@ -135,5 +151,22 @@ func (b *Builder) WithEnvsNew(envs []corev1.EnvVar) *Builder {
 	newenvs = append(newenvs, envs...)
 
 	b.con.object.Env = newenvs
+	return b
+}
+
+// WithPortsNew sets ports of the container
+func (b *Builder) WithPortsNew(ports []corev1.ContainerPort) *Builder {
+	if len(ports) == 0 {
+		b.errors = append(
+			b.errors,
+			errors.New("failed to build container object: missing ports"),
+		)
+		return b
+	}
+
+	newports := []corev1.ContainerPort{}
+	newports = append(newports, ports...)
+
+	b.con.object.Ports = newports
 	return b
 }
