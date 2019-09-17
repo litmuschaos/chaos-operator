@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	container "github.com/litmuschaos/chaos-operator/pkg/kubernetes/containers"
+	"github.com/litmuschaos/kube-helper/kubernetes/container"
 
 	corev1 "k8s.io/api/core/v1"
 )

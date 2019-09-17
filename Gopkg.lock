@@ -365,6 +365,18 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:3ee0ffa1bb2c711194fa4598fa94760f6b4c57680d7882aaf53ec183a88a06ff"
+  name = "github.com/litmuschaos/kube-helper"
+  packages = [
+    "kubernetes/container",
+    "kubernetes/pod",
+    "kubernetes/service",
+  ]
+  pruneopts = "NT"
+  revision = "b452636fc6b291de80f867d40314f7aac4175077"
+
+[[projects]]
+  branch = "master"
   digest = "1:782fb677791a7fe7b5b8e637bcf695efb13950ce09e3e8e3b1cf21c57649be7c"
   name = "github.com/mailru/easyjson"
   packages = [
@@ -1186,8 +1198,9 @@
   input-imports = [
     "github.com/go-logr/logr",
     "github.com/go-openapi/spec",
-    "github.com/onsi/ginkgo",
-    "github.com/onsi/gomega",
+    "github.com/litmuschaos/kube-helper/kubernetes/container",
+    "github.com/litmuschaos/kube-helper/kubernetes/pod",
+    "github.com/litmuschaos/kube-helper/kubernetes/service",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",
