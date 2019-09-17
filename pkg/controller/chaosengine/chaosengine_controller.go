@@ -140,7 +140,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 			appName = app.ObjectMeta.Name
 			appUUID = app.ObjectMeta.UID
 			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
-			//if appCaSts == true {
 			if appCaSts {
 				//Checks if the annotation is "true" / "false"
 				var annotationFlag bool
@@ -173,7 +172,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	// Define an engine(ansible?)-runner pod which is secondary-resource #1
+	// Define an engineRunner pod which is secondary-resource #1
 	engineRunner, err := newRunnerPodForCR(instance, appUUID, appExperiments)
 	if err != nil {
 		return reconcile.Result{}, nil
