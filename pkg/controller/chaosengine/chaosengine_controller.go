@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/litmuschaos/kube-helper/kubernetes/container"
+	"github.com/litmuschaos/kube-helper/kubernetes/pod"
+	"github.com/litmuschaos/kube-helper/kubernetes/service"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -23,9 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	container "github.com/litmuschaos/chaos-operator/pkg/kubernetes/containers"
-	"github.com/litmuschaos/chaos-operator/pkg/kubernetes/pod"
-	"github.com/litmuschaos/chaos-operator/pkg/kubernetes/service"
 )
 
 // Add creates a new ChaosEngine Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -257,7 +257,6 @@ func getMonitoringENV() []corev1.ServicePort {
 		},
 	}
 }
-
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
 func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
