@@ -17,6 +17,8 @@ type ChaosEngineSpec struct {
 	Experiments []ExperimentList `json:"experiments"`
 	//Execution schedule of batch of chaos experiments
 	Schedule ChaosSchedule `json:"schedule"`
+	//Monitor Enable Status
+	MonitorEnable bool `json:"monitorenable"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
