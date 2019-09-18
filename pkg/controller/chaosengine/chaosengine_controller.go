@@ -368,7 +368,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 }
 func newExporterPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) (*corev1.Pod, error) {
 	monitorstatus := cr.Spec.MonitorEnable
-	if monitorstatus == false {
+	if !monitorstatus {
 		return nil, nil
 	}
 	if cr == nil {
@@ -402,7 +402,7 @@ func newExporterPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) (
 // newMonitorServiceForCR defines secondary resource #2 in same namespace as CR */
 func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Service, error) {
 	monitorstatus := cr.Spec.MonitorEnable
-	if monitorstatus == false {
+	if !monitorstatus {
 		return nil, nil
 	}
 	if cr == nil {
