@@ -244,6 +244,10 @@ func getChaosExporterENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) [
 			Name:  "APP_UUID",
 			Value: string(aUUID),
 		},
+		{
+			Name:  "APP_NAMESPACE",
+			Value: cr.Namespace,
+		},
 	}
 }
 
