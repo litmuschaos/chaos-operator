@@ -17,6 +17,8 @@ type ChaosEngineSpec struct {
 	Experiments []ExperimentList `json:"experiments"`
 	//Execution schedule of batch of chaos experiments
 	Schedule ChaosSchedule `json:"schedule"`
+	//Monitor Enable Status
+	Monitor bool `json:"monitorenable"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
@@ -57,12 +59,18 @@ type ChaosSchedule struct {
 	ConcurrencyPolicy string `json:"concurrencyPolicy"`
 }
 
+// ENVPairForExp varibles for each experiments
+type ENVPairForExp struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 // ExperimentAttributes defines attributes of experiments
 type ExperimentAttributes struct {
 	//Execution priority of the chaos experiment
 	Rank uint32 `json:"rank"`
 	//K8s, infra or app objects subjected to chaos
-	Components ObjectUnderTest `json:"components"`
+	Components []ENVPairForExp `json:"components"`
 	//Execution schedule of individual chaos experiment
 	Schedule ExperimentSchedule `json:"schedule"`
 }
@@ -122,8 +130,9 @@ type ChaosEngine struct {
 	Status ChaosEngineStatus `json:"status,omitempty"`
 }
 
-// ChaosEngineList contains a list of ChaosEngine
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ChaosEngineList contains a list of ChaosEngine
 type ChaosEngineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

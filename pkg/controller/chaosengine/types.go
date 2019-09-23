@@ -25,10 +25,10 @@ import (
 // to access the values in the logger.
 
 var (
-	appLabelKey string
+	appLabelKey   string
 	appLabelValue string
-	log = logf.Log.WithName("controller_chaosengine")
-	_ reconcile.Reconciler = &ReconcileChaosEngine{}
+	log                                = logf.Log.WithName("controller_chaosengine")
+	_             reconcile.Reconciler = &ReconcileChaosEngine{}
 )
 
 // Annotations on app to enable chaos on it
