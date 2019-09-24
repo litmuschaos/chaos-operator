@@ -187,16 +187,17 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 	// Define the engine-monitor service which is secondary-resource #2
 	engineMonitor, err := newMonitorServiceForCR(instance)
-	if !instance.Spec.Monitor {
+	if !instance.Spec.Monitor && err != nil {
 		reqLogger.Info("No EngineMonitor SVC Because EngineMonitor DISABLED")
-	}
-	if err != nil {
+	} else if instance.Spec.Monitor && err != nil {
 		return reconcile.Result{}, nil
 	}
 	// Define an engine-exporter pod which is secondary-resource #3
 	engineExporter, err := newExporterPodForCR(instance, appUUID)
-	if !instance.Spec.Monitor {
-		reqLogger.Info("No EngineExporter POD Because EngineMonitor DISABLED")
+	if !instance.Spec.Monitor && err != nil {
+		reqLogger.Info("No EngineExporter Pod Because EngineMonitor DISABLED")
+	} else if instance.Spec.Monitor && err != nil {
+		return reconcile.Result{}, nil
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-runner pod
 	if err := controllerutil.SetControllerReference(instance, engineRunner, r.scheme); err != nil {
