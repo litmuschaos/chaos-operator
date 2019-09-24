@@ -182,17 +182,17 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Define an engineRunner pod which is secondary-resource #1
 	engineRunner, err := newRunnerPodForCR(instance, appUUID, appExperiments)
 	if err != nil {
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, err
 	}
 	// Define the engine-monitor service which is secondary-resource #2
 	engineMonitor, err := newMonitorServiceForCR(instance)
 	if err != nil {
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, err
 	}
 	// Define an engine-exporter pod which is secondary-resource #3
 	engineExporter, err := newExporterPodForCR(instance, appUUID)
 	if err != nil {
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, err
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-runner pod
 	if err := controllerutil.SetControllerReference(instance, engineRunner, r.scheme); err != nil {
@@ -202,6 +202,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err := controllerutil.SetControllerReference(instance, engineExporter, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
+	// Set ChaosEngine instance as the owner and controller of engine-monitor service
+	if err := controllerutil.SetControllerReference(instance, engineMonitor, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Check if the engineRunner pod already exists, else create
 	err = engineRunnerPod(engineRunner, r, reqLogger, &corev1.Pod{})
 	if err != nil {
@@ -211,12 +216,12 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Check if the engineMonitorService already exists, else create
 	err = engineMonitorService(engineMonitor, r, reqLogger, &corev1.Service{})
 	if err != nil {
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, err
 	}
 	// Check if the EngineExporterPod already exists, else create
 	err = engineExporterPod(engineExporter, r, reqLogger, &corev1.Pod{})
 	if err != nil {
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
@@ -293,7 +298,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
-				WithImage("rahulchheda1997/ansible-runner:ci").
+				WithImage("ksatchit/ansible-runner:trial7").
 				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
