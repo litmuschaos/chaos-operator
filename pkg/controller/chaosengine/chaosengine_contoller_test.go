@@ -92,7 +92,7 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 					Namespace: "test",
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					Monitor: false,
+					ChaosServiceAccount: "fake-serviceAccount",
 				},
 			},
 			isErr: false,
@@ -100,9 +100,7 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 		"Test Negative": {
 			cr: &litmuschaosv1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					Monitor: true,
-				},
+				Spec:       litmuschaosv1alpha1.ChaosEngineSpec{},
 			},
 			isErr: true,
 		},
@@ -133,18 +131,14 @@ func TestNewExporterPodForCR(t *testing.T) {
 					Name:      "test-monitor",
 					Namespace: "test",
 				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					Monitor: false,
-				},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{},
 			},
 			isErr: false,
 		},
 		"Test Negative": {
 			cr: &litmuschaosv1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					Monitor: true,
-				},
+				Spec:       litmuschaosv1alpha1.ChaosEngineSpec{},
 			},
 			isErr: true,
 		},

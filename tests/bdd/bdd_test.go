@@ -190,7 +190,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Appns:    "litmus",
 						Applabel: "app=nginx",
 					},
-					Monitor:             true,
 					ChaosServiceAccount: "litmus",
 					Experiments: []v1alpha1.ExperimentList{
 						{
