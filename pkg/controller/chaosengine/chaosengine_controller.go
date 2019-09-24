@@ -219,7 +219,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	// Check if the EngineExporterPod already exists, else create
-	err = engineExporterPod(engineExporter, r, reqLogger, &corev1.Pod{})
+	err = engineExporterPod(engineExporter, r, reqLogger)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -421,7 +421,8 @@ func engineMonitorService(engineMonitor *v1.Service, r *ReconcileChaosEngine, re
 }
 
 // engineExporterPod to Check if the engineExporter Pod is already exists, else create
-func engineExporterPod(engineExporter *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger, pod *v1.Pod) error {
+func engineExporterPod(engineExporter *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger) error {
+	pod := &corev1.Pod{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineExporter.Name, Namespace: engineExporter.Namespace}, pod)
 	if err != nil && k8serrors.IsNotFound(err) {
 		reqLogger.Info("Creating a new engineExporter Pod", "Pod.Namespace", engineExporter.Namespace, "Pod.Name", engineExporter.Name)
