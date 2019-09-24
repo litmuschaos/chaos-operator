@@ -59,18 +59,12 @@ type ChaosSchedule struct {
 	ConcurrencyPolicy string `json:"concurrencyPolicy"`
 }
 
-// ENVPairForExp varibles for each experiments
-type ENVPairForExp struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
 // ExperimentAttributes defines attributes of experiments
 type ExperimentAttributes struct {
 	//Execution priority of the chaos experiment
 	Rank uint32 `json:"rank"`
 	//K8s, infra or app objects subjected to chaos
-	Components []ENVPairForExp `json:"components"`
+	Components ObjectUnderTest `json:"components"`
 	//Execution schedule of individual chaos experiment
 	Schedule ExperimentSchedule `json:"schedule"`
 }
