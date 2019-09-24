@@ -15,8 +15,6 @@ type ChaosEngineSpec struct {
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`
-	//Execution schedule of batch of chaos experiments
-	Schedule ChaosSchedule `json:"schedule"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
@@ -43,18 +41,6 @@ type ExperimentList struct {
 	Name string `json:"name"`
 	//Holds properties of an experiment listed in the engine
 	Spec ExperimentAttributes `json:"spec"`
-}
-
-// ChaosSchedule defines information about schedule of chaos batch run
-type ChaosSchedule struct {
-	//Period b/w two iterations of chaos experiments batch run
-	Interval string `json:"interval"`
-	//Time(s) of day when experiments batch run is not scheduled
-	ExcludedTimes string `json:"excludedTimes"`
-	//Days of week when experiments batch run is not scheduled
-	ExcludedDays string `json:"excludedDays"`
-	//Action upon schedule interval if older batch run is in progress
-	ConcurrencyPolicy string `json:"concurrencyPolicy"`
 }
 
 // ExperimentAttributes defines attributes of experiments
