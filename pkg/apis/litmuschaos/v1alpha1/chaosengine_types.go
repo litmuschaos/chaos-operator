@@ -63,8 +63,6 @@ type ExperimentAttributes struct {
 	Rank uint32 `json:"rank"`
 	//K8s, infra or app objects subjected to chaos
 	Components ObjectUnderTest `json:"components"`
-	//Execution schedule of individual chaos experiment
-	Schedule ExperimentSchedule `json:"schedule"`
 }
 
 // ObjectUnderTest defines information about component subjected to chaos in an experiment
@@ -80,19 +78,6 @@ type ObjectUnderTest struct {
 	PVC string `json:"pvc"`
 	//Name of backend disk under test on a node
 	Disk string `json:"disk"`
-}
-
-// ExperimentSchedule defines information about schedule of individual experiments
-// +optional
-type ExperimentSchedule struct {
-	//Period b/w two iterations of a specific experiment
-	Interval string `json:"interval"`
-	//Time(s) of day when experiment is not scheduled
-	ExcludedTimes string `json:"excludedTimes"`
-	//Days of week when experiment is not scheduled
-	ExcludedDays string `json:"excludedDays"`
-	//Action upon schedule interval if older experiment is in progress
-	ConcurrencyPolicy string `json:"concurrencyPolicy"`
 }
 
 // ExperimentStatuses defines information about status of individual experiments
