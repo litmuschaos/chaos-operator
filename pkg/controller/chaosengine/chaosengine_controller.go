@@ -49,19 +49,19 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		IsController: true,
 		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
 	}
-	err = toWatchSecondaryResources(handlerForOwner, c)
+	err = watchSecondaryResources(handlerForOwner, c)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func toWatchSecondaryResources(handlerForOwner handler.EnqueueRequestForOwner, c controller.Controller) error {
-	// Watch for changes to primary resource ChaosEngine
+
+// watchSecondaryResources watch's for changes in chaos resources
+func watchSecondaryResources(handlerForOwner handler.EnqueueRequestForOwner, c controller.Controller) error {
 	err := c.Watch(&source.Kind{Type: &litmuschaosv1alpha1.ChaosEngine{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
-	// Watch for changes to secondary resource Pods, Services and requeue the owner ChaosEngine
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handlerForOwner)
 	if err != nil {
 		return err
