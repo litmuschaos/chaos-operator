@@ -191,7 +191,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Applabel: "app=nginx",
 					},
 					ChaosServiceAccount: "litmus",
-					Monitor:             true,
+					Monitoring:          true,
 					Experiments: []v1alpha1.ExperimentList{
 						{
 							Name: "pod-delete",

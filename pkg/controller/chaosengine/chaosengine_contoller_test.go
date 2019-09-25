@@ -24,7 +24,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: "fake-serviceAccount",
-					Monitor:             true,
+					Monitoring:          true,
 				},
 			},
 			aUUID:   "fake_id",
@@ -39,7 +39,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: "fake-serviceAccount",
-					Monitor:             false,
+					Monitoring:          false,
 				},
 			},
 			aUUID:   "fake_id",
@@ -96,7 +96,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 		})
 	}
 }
-func TestNewMonitorServiceForCR(t *testing.T) {
+func TestNewExporterServiceForCR(t *testing.T) {
 	tests := map[string]struct {
 		cr    *litmuschaosv1alpha1.ChaosEngine
 		isErr bool
@@ -109,7 +109,7 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: "fake-serviceAccount",
-					Monitor:             false,
+					Monitoring:          false,
 				},
 			},
 			isErr: false,
@@ -118,7 +118,7 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 			cr: &litmuschaosv1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					Monitor: true,
+					Monitoring: true,
 				},
 			},
 			isErr: true,
@@ -128,7 +128,7 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 
-			_, err := newMonitorServiceForCR(mock.cr)
+			_, err := newExporterServiceForCR(mock.cr)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -152,7 +152,7 @@ func TestNewExporterPodForCR(t *testing.T) {
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: "fake-serviceAccount",
-					Monitor:             false,
+					Monitoring:          false,
 				},
 			},
 			isErr: false,
@@ -161,7 +161,7 @@ func TestNewExporterPodForCR(t *testing.T) {
 			cr: &litmuschaosv1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					Monitor: true,
+					Monitoring: true,
 				},
 			},
 			isErr: true,

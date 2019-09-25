@@ -16,7 +16,7 @@ type ChaosEngineSpec struct {
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`
 	//Monitor Enable Status
-	Monitor bool `json:"monitorenable,omitempty"`
+	Monitoring bool `json:"monitorenable,omitempty"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
