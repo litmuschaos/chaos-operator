@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
@@ -437,7 +438,7 @@ func engineMonitorService(monitorService *serviceEngineMonitor) error {
 }
 
 // engineExporterPod to Check if the engineExporter Pod is already exists, else create
-func engineExporterPod(engineExporter *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger) error {
+func engineExporterPod(engineExporter *corev1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger) error {
 	pod := &corev1.Pod{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineExporter.Name, Namespace: engineExporter.Namespace}, pod)
 	if err != nil && k8serrors.IsNotFound(err) {

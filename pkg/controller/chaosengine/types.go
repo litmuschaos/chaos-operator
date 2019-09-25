@@ -1,7 +1,7 @@
 package chaosengine
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -62,12 +62,12 @@ type reconcileEngine struct {
 
 //podEngineRunner contains the information of pod
 type podEngineRunner struct {
-	pod, engineRunner *v1.Pod
+	pod, engineRunner *corev1.Pod
 	*reconcileEngine
 }
 
 //serviceEngineMonitor contains informatiom of service
 type serviceEngineMonitor struct {
-	service, engineMonitor *v1.Service
+	service, engineMonitor *corev1.Service
 	*reconcileEngine
 }
