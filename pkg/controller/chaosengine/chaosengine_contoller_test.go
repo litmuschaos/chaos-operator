@@ -16,7 +16,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 		aExList []string
 		isErr   bool
 	}{
-		"Test Positive": {
+		"Test Positive-1": {
 			cr: &litmuschaosv1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-runner",
@@ -24,6 +24,22 @@ func TestNewRunnerPodForCR(t *testing.T) {
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: "fake-serviceAccount",
+					Monitor:             true,
+				},
+			},
+			aUUID:   "fake_id",
+			aExList: []string{"exp-1"},
+			isErr:   false,
+		},
+		"Test Positive-2": {
+			cr: &litmuschaosv1alpha1.ChaosEngine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-runner",
+					Namespace: "test",
+				},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					ChaosServiceAccount: "fake-serviceAccount",
+					Monitor:             false,
 				},
 			},
 			aUUID:   "fake_id",
@@ -93,6 +109,7 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: "fake-serviceAccount",
+					Monitor:             false,
 				},
 			},
 			isErr: false,
@@ -100,7 +117,9 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 		"Test Negative": {
 			cr: &litmuschaosv1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{},
-				Spec:       litmuschaosv1alpha1.ChaosEngineSpec{},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Monitor: true,
+				},
 			},
 			isErr: true,
 		},
@@ -133,6 +152,7 @@ func TestNewExporterPodForCR(t *testing.T) {
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: "fake-serviceAccount",
+					Monitor:             false,
 				},
 			},
 			isErr: false,
@@ -140,7 +160,9 @@ func TestNewExporterPodForCR(t *testing.T) {
 		"Test Negative": {
 			cr: &litmuschaosv1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{},
-				Spec:       litmuschaosv1alpha1.ChaosEngineSpec{},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Monitor: true,
+				},
 			},
 			isErr: true,
 		},
