@@ -118,9 +118,9 @@ spec:
 - Install Litmus infrastructure (RBAC, CRD, Operator) components 
 
   ```
-  helm repo add https://litmuschaos.github.io/chaos-charts
+  helm repo add litmuschaos https://litmuschaos.github.io/chaos-charts
   helm repo update
-  helm install litmuschaos/litmusInfra --namespace=litmus
+  helm install litmuschaos/litmus --namespace=litmus
   ```
 
 - Download the desired Chaos Experiment bundles, say, general Kubernetes chaos
