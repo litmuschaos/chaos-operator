@@ -1,11 +1,13 @@
 package chaosengine
 
 import (
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
+	"github.com/go-logr/logr"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 )
 
@@ -25,10 +27,10 @@ import (
 // to access the values in the logger.
 
 var (
-	appLabelKey string
+	appLabelKey   string
 	appLabelValue string
-	log = logf.Log.WithName("controller_chaosengine")
-	_ reconcile.Reconciler = &ReconcileChaosEngine{}
+	log                                = logf.Log.WithName("controller_chaosengine")
+	_             reconcile.Reconciler = &ReconcileChaosEngine{}
 )
 
 // Annotations on app to enable chaos on it
@@ -50,4 +52,22 @@ type applicationInfo struct {
 	label              map[string]string
 	experimentList     []litmuschaosv1alpha1.ExperimentList
 	serviceAccountName string
+}
+
+// reconcileEngine contains details of reconcileEngine
+type reconcileEngine struct {
+	r         *ReconcileChaosEngine
+	reqLogger logr.Logger
+}
+
+//podEngineRunner contains the information of pod
+type podEngineRunner struct {
+	pod, engineRunner *v1.Pod
+	*reconcileEngine
+}
+
+//serviceEngineMonitor contains informatiom of service
+type serviceEngineMonitor struct {
+	service, engineMonitor *v1.Service
+	*reconcileEngine
 }
