@@ -428,7 +428,6 @@ func engineExporterPod(engineExporter *v1.Pod, r *ReconcileChaosEngine, reqLogge
 			return err
 		}
 
-		// Pod created successfully - don't requeue
 		reqLogger.Info("engineExporter Pod created successfully")
 	} else if err != nil {
 		return err
