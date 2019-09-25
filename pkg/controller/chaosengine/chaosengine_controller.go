@@ -52,21 +52,18 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner ChaosEngine
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	handler := handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
-	})
+	}
+	// TODO(user): Modify this to be the types you create that are owned by the primary resource
+	// Watch for changes to secondary resource Pods and requeue the owner ChaosEngine
+	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler)
 	if err != nil {
 		return err
 	}
 	// Watch for changes to secondary resources Services and requeue the owner ChaosEngine
-	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
-	})
+	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler)
 	if err != nil {
 		return err
 	}
