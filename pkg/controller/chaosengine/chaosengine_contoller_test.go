@@ -131,7 +131,9 @@ func TestNewExporterPodForCR(t *testing.T) {
 					Name:      "test-monitor",
 					Namespace: "test",
 				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					ChaosServiceAccount: "fake-serviceAccount",
+				},
 			},
 			isErr: false,
 		},

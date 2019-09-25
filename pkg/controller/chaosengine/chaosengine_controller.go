@@ -314,11 +314,11 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 // newExporterPodForCR defines secondary resource #2 in same namespace as CR */
 func newExporterPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) (*corev1.Pod, error) {
 	if cr == nil {
-		return nil, errors.New("nil ChaosEngine Object")
+		return nil, errors.New("chaosengine got nil")
 	}
 	labels := map[string]string{
-		"app":  cr.Name,
-		"type": "exporter",
+		"app":         cr.Name,
+		"exporterFor": cr.Name,
 	}
 	exporterPod, err := pod.NewBuilder().
 		WithName(cr.Name + "-exporter").
@@ -347,8 +347,8 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 		return nil, errors.New("nil chaosengine object")
 	}
 	labels := map[string]string{
-		"app":  cr.Name,
-		"type": "exporter",
+		"app":         cr.Name,
+		"exporterFor": cr.Name,
 	}
 	serviceObj, err := service.NewBuilder().
 		WithName(cr.Name + "-monitor").
@@ -357,8 +357,8 @@ func newMonitorServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Servic
 		WithPorts(getMonitoringENV()).
 		WithSelectorsNew(
 			map[string]string{
-				"app":  cr.Name,
-				"type": "exporter",
+				"app":         cr.Name,
+				"exporterFor": cr.Name,
 			}).
 		Build()
 	if err != nil {
