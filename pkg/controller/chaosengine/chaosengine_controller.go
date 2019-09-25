@@ -41,33 +41,35 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	// Create a new controller
 	c, err := controller.New("chaosengine-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
-
-	// Watch for changes to primary resource ChaosEngine
-	err = c.Watch(&source.Kind{Type: &litmuschaosv1alpha1.ChaosEngine{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
-	}
-	handler := handler.EnqueueRequestForOwner{
+	handlerForOwner := handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
 	}
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner ChaosEngine
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler)
+	err = toWatchSecondaryResources(handlerForOwner, c)
 	if err != nil {
 		return err
 	}
-	// Watch for changes to secondary resources Services and requeue the owner ChaosEngine
-	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler)
+	return nil
+}
+func toWatchSecondaryResources(handlerForOwner handler.EnqueueRequestForOwner, c controller.Controller) error {
+	// Watch for changes to primary resource ChaosEngine
+	err := c.Watch(&source.Kind{Type: &litmuschaosv1alpha1.ChaosEngine{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
-
+	// Watch for changes to secondary resource Pods, Services and requeue the owner ChaosEngine
+	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handlerForOwner)
+	if err != nil {
+		return err
+	}
+	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handlerForOwner)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
