@@ -15,8 +15,6 @@ type ChaosEngineSpec struct {
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`
-	//Execution schedule of batch of chaos experiments
-	Schedule ChaosSchedule `json:"schedule"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
@@ -45,26 +43,12 @@ type ExperimentList struct {
 	Spec ExperimentAttributes `json:"spec"`
 }
 
-// ChaosSchedule defines information about schedule of chaos batch run
-type ChaosSchedule struct {
-	//Period b/w two iterations of chaos experiments batch run
-	Interval string `json:"interval"`
-	//Time(s) of day when experiments batch run is not scheduled
-	ExcludedTimes string `json:"excludedTimes"`
-	//Days of week when experiments batch run is not scheduled
-	ExcludedDays string `json:"excludedDays"`
-	//Action upon schedule interval if older batch run is in progress
-	ConcurrencyPolicy string `json:"concurrencyPolicy"`
-}
-
 // ExperimentAttributes defines attributes of experiments
 type ExperimentAttributes struct {
 	//Execution priority of the chaos experiment
 	Rank uint32 `json:"rank"`
 	//K8s, infra or app objects subjected to chaos
 	Components ObjectUnderTest `json:"components"`
-	//Execution schedule of individual chaos experiment
-	Schedule ExperimentSchedule `json:"schedule"`
 }
 
 // ObjectUnderTest defines information about component subjected to chaos in an experiment
@@ -80,19 +64,6 @@ type ObjectUnderTest struct {
 	PVC string `json:"pvc"`
 	//Name of backend disk under test on a node
 	Disk string `json:"disk"`
-}
-
-// ExperimentSchedule defines information about schedule of individual experiments
-// +optional
-type ExperimentSchedule struct {
-	//Period b/w two iterations of a specific experiment
-	Interval string `json:"interval"`
-	//Time(s) of day when experiment is not scheduled
-	ExcludedTimes string `json:"excludedTimes"`
-	//Days of week when experiment is not scheduled
-	ExcludedDays string `json:"excludedDays"`
-	//Action upon schedule interval if older experiment is in progress
-	ConcurrencyPolicy string `json:"concurrencyPolicy"`
 }
 
 // ExperimentStatuses defines information about status of individual experiments
