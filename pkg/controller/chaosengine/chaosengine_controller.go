@@ -7,12 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -98,7 +96,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
-
 	// Fetch the app details from ChaosEngine instance. Check if app is present
 	// Also check, if the app is annotated for chaos & that the labels are unique
 
@@ -209,14 +206,31 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
+	engineReconcile := &reconcileEngine{
+		r:         r,
+		reqLogger: reqLogger,
+	}
+
+	runnerPod := &podEngineRunner{
+		pod:             &corev1.Pod{},
+		engineRunner:    engineRunner,
+		reconcileEngine: engineReconcile,
+	}
+
+	monitorService := &serviceEngineMonitor{
+		service:         &corev1.Service{},
+		engineMonitor:   engineMonitor,
+		reconcileEngine: engineReconcile,
+	}
+
 	// Check if the engineRunner pod already exists, else create
-	err = engineRunnerPod(engineRunner, r, reqLogger, &corev1.Pod{})
+	err = engineRunnerPod(runnerPod)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Check if the engineMonitorService already exists, else create
-	err = engineMonitorService(engineMonitor, r, reqLogger, &corev1.Service{})
+	err = engineMonitorService(monitorService)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -386,30 +400,30 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 }
 
 // engineRunnerPod to Check if the engineRunner pod already exists, else create
-func engineRunnerPod(engineRunner *v1.Pod, r *ReconcileChaosEngine, reqLogger logr.Logger, pod *v1.Pod) error {
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineRunner.Name, Namespace: engineRunner.Namespace}, pod)
+func engineRunnerPod(runnerPod *podEngineRunner) error {
+	err := runnerPod.r.client.Get(context.TODO(), types.NamespacedName{Name: runnerPod.engineRunner.Name, Namespace: runnerPod.engineRunner.Namespace}, runnerPod.pod)
 	if err != nil && k8serrors.IsNotFound(err) {
-		reqLogger.Info("Creating a new engineRunner Pod", "Pod.Namespace", engineRunner.Namespace, "Pod.Name", engineRunner.Name)
-		err = r.client.Create(context.TODO(), engineRunner)
+		runnerPod.reqLogger.Info("Creating a new engineRunner Pod", "Pod.Namespace", runnerPod.engineRunner.Namespace, "Pod.Name", runnerPod.engineRunner.Name)
+		err = runnerPod.r.client.Create(context.TODO(), runnerPod.engineRunner)
 		if err != nil {
 			return err
 		}
 
 		// Pod created successfully - don't requeue
-		reqLogger.Info("engineRunner Pod created successfully")
+		runnerPod.reqLogger.Info("engineRunner Pod created successfully")
 	} else if err != nil {
 		return err
 	}
-	reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+	runnerPod.reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", runnerPod.pod.Namespace, "Pod.Name", runnerPod.pod.Name)
 	return nil
 }
 
 // Check if the engineMonitorService already exists, else create
-func engineMonitorService(engineMonitor *v1.Service, r *ReconcileChaosEngine, reqLogger logr.Logger, service *v1.Service) error {
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engineMonitor.Name, Namespace: engineMonitor.Namespace}, service)
+func engineMonitorService(monitorService *serviceEngineMonitor) error {
+	err := monitorService.r.client.Get(context.TODO(), types.NamespacedName{Name: monitorService.engineMonitor.Name, Namespace: monitorService.engineMonitor.Namespace}, monitorService.service)
 	if err != nil && k8serrors.IsNotFound(err) {
-		reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", engineMonitor.Namespace, "Service.Name", engineMonitor.Name)
-		err = r.client.Create(context.TODO(), engineMonitor)
+		monitorService.reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", monitorService.engineMonitor.Namespace, "Service.Name", monitorService.engineMonitor.Name)
+		err = monitorService.r.client.Create(context.TODO(), monitorService.engineMonitor)
 		if err != nil {
 			return err
 		}
@@ -418,7 +432,7 @@ func engineMonitorService(engineMonitor *v1.Service, r *ReconcileChaosEngine, re
 	} else if err != nil {
 		return err
 	}
-	reqLogger.Info("Skip reconcile: engineMonitor Service already exists", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
+	monitorService.reqLogger.Info("Skip reconcile: engineMonitor Service already exists", "Service.Namespace", monitorService.service.Namespace, "Service.Name", monitorService.service.Name)
 	return nil /*You can return now, both sec resources are existing */
 }
 
