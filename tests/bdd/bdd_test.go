@@ -211,11 +211,13 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			//Fetching engine-nginx-runner pod
 			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
-
+			//Fetching engine-nginx-exporter pod
+			exporter, err := client.CoreV1().Pods("litmus").Get("engine-nginx-exporter", metav1.GetOptions{})
 			//Check for the Availabilty and status of the runner pod
 			fmt.Println("name : ", runner.Name)
 			Expect(err).To(BeNil())
-			Expect(string(runner.Status.Phase)).To(Equal("Running"))
+			Expect(string(runner.Status.Phase)).To(Or(Equal("Running"), Equal("Succeeded")))
+			Expect(string(exporter.Status.Phase)).To(Equal("Running"))
 		})
 	})
 
