@@ -58,10 +58,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 // watchSecondaryResources watch's for changes in chaos resources
 func watchChaosResources(handlerForOwner handler.EnqueueRequestForOwner, c controller.Controller) error {
+	// Watch for Primary Resource
 	err := c.Watch(&source.Kind{Type: &litmuschaosv1alpha1.ChaosEngine{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
+
+	// Watch for Secondary Resources
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handlerForOwner)
 	if err != nil {
 		return err
