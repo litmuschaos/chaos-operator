@@ -213,7 +213,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			//Fetching engine-nginx-runner pod
 			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
 			//Fetching engine-nginx-exporter pod
-			exporter, err := client.CoreV1().Pods("litmus").Get("engine-nginx-exporter", metav1.GetOptions{})
+			exporter, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
 			//Check for the Availabilty and status of the runner pod
 			fmt.Println("name : ", runner.Name)
 			Expect(err).To(BeNil())
@@ -226,7 +226,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 	Context("check for the custom resources", func() {
 
 		It("Should check for creation of monitor service", func() {
-			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-exporter", metav1.GetOptions{})
+			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
 
 			Expect(err).To(BeNil())
 
