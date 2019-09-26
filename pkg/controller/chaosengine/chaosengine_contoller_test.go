@@ -104,7 +104,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 		})
 	}
 }
-func TestNewExporterServiceForCR(t *testing.T) {
+func TestNewMonitorServiceForCR(t *testing.T) {
 	tests := map[string]struct {
 		engine engineInfo
 		isErr  bool
@@ -140,7 +140,7 @@ func TestNewExporterServiceForCR(t *testing.T) {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 
-			_, err := newExporterServiceForCR(mock.engine)
+			_, err := newMonitorServiceForCR(mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -150,7 +150,7 @@ func TestNewExporterServiceForCR(t *testing.T) {
 		})
 	}
 }
-func TestNewExporterPodForCR(t *testing.T) {
+func TestNewExpoMonitorPodForCR(t *testing.T) {
 	tests := map[string]struct {
 		engine engineInfo
 		isErr  bool
@@ -186,7 +186,7 @@ func TestNewExporterPodForCR(t *testing.T) {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 
-			_, err := newExporterPodForCR(mock.engine)
+			_, err := newMonitorPodForCR(mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
