@@ -256,7 +256,7 @@ func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (r
 		return reconcile.Result{}, err
 	}
 	// Check if the engineMonitorService already exists, else create
-	err = engineMonitorService(monitorService)
+	err = engineExporterService(monitorService)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -450,7 +450,7 @@ func engineRunnerPod(runnerPod *podEngineRunner) error {
 }
 
 // Check if the engineMonitorService already exists, else create
-func engineMonitorService(monitorService *serviceEngineMonitor) error {
+func engineExporterService(monitorService *serviceEngineMonitor) error {
 	if !monitorService.monitorstatus {
 		return errors.New("Wont Reconcile, Monitor Status is Disabled for EngineMonitor Service")
 	}
