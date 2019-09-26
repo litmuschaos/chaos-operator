@@ -103,8 +103,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	// TODO: Get app kind from chaosengine spec as well. Using "deploy" for now
 	// TODO: Freeze label format in chaosengine( "=" as a const)
-	monitorstatus := instance.Spec.Monitoring
-	engine.instance.Spec.Monitoring = monitorstatus
 	appInfo := &applicationInfo{}
 	appInfo, err = appInfo.initializeApplicationInfo(instance)
 	if err != nil {
@@ -122,7 +120,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	log.Info("App Label derived from Chaosengine is ", "appLabelValue", appLabelValue)
 	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
 	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
-	log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", monitorstatus)
+	log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", engine.instance.Spec.Monitoring)
 
 	// Use client-Go to obtain a list of apps w/ specified labels
 	restConfig, err := config.GetConfig()
@@ -143,15 +141,12 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	var appName string
-	var appUUID types.UID
-
 	// Determine whether apps with matching labels have chaos annotation set to true
 	chaosCandidates := 0
 	if len(chaosAppList.Items) > 0 {
 		for _, app := range chaosAppList.Items {
-			appName = app.ObjectMeta.Name
-			appUUID = app.ObjectMeta.UID
+			engine.appName = app.ObjectMeta.Name
+			engine.appUUID = app.ObjectMeta.UID
 			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
 			if appCaSts {
 				//Checks if the annotation is "true" / "false"
@@ -166,7 +161,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 					if annotationFlag {
 						// If annotationFlag is true
 						// Add it to the Chaos Candidates, and log the details
-						log.Info("chaos candidate : ", "appName", appName, "appUUID", appUUID)
+						log.Info("chaos candidate : ", "appName", engine.appName, "appUUID", engine.appUUID)
 						chaosCandidates++
 					}
 				}
@@ -184,8 +179,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		log.Info("No app deployments with matching labels")
 		return reconcile.Result{}, nil
 	}
-	engine.appUUID = appUUID
-	engine.appName = appName
+
 	// Define an engineRunner pod which is secondary-resource #1
 	engineRunner, err := newRunnerPodForCR(engine)
 	if err != nil {
@@ -215,7 +209,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if monitorstatus {
+	if engine.instance.Spec.Monitoring {
 		reconcileResult, err := createMonitoringResources(engine, engineReconcile)
 		if err != nil {
 			return reconcileResult, err
