@@ -16,7 +16,7 @@ spec:
       serviceAccountName: litmus
       containers:
         - name: chaos-operator
-          image: rahulchheda1997/chaos-operator:ci
+          image: litmuschaos/chaos-operator:latest
           command:
           - chaos-operator
           imagePullPolicy: IfNotPresent
