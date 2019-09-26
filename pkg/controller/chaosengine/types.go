@@ -71,14 +71,14 @@ type podEngineRunner struct {
 type serviceEngineExporter struct {
 	service, engineExporter *corev1.Service
 	*reconcileEngine
-	monitorstatus bool
+	monitoring bool
 }
 
 //podEngineExporter contains the information of pod
 type podEngineExporter struct {
 	pod, engineExporter *corev1.Pod
 	*reconcileEngine
-	monitorstatus bool
+	monitoring bool
 }
 
 //engine Related information

@@ -238,14 +238,14 @@ func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (r
 		service:         &corev1.Service{},
 		engineExporter:  engineExporterSvc,
 		reconcileEngine: recEngine,
-		monitorstatus:   engine.instance.Spec.Monitoring,
+		monitoring:      engine.instance.Spec.Monitoring,
 	}
 
 	exporterPod := &podEngineExporter{
 		pod:             &corev1.Pod{},
 		engineExporter:  engineExporter,
 		reconcileEngine: recEngine,
-		monitorstatus:   engine.instance.Spec.Monitoring,
+		monitoring:      engine.instance.Spec.Monitoring,
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-exporter pod
 	if err := controllerutil.SetControllerReference(engine.instance, engineExporter, recEngine.r.scheme); err != nil {
@@ -354,9 +354,6 @@ func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
 
 // newExporterPodForCR defines secondary resource #2 in same namespace as CR */
 func newExporterPodForCR(engine engineInfo) (*corev1.Pod, error) {
-	if !engine.instance.Spec.Monitoring {
-		return nil, nil
-	}
 	if engine.instance == nil {
 		return nil, errors.New("chaosengine got nil")
 	}
@@ -387,9 +384,7 @@ func newExporterPodForCR(engine engineInfo) (*corev1.Pod, error) {
 
 // newExporterServiceForCR defines secondary resource #2 in same namespace as CR */
 func newExporterServiceForCR(engine engineInfo) (*corev1.Service, error) {
-	if !engine.instance.Spec.Monitoring {
-		return nil, nil
-	}
+
 	if engine.instance == nil {
 		return nil, errors.New("nil chaosengine object")
 	}
@@ -451,7 +446,7 @@ func engineRunnerPod(runnerPod *podEngineRunner) error {
 
 // Check if the engineExporterService already exists, else create
 func engineExporterService(exporterService *serviceEngineExporter) error {
-	if !exporterService.monitorstatus {
+	if !exporterService.monitoring {
 		return errors.New("Wont Reconcile, Monitor Status is Disabled for EngineExporter Service")
 	}
 	err := exporterService.r.client.Get(context.TODO(), types.NamespacedName{Name: exporterService.engineExporter.Name, Namespace: exporterService.engineExporter.Namespace}, exporterService.service)
@@ -472,7 +467,7 @@ func engineExporterService(exporterService *serviceEngineExporter) error {
 
 // engineExporterPod to Check if the engineExporter Pod is already exists, else create
 func engineExporterPod(exporterPod *podEngineExporter) error {
-	if !exporterPod.monitorstatus {
+	if !exporterPod.monitoring {
 		return errors.New("Wont Reconcile, Monitor Status is Disabled for EngineMonitor Service")
 	}
 	pod := &corev1.Pod{}
