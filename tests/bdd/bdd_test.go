@@ -20,7 +20,7 @@ import (
 	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 )
 
-var kubeconfig = "/home/circleci/.kube/config"
+var kubeconfig = "/home/rahul/.kube/config"
 var config, _ = clientcmd.BuildConfigFromFlags("", kubeconfig)
 var client, _ = kubernetes.NewForConfig(config)
 var clientSet, _ = chaosClient.NewForConfig(config)
@@ -226,7 +226,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 	Context("check for the custom resources", func() {
 
 		It("Should check for creation of monitor service", func() {
-			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-exporter", metav1.GetOptions{})
 
 			Expect(err).To(BeNil())
 
