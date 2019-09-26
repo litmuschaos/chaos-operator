@@ -3,6 +3,7 @@ package chaosengine
 import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -78,4 +79,13 @@ type podEngineExporter struct {
 	pod, engineExporter *corev1.Pod
 	*reconcileEngine
 	monitorstatus bool
+}
+
+//engine Related information
+type engineInfo struct {
+	instance       *litmuschaosv1alpha1.ChaosEngine
+	appInfo        *applicationInfo
+	appExperiments []string
+	appName        string
+	appUUID        types.UID
 }

@@ -96,22 +96,27 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+	var engine engineInfo
+	engine.instance = instance
 	// Fetch the app details from ChaosEngine instance. Check if app is present
 	// Also check, if the app is annotated for chaos & that the labels are unique
 
 	// TODO: Get app kind from chaosengine spec as well. Using "deploy" for now
 	// TODO: Freeze label format in chaosengine( "=" as a const)
 	monitorstatus := instance.Spec.Monitoring
+	engine.instance.Spec.Monitoring = monitorstatus
 	appInfo := &applicationInfo{}
 	appInfo, err = appInfo.initializeApplicationInfo(instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+	engine.appInfo = appInfo
 
 	var appExperiments []string
 	for _, exp := range appInfo.experimentList {
 		appExperiments = append(appExperiments, exp.Name)
 	}
+	engine.appExperiments = appExperiments
 
 	log.Info("App key derived from chaosengine is ", "appLabelKey", appLabelKey)
 	log.Info("App Label derived from Chaosengine is ", "appLabelValue", appLabelValue)
@@ -179,9 +184,10 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		log.Info("No app deployments with matching labels")
 		return reconcile.Result{}, nil
 	}
-
+	engine.appUUID = appUUID
+	engine.appName = appName
 	// Define an engineRunner pod which is secondary-resource #1
-	engineRunner, err := newRunnerPodForCR(instance, appUUID, appExperiments)
+	engineRunner, err := newRunnerPodForCR(engine)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -189,7 +195,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Define an engine-exporter pod which is secondary-resource #3
 
 	// Set ChaosEngine instance as the owner and controller of engine-runner pod
-	if err := controllerutil.SetControllerReference(instance, engineRunner, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(engine.instance, engineRunner, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -210,7 +216,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	if monitorstatus {
-		reconcileResult, err := createMonitoringResources(instance, engineReconcile, appUUID)
+		reconcileResult, err := createMonitoringResources(engine, engineReconcile)
 		if err != nil {
 			return reconcileResult, err
 		}
@@ -222,15 +228,15 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 }
 
 //
-func createMonitoringResources(instance *litmuschaosv1alpha1.ChaosEngine, recEngine *reconcileEngine, appUUID types.UID) (reconcile.Result, error) {
+func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (reconcile.Result, error) {
 	//reqLogger.Info("Monitoring is Enabled")
 	// Define the engine-monitor service which is secondary-resource #2
-	engineMonitor, err := newExporterServiceForCR(instance)
+	engineMonitor, err := newExporterServiceForCR(engine)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 	// Define an engine-exporter pod which is secondary-resource #3
-	engineExporter, err := newExporterPodForCR(instance, appUUID)
+	engineExporter, err := newExporterPodForCR(engine)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -238,21 +244,21 @@ func createMonitoringResources(instance *litmuschaosv1alpha1.ChaosEngine, recEng
 		service:         &corev1.Service{},
 		engineMonitor:   engineMonitor,
 		reconcileEngine: recEngine,
-		monitorstatus:   instance.Spec.Monitoring,
+		monitorstatus:   engine.instance.Spec.Monitoring,
 	}
 
 	exporterPod := &podEngineExporter{
 		pod:             &corev1.Pod{},
 		engineExporter:  engineExporter,
 		reconcileEngine: recEngine,
-		monitorstatus:   instance.Spec.Monitoring,
+		monitorstatus:   engine.instance.Spec.Monitoring,
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-exporter pod
-	if err := controllerutil.SetControllerReference(instance, engineExporter, recEngine.r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(engine.instance, engineExporter, recEngine.r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-monitor service
-	if err := controllerutil.SetControllerReference(instance, engineMonitor, recEngine.r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(engine.instance, engineMonitor, recEngine.r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 	// Check if the engineMonitorService already exists, else create
@@ -323,18 +329,18 @@ func getMonitoringENV() []corev1.ServicePort {
 }
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
-func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aExList []string) (*corev1.Pod, error) {
-	if len(aExList) == 0 || aUUID == "" {
+func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
+	if len(engine.appExperiments) == 0 || engine.appUUID == "" {
 		return nil, errors.New("expected aExList not found")
 	}
 	labels := map[string]string{
-		"app": cr.Name,
+		"app": engine.instance.Name,
 	}
 	podObj, err := pod.NewBuilder().
-		WithName(cr.Name + "-runner").
-		WithNamespace(cr.Namespace).
+		WithName(engine.instance.Name + "-runner").
+		WithNamespace(engine.instance.Namespace).
 		WithLabels(labels).
-		WithServiceAccountName(cr.Spec.ChaosServiceAccount).
+		WithServiceAccountName(engine.instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
@@ -343,7 +349,7 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
-				WithEnvsNew(getChaosRunnerENV(cr, aExList)),
+				WithEnvsNew(getChaosRunnerENV(engine.instance, engine.appExperiments)),
 		).
 		Build()
 	if err != nil {
@@ -353,29 +359,29 @@ func newRunnerPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID, aEx
 }
 
 // newExporterPodForCR defines secondary resource #2 in same namespace as CR */
-func newExporterPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) (*corev1.Pod, error) {
-	if !cr.Spec.Monitoring {
+func newExporterPodForCR(engine engineInfo) (*corev1.Pod, error) {
+	if !engine.instance.Spec.Monitoring {
 		return nil, nil
 	}
-	if cr == nil {
+	if engine.instance == nil {
 		return nil, errors.New("chaosengine got nil")
 	}
 	labels := map[string]string{
-		"app":         cr.Name,
-		"exporterFor": cr.Name,
+		"app":         engine.instance.Name,
+		"exporterFor": engine.instance.Name,
 	}
 	exporterPod, err := pod.NewBuilder().
-		WithName(cr.Name + "-exporter").
-		WithNamespace(cr.Namespace).
+		WithName(engine.instance.Name + "-exporter").
+		WithNamespace(engine.instance.Namespace).
 		WithLabels(labels).
-		WithServiceAccountName(cr.Spec.ChaosServiceAccount).
+		WithServiceAccountName(engine.instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-exporter").
 				WithImage("litmuschaos/chaos-exporter:ci").
 				WithPortsNew([]corev1.ContainerPort{{ContainerPort: 8080, Protocol: "TCP", Name: "metrics"}}).
-				WithEnvsNew(getChaosExporterENV(cr, aUUID)),
+				WithEnvsNew(getChaosExporterENV(engine.instance, engine.appUUID)),
 		).
 		Build()
 
@@ -386,26 +392,26 @@ func newExporterPodForCR(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) (
 }
 
 // newMonitorServiceForCR defines secondary resource #2 in same namespace as CR */
-func newExporterServiceForCR(cr *litmuschaosv1alpha1.ChaosEngine) (*corev1.Service, error) {
-	if !cr.Spec.Monitoring {
+func newExporterServiceForCR(engine engineInfo) (*corev1.Service, error) {
+	if !engine.instance.Spec.Monitoring {
 		return nil, nil
 	}
-	if cr == nil {
+	if engine.instance == nil {
 		return nil, errors.New("nil chaosengine object")
 	}
 	labels := map[string]string{
-		"app":         cr.Name,
-		"exporterFor": cr.Name,
+		"app":         engine.instance.Name,
+		"exporterFor": engine.instance.Name,
 	}
 	serviceObj, err := service.NewBuilder().
-		WithName(cr.Name + "-exporter").
-		WithNamespace(cr.Namespace).
+		WithName(engine.instance.Name + "-exporter").
+		WithNamespace(engine.instance.Namespace).
 		WithLabels(labels).
 		WithPorts(getMonitoringENV()).
 		WithSelectorsNew(
 			map[string]string{
-				"app":         cr.Name,
-				"exporterFor": cr.Name,
+				"app":         engine.instance.Name,
+				"exporterFor": engine.instance.Name,
 			}).
 		Build()
 	if err != nil {
