@@ -227,12 +227,12 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 // Also reconciles those resources
 func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (reconcile.Result, error) {
 
-	// Define the engine-monitor service which is secondary-resource #2
+	// Define the engine-monitor service which is secondary-resource #3
 	engineMonitorSvc, err := newMonitorServiceForCR(engine)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	// Define an engine-monitor pod which is secondary-resource #3
+	// Define an engine-monitor pod which is secondary-resource #2
 	engineMonitor, err := newMonitorPodForCR(engine)
 	if err != nil {
 		return reconcile.Result{}, err
