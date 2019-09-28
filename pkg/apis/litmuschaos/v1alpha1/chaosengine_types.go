@@ -15,6 +15,8 @@ type ChaosEngineSpec struct {
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`
+	//Monitor Enable Status
+	Monitoring bool `json:"monitoring,omitempty"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine

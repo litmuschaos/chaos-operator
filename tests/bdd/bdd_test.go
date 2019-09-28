@@ -191,6 +191,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Applabel: "app=nginx",
 					},
 					ChaosServiceAccount: "litmus",
+					Monitoring:          true,
 					Experiments: []v1alpha1.ExperimentList{
 						{
 							Name: "pod-delete",
@@ -212,7 +213,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			//Fetching engine-nginx-runner pod
 			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
 			//Fetching engine-nginx-exporter pod
-			exporter, err := client.CoreV1().Pods("litmus").Get("engine-nginx-exporter", metav1.GetOptions{})
+			exporter, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
 			//Check for the Availabilty and status of the runner pod
 			fmt.Println("name : ", runner.Name)
 			Expect(err).To(BeNil())

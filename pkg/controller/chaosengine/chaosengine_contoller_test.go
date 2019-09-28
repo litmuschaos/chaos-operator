@@ -6,71 +6,95 @@ import (
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestNewRunnerPodForCR(t *testing.T) {
 	tests := map[string]struct {
-		cr      *litmuschaosv1alpha1.ChaosEngine
-		aUUID   types.UID
-		aExList []string
-		isErr   bool
+		engine engineInfo
+		isErr  bool
 	}{
-		"Test Positive": {
-			cr: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-runner",
-					Namespace: "test",
+		"Test Positive-1": {
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          true,
+					},
 				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					ChaosServiceAccount: "fake-serviceAccount",
-				},
+				appUUID:        "fake_id",
+				appExperiments: []string{"exp-1"},
 			},
-			aUUID:   "fake_id",
-			aExList: []string{"exp-1"},
-			isErr:   false,
+			isErr: false,
+		},
+		"Test Positive-2": {
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+					},
+				},
+				appUUID:        "fake_id",
+				appExperiments: []string{"exp-1"},
+			},
+
+			isErr: false,
 		},
 		"Test Negative-1": {
-			cr: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{},
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{},
+				},
+				appUUID:        "fake_id",
+				appExperiments: []string{"exp-1"},
 			},
-			aUUID:   "fake_id",
-			aExList: []string{"exp-1"},
-			isErr:   true,
+			isErr: true,
 		},
 		"Test Negative-2 ": {
-			cr: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-runner",
-					Namespace: "test",
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+					},
 				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					ChaosServiceAccount: "fake-serviceAccount",
-				},
+				appUUID:        "",
+				appExperiments: []string{"exp-1"},
 			},
-			aUUID:   "",
-			aExList: []string{"exp-1"},
-			isErr:   true,
+			isErr: true,
 		},
 		"Test Negative-3 ": {
-			cr: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-runner",
-					Namespace: "test",
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+					},
 				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					ChaosServiceAccount: "fake-serviceAccount",
-				},
+				appUUID:        "fake_id",
+				appExperiments: []string{},
 			},
-			aUUID:   "fake_id",
-			aExList: []string{},
-			isErr:   true,
+			isErr: true,
 		},
 	}
 	for name, mock := range tests {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
-			_, err := newRunnerPodForCR(mock.cr, mock.aUUID, mock.aExList)
+			_, err := newRunnerPodForCR(mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -82,25 +106,32 @@ func TestNewRunnerPodForCR(t *testing.T) {
 }
 func TestNewMonitorServiceForCR(t *testing.T) {
 	tests := map[string]struct {
-		cr    *litmuschaosv1alpha1.ChaosEngine
-		isErr bool
+		engine engineInfo
+		isErr  bool
 	}{
 		"Test Positive": {
-			cr: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-monitor",
-					Namespace: "test",
-				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					ChaosServiceAccount: "fake-serviceAccount",
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-monitor",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+					},
 				},
 			},
 			isErr: false,
 		},
 		"Test Negative": {
-			cr: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{},
-				Spec:       litmuschaosv1alpha1.ChaosEngineSpec{},
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Monitoring: true,
+					},
+				},
 			},
 			isErr: true,
 		},
@@ -109,7 +140,7 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 
-			_, err := newMonitorServiceForCR(mock.cr)
+			_, err := newMonitorServiceForCR(mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -119,28 +150,34 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 		})
 	}
 }
-func TestNewExporterPodForCR(t *testing.T) {
+func TestNewMonitorPodForCR(t *testing.T) {
 	tests := map[string]struct {
-		cr    *litmuschaosv1alpha1.ChaosEngine
-		aUUID types.UID
-		isErr bool
+		engine engineInfo
+		isErr  bool
 	}{
 		"Test Positive": {
-			cr: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-monitor",
-					Namespace: "test",
-				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					ChaosServiceAccount: "fake-serviceAccount",
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-monitor",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+					},
 				},
 			},
 			isErr: false,
 		},
 		"Test Negative": {
-			cr: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{},
-				Spec:       litmuschaosv1alpha1.ChaosEngineSpec{},
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Monitoring: true,
+					},
+				},
 			},
 			isErr: true,
 		},
@@ -149,7 +186,7 @@ func TestNewExporterPodForCR(t *testing.T) {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 
-			_, err := newExporterPodForCR(mock.cr, mock.aUUID)
+			_, err := newMonitorPodForCR(mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
