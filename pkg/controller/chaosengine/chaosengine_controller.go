@@ -185,8 +185,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	// Define the engine-monitor service which is secondary-resource #2
-	// Define an engine-monitor pod which is secondary-resource #3
 
 	// Set ChaosEngine instance as the owner and controller of engine-runner pod
 	if err := controllerutil.SetControllerReference(engine.instance, engineRunner, r.scheme); err != nil {
@@ -197,7 +195,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		r:         r,
 		reqLogger: reqLogger,
 	}
-
+	// Creates an object of engineRunner Pod
 	runnerPod := &podEngineRunner{
 		pod:             &corev1.Pod{},
 		engineRunner:    engineRunner,
@@ -209,6 +207,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	// If monitoring is set to true,
+	// Define an engineMonitor pod which is secondary-resource #2 and
+	// Define an engineMonitor service which is secondary-resource #3
+	// in the same namespace as CR
 	if engine.instance.Spec.Monitoring {
 		reconcileResult, err := createMonitoringResources(engine, engineReconcile)
 		if err != nil {
@@ -221,7 +224,8 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	return reconcile.Result{}, nil
 }
 
-//
+// Creates engineMonitor pod and engineMonitor Service
+// Also reconciles those resources
 func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (reconcile.Result, error) {
 
 	// Define the engine-monitor service which is secondary-resource #2
@@ -234,13 +238,15 @@ func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (r
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	// Creates an object of monitorService
 	monitorService := &serviceEngineMonitor{
 		service:         &corev1.Service{},
 		engineMonitor:   engineMonitorSvc,
 		reconcileEngine: recEngine,
 		monitoring:      engine.instance.Spec.Monitoring,
 	}
-
+	// Creates an oblect of monitorPod
 	monitorPod := &podEngineMonitor{
 		pod:             &corev1.Pod{},
 		engineMonitor:   engineMonitor,
@@ -446,9 +452,6 @@ func engineRunnerPod(runnerPod *podEngineRunner) error {
 
 // Check if the engineMonitorService already exists, else create
 func engineMonitorService(monitorService *serviceEngineMonitor) error {
-	if !monitorService.monitoring {
-		return errors.New("Wont Reconcile, Monitor Status is Disabled for EngineMonitor Service")
-	}
 	err := monitorService.r.client.Get(context.TODO(), types.NamespacedName{Name: monitorService.engineMonitor.Name, Namespace: monitorService.engineMonitor.Namespace}, monitorService.service)
 	if err != nil && k8serrors.IsNotFound(err) {
 		monitorService.reqLogger.Info("Creating a new engineMonitor Service", "Service.Namespace", monitorService.engineMonitor.Namespace, "Service.Name", monitorService.engineMonitor.Name)
@@ -467,9 +470,6 @@ func engineMonitorService(monitorService *serviceEngineMonitor) error {
 
 // engineMonitorPod to Check if the engineMonitor Pod is already exists, else create
 func engineMonitorPod(monitorPod *podEngineMonitor) error {
-	if !monitorPod.monitoring {
-		return errors.New("Wont Reconcile, Monitor Status is Disabled for EngineMonitor Service")
-	}
 	pod := &corev1.Pod{}
 	err := monitorPod.r.client.Get(context.TODO(), types.NamespacedName{Name: monitorPod.engineMonitor.Name, Namespace: monitorPod.engineMonitor.Namespace}, pod)
 	if err != nil && k8serrors.IsNotFound(err) {
