@@ -245,7 +245,7 @@ func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (r
 		reconcileEngine: recEngine,
 		monitoring:      engine.instance.Spec.Monitoring,
 	}
-	// Creates an oblect of monitorPod
+	// Creates an object of monitorPod
 	monitorPod := &podEngineMonitor{
 		pod:             &corev1.Pod{},
 		engineMonitor:   engineMonitor,
