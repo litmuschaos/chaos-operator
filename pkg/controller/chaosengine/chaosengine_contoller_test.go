@@ -150,7 +150,7 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 		})
 	}
 }
-func TestNewExpoMonitorPodForCR(t *testing.T) {
+func TestNewMonitorPodForCR(t *testing.T) {
 	tests := map[string]struct {
 		engine engineInfo
 		isErr  bool
