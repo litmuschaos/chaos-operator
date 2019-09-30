@@ -53,6 +53,12 @@ type ExperimentAttributes struct {
 	Components []ENVPair `json:"components"`
 }
 
+// ExperimentENV varibles to override the defaults in chaosexperiment
+type ExperimentENV struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 // ExperimentStatuses defines information about status of individual experiments
 // These fields are immutable, and are derived by kubernetes(operator)
 type ExperimentStatuses struct {
