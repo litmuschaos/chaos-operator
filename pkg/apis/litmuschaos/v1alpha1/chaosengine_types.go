@@ -50,7 +50,7 @@ type ExperimentAttributes struct {
 	//Execution priority of the chaos experiment
 	Rank uint32 `json:"rank"`
 	//K8s, infra or app objects subjected to chaos
-	Components ObjectUnderTest `json:"components"`
+	Components []ENVPair `json:"components"`
 }
 
 // ObjectUnderTest defines information about component subjected to chaos in an experiment
