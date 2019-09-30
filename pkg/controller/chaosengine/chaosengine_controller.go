@@ -344,7 +344,7 @@ func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
-				WithImage("ksatchit/ansible-runner:trial7").
+				WithImage("rahulchheda1997/litmus:ci").
 				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
