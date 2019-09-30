@@ -49,11 +49,11 @@ type ExperimentList struct {
 type ExperimentAttributes struct {
 	//Execution priority of the chaos experiment
 	Rank uint32 `json:"rank"`
-	//Environment Varibles to override defaults in chaos-experiments
+	//Environment Varibles to override the default values in chaos-experiments
 	Components []ENVPair `json:"components"`
 }
 
-// ExperimentENV varibles to override the defaults in chaosexperiment
+// ExperimentENV varibles to override the default values in chaosexperiment
 type ExperimentENV struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
