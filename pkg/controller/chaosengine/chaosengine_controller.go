@@ -341,11 +341,12 @@ func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
 		WithLabels(labels).
 		WithServiceAccountName(engine.instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
+		WithImagePullPolicy().
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
-				WithImage("rahulchheda1997/litmus:ci").
-				WithImagePullPolicy(corev1.PullIfNotPresent).
+				WithImage("ksatchit/ansible-runner:trial7").
+				WithImagePullPolicy("Always").
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
 				WithEnvsNew(getChaosRunnerENV(engine.instance, engine.appExperiments)),

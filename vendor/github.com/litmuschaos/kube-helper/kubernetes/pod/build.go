@@ -66,6 +66,11 @@ func (b *Builder) WithLabels(labels map[string]string) *Builder {
 	return b
 }
 
+func (b *Builder) WithImagePullPolicy() *Builder {
+	b.pod.object.Spec.RestartPolicy = corev1.RestartPolicyAlways
+	return b
+}
+
 // WithServiceAccountName sets the serviceaccountname field of Pod with provided value
 func (b *Builder) WithServiceAccountName(serviceaccountname string) *Builder {
 	if len(serviceaccountname) == 0 {
