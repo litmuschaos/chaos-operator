@@ -341,7 +341,6 @@ func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
 		WithLabels(labels).
 		WithServiceAccountName(engine.instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
-		WithImagePullPolicy().
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
