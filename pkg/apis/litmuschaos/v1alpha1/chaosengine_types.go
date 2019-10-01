@@ -49,23 +49,14 @@ type ExperimentList struct {
 type ExperimentAttributes struct {
 	//Execution priority of the chaos experiment
 	Rank uint32 `json:"rank"`
-	//K8s, infra or app objects subjected to chaos
-	Components ObjectUnderTest `json:"components"`
+	//Environment Varibles to override the default values in chaos-experiments
+	Components []ExperimentENV `json:"components"`
 }
 
-// ObjectUnderTest defines information about component subjected to chaos in an experiment
-// +optional
-type ObjectUnderTest struct {
-	//Name of container under test in a pod
-	Container string `json:"container"`
-	//Name of interface under test in a container
-	NWinterface string `json:"nwinterface"`
-	//Name of node under test in a K8s cluster
-	Node string `json:"node"`
-	//Name of persistent volume claim used by app
-	PVC string `json:"pvc"`
-	//Name of backend disk under test on a node
-	Disk string `json:"disk"`
+// ExperimentENV varibles to override the default values in chaosexperiment
+type ExperimentENV struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // ExperimentStatuses defines information about status of individual experiments
