@@ -346,7 +346,7 @@ func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
 			container.NewBuilder().
 				WithName("chaos-runner").
 				WithImage("ksatchit/ansible-runner:trial7").
-				WithImagePullPolicy("Always").
+				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
 				WithEnvsNew(getChaosRunnerENV(engine.instance, engine.appExperiments)),
