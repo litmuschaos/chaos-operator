@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	appv1 "k8s.io/api/apps/v1"
+
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
@@ -15,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -54,6 +57,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
+var engine engineInfo
+
+var restConfig *rest.Config
+var clientset *kubernetes.Clientset
+
 // watchSecondaryResources watch's for changes in chaos resources
 func watchChaosResources(handlerForOwner handler.EnqueueRequestForOwner, c controller.Controller) error {
 	// Watch for Primary Resource
@@ -69,6 +77,89 @@ func watchChaosResources(handlerForOwner handler.EnqueueRequestForOwner, c contr
 	}
 	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handlerForOwner)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Determine whether apps with matching labels have chaos annotation set to true
+func checkChaosAnnotation(chaosAppList *appv1.DeploymentList) string {
+	chaosCandidates := 0
+	if len(chaosAppList.Items) > 0 {
+		for _, app := range chaosAppList.Items {
+			engine.appName = app.ObjectMeta.Name
+			engine.appUUID = app.ObjectMeta.UID
+			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
+			if appCaSts {
+				//Checks if the annotation is "true" / "false"
+				var annotationFlag bool
+				var err error
+				annotationFlag, err = strconv.ParseBool(app.ObjectMeta.GetAnnotations()[chaosAnnotation])
+				//log.Info("Annotation Flag", "aflag", annotationFlag)
+				if err != nil {
+					// Unable to check the annotation
+					// Would not add in the chaosCandidates
+					log.Info("Unable to check the annotationFlag", "annotationFlag", annotationFlag)
+				} else {
+					if annotationFlag {
+						// If annotationFlag is true
+						// Add it to the Chaos Candidates, and log the details
+						log.Info("chaos candidate : ", "appName", engine.appName, "appUUID", engine.appUUID)
+						chaosCandidates++
+					}
+				}
+			}
+		}
+		if chaosCandidates == 0 {
+			log.Info("No chaos candidates found")
+			return ""
+
+		} else if chaosCandidates > 1 {
+			log.Info("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
+			return ""
+		}
+	} else {
+		log.Info("No app deployments with matching labels")
+		return ""
+	}
+	return "x"
+
+}
+
+func getAppInfo() error {
+	appInfo := &applicationInfo{}
+	var err error
+	appInfo, err = appInfo.initializeApplicationInfo(engine.instance)
+	if err != nil {
+		return err
+	}
+	engine.appInfo = appInfo
+
+	var appExperiments []string
+	for _, exp := range appInfo.experimentList {
+		appExperiments = append(appExperiments, exp.Name)
+	}
+	engine.appExperiments = appExperiments
+
+	log.Info("App key derived from chaosengine is ", "appLabelKey", appLabelKey)
+	log.Info("App Label derived from Chaosengine is ", "appLabelValue", appLabelValue)
+	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
+	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
+	log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", engine.instance.Spec.Monitoring)
+	return nil
+}
+
+func setConfig() error {
+	var err error
+	restConfig, err = config.GetConfig()
+	if err != nil {
+		log.Error(err, "unable to get rest kube config")
+		return err
+	}
+
+	clientset, err = kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		log.Error(err, "unable to create clientset using restconfig")
 		return err
 	}
 	return nil
@@ -96,90 +187,38 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
-	var engine engineInfo
+
 	engine.instance = instance
 	// Fetch the app details from ChaosEngine instance. Check if app is present
 	// Also check, if the app is annotated for chaos & that the labels are unique
 
 	// TODO: Get app kind from chaosengine spec as well. Using "deploy" for now
 	// TODO: Freeze label format in chaosengine( "=" as a const)
-	appInfo := &applicationInfo{}
-	appInfo, err = appInfo.initializeApplicationInfo(instance)
+
+	err = getAppInfo()
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	engine.appInfo = appInfo
-
-	var appExperiments []string
-	for _, exp := range appInfo.experimentList {
-		appExperiments = append(appExperiments, exp.Name)
-	}
-	engine.appExperiments = appExperiments
-
-	log.Info("App key derived from chaosengine is ", "appLabelKey", appLabelKey)
-	log.Info("App Label derived from Chaosengine is ", "appLabelValue", appLabelValue)
-	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
-	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
-	log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", engine.instance.Spec.Monitoring)
-
 	// Use client-Go to obtain a list of apps w/ specified labels
-	restConfig, err := config.GetConfig()
+	err = setConfig()
 	if err != nil {
-		log.Error(err, "unable to get rest kube config")
 		return reconcile.Result{}, err
 	}
 
-	clientset, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		log.Error(err, "unable to create clientset using restconfig")
-		return reconcile.Result{}, err
-	}
-
-	chaosAppList, err := clientset.AppsV1().Deployments(appInfo.namespace).List(metav1.ListOptions{LabelSelector: instance.Spec.Appinfo.Applabel, FieldSelector: ""})
+	chaosAppList, err := clientset.AppsV1().Deployments(engine.appInfo.namespace).List(metav1.ListOptions{LabelSelector: instance.Spec.Appinfo.Applabel, FieldSelector: ""})
 	if err != nil {
 		log.Error(err, "unable to list apps matching labels")
 		return reconcile.Result{}, err
 	}
-
 	// Determine whether apps with matching labels have chaos annotation set to true
-	chaosCandidates := 0
-	if len(chaosAppList.Items) > 0 {
-		for _, app := range chaosAppList.Items {
-			engine.appName = app.ObjectMeta.Name
-			engine.appUUID = app.ObjectMeta.UID
-			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
-			if appCaSts {
-				//Checks if the annotation is "true" / "false"
-				var annotationFlag bool
-				annotationFlag, err = strconv.ParseBool(app.ObjectMeta.GetAnnotations()[chaosAnnotation])
-				//log.Info("Annotation Flag", "aflag", annotationFlag)
-				if err != nil {
-					// Unable to check the annotation
-					// Would not add in the chaosCandidates
-					log.Info("Unable to check the annotationFlag", "annotationFlag", annotationFlag)
-				} else {
-					if annotationFlag {
-						// If annotationFlag is true
-						// Add it to the Chaos Candidates, and log the details
-						log.Info("chaos candidate : ", "appName", engine.appName, "appUUID", engine.appUUID)
-						chaosCandidates++
-					}
-				}
-			}
-		}
-		if chaosCandidates == 0 {
-			log.Info("No chaos candidates found")
-			return reconcile.Result{}, nil
-
-		} else if chaosCandidates > 1 {
-			log.Info("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
-			return reconcile.Result{}, nil
-		}
-	} else {
-		log.Info("No app deployments with matching labels")
+	annotation := checkChaosAnnotation(chaosAppList)
+	if annotation == "" {
 		return reconcile.Result{}, nil
 	}
+	log.Info("chaos candidate after amit : ", "appName", engine.appName, "appUUID", engine.appUUID)
+
 	// Define an engineRunner pod which is secondary-resource #1
+
 	engineRunner, err := newRunnerPodForCR(engine)
 	if err != nil {
 		return reconcile.Result{}, err
