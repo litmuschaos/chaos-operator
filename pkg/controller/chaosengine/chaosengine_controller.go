@@ -440,7 +440,6 @@ func (r *ReconcileChaosEngine) chaosengineInstance(request reconcile.Request) er
 		// Error reading the object - requeue the request.
 		return err
 	}
-
 	engine.instance = instance
 	return errors.New("No error")
 }
