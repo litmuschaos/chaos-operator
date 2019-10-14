@@ -7,12 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	appv1 "k8s.io/api/apps/v1"
-
 	"github.com/go-logr/logr"
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
+	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,7 +105,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	// Use client-Go to obtain a list of apps w/ specified labels
-	err = setConfig()
+	clientset, err = setConfig()
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -471,20 +470,19 @@ func getAppInfo() error {
 }
 
 // Use client-Go to obtain a list of apps w/ specified labels
-func setConfig() error {
-	var err error
-	restConfig, err = config.GetConfig()
+func setConfig() (*kubernetes.Clientset, error) {
+	restConfig, err := config.GetConfig()
 	if err != nil {
 		log.Error(err, "unable to get rest kube config")
-		return err
+		return &kubernetes.Clientset{}, err
 	}
 
-	clientset, err = kubernetes.NewForConfig(restConfig)
+	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		log.Error(err, "unable to create clientset using restconfig")
-		return err
+		return &kubernetes.Clientset{}, err
 	}
-	return nil
+	return clientset, nil
 }
 
 // Determine whether apps with matching labels have chaos annotation set to true

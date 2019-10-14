@@ -8,7 +8,6 @@ import (
 	"runtime"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-
 	"github.com/litmuschaos/chaos-operator/pkg/apis"
 	"github.com/litmuschaos/chaos-operator/pkg/controller"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
