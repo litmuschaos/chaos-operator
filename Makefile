@@ -78,8 +78,8 @@ test:
 .PHONY: dockerops 
 dockerops: 
 	@echo "------------------"
-	@echo "--> Build chaos-exporter image" 
+	@echo "--> Build chaos-operator image" 
 	@echo "------------------"
 	# Dockerfile available in the repo root
-	sudo docker build . -f Dockerfile -t litmuschaos/chaos-exporter:ci  
+	sudo docker build . -f Dockerfile -t litmuschaos/chaos-operator:ci  
 	REPONAME="litmuschaos" IMGNAME="chaos-operator" IMGTAG="ci" ./buildscripts/push
