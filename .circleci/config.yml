@@ -44,9 +44,5 @@ jobs:
       - run: sed '/chaos-operator:latest/s/latest/'${IMGSHATAG}'/' -i ./deploy/operator.yaml
       - run: make deps
       - run: make gotasks
-      - run: |
-          docker build . -f build/Dockerfile -t "${REPONAME}"/"${IMGNAME}":"${IMGSHATAG}"
-          docker tag "${REPONAME}"/"${IMGNAME}":"${IMGSHATAG}" "${REPONAME}"/"${IMGNAME}":"${IMGTAG}"
       - run: make test  
-      - run: |
-          ${GOPATH}/src/github.com/litmuschaos/chaos-operator/buildscripts/push
+      - run: make dockerops
