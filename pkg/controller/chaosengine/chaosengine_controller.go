@@ -59,9 +59,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var engine engineInfo
 
-var restConfig *rest.Config
-var clientset *kubernetes.Clientset
-
 // watchSecondaryResources watch's for changes in chaos resources
 func watchChaosResources(handlerForOwner handler.EnqueueRequestForOwner, c controller.Controller) error {
 	// Watch for Primary Resource
