@@ -36,7 +36,8 @@ var (
 
 // Annotations on app to enable chaos on it
 const (
-	chaosAnnotation = "litmuschaos.io/chaos"
+	chaosAnnotationKey = "litmuschaos.io/chaos"
+	chaosAnnotationValue = "true"
 )
 
 // ReconcileChaosEngine reconciles a ChaosEngine object

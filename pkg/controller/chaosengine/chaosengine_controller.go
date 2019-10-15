@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
@@ -137,46 +136,33 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	chaosAppList, err := clientset.AppsV1().Deployments(appInfo.namespace).List(metav1.ListOptions{LabelSelector: instance.Spec.Appinfo.Applabel, FieldSelector: ""})
 	if err != nil {
-		log.Error(err, "unable to list apps matching labels")
+		log.Error(err, "unable to list applications with matching label")
 		return reconcile.Result{}, err
+	}
+	if len(chaosAppList.Items) == 0 {
+		log.Info("No app deployments with matching labels")
+		return reconcile.Result{}, nil
 	}
 
 	// Determine whether apps with matching labels have chaos annotation set to true
 	chaosCandidates := 0
-	if len(chaosAppList.Items) > 0 {
-		for _, app := range chaosAppList.Items {
-			engine.appName = app.ObjectMeta.Name
-			engine.appUUID = app.ObjectMeta.UID
-			appCaSts := metav1.HasAnnotation(app.ObjectMeta, chaosAnnotation)
-			if appCaSts {
-				//Checks if the annotation is "true" / "false"
-				var annotationFlag bool
-				annotationFlag, err = strconv.ParseBool(app.ObjectMeta.GetAnnotations()[chaosAnnotation])
-				//log.Info("Annotation Flag", "aflag", annotationFlag)
-				if err != nil {
-					// Unable to check the annotation
-					// Would not add in the chaosCandidates
-					log.Info("Unable to check the annotationFlag", "annotationFlag", annotationFlag)
-				} else {
-					if annotationFlag {
-						// If annotationFlag is true
-						// Add it to the Chaos Candidates, and log the details
-						log.Info("chaos candidate : ", "appName", engine.appName, "appUUID", engine.appUUID)
-						chaosCandidates++
-					}
-				}
-			}
+	for _, app := range chaosAppList.Items {
+		engine.appName = app.ObjectMeta.Name
+		engine.appUUID = app.ObjectMeta.UID
+		//Checks if the annotation is "true" / "false"
+		annotationValue := app.ObjectMeta.GetAnnotations()[chaosAnnotationKey]
+		if annotationValue == chaosAnnotationValue {
+			// Add it to the Chaos Candidates, and log the details
+			log.Info("chaos candidate : ", "appName", engine.appName, "appUUID", engine.appUUID)
+			chaosCandidates++
 		}
-		if chaosCandidates == 0 {
-			log.Info("No chaos candidates found")
-			return reconcile.Result{}, nil
-
-		} else if chaosCandidates > 1 {
+		if chaosCandidates > 1 {
 			log.Info("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
 			return reconcile.Result{}, nil
 		}
-	} else {
-		log.Info("No app deployments with matching labels")
+	}
+	if chaosCandidates == 0 {
+		log.Info("No chaos candidates found")
 		return reconcile.Result{}, nil
 	}
 	// Define an engineRunner pod which is secondary-resource #1
