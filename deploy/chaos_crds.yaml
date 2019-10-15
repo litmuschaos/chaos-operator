@@ -12,7 +12,6 @@ spec:
     singular: chaosengine
   scope: Namespaced
   subresources:
-    status: {}
   validation:
     openAPIV3Schema:
       properties:
