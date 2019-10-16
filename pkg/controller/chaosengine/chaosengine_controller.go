@@ -473,7 +473,6 @@ func createClientSet() (*kubernetes.Clientset, error) {
 	}
 	clientSet, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		log.Error(err, "unable to create clientset using restconfig")
 		return &kubernetes.Clientset{}, err
 	}
 	return clientSet, nil
@@ -483,7 +482,7 @@ func createClientSet() (*kubernetes.Clientset, error) {
 func checkChaosAnnotation(targetApplicationList *appv1.DeploymentList) error {
 	chaosCandidates := 0
 	if len(targetApplicationList.Items) == 0 {
-		return errors.New("No app deployments with matching labels")
+		return errors.New("no app deployments with matching labels")
 	}
 	for _, app := range targetApplicationList.Items {
 		engine.appName = app.ObjectMeta.Name
@@ -497,7 +496,7 @@ func checkChaosAnnotation(targetApplicationList *appv1.DeploymentList) error {
 			chaosCandidates++
 		}
 		if chaosCandidates > 1 {
-			return errors.New("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
+			return errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
 		}
 		if chaosCandidates == 0 {
 			return errors.New("no chaos-candidate found")
