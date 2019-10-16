@@ -87,7 +87,13 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	reqLogger.Info("Reconciling ChaosEngine")
 	// Fetch the ChaosEngine instance
 	err := r.getChaosEngineInstance(request)
-	if err.Error() != "No error" {
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return reconcile.Result{}, nil
+		}
 		return reconcile.Result{}, err
 	}
 	// Fetch the app details from ChaosEngine instance. Check if app is present
@@ -102,6 +108,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Use client-Go to obtain a list of apps w/ specified labels
 	clientSet, err := createClientSet()
 	if err != nil {
+		log.Error(err, "Clientset generation failed with error: ")
 		return reconcile.Result{}, err
 	}
 	targetApplicationList, err := clientSet.AppsV1().Deployments(engine.appInfo.namespace).List(metav1.ListOptions{LabelSelector: engine.instance.Spec.Appinfo.Applabel, FieldSelector: ""})
@@ -113,6 +120,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Determine whether apps with matching labels have chaos annotation set to true
 	err = checkChaosAnnotation(targetApplicationList)
 	if err != nil {
+		log.Info("Annotation check failed with error: ", err)
 		return reconcile.Result{}, nil
 	}
 	// Define an engineRunner pod which is secondary-resource #1
@@ -427,12 +435,6 @@ func (r *ReconcileChaosEngine) getChaosEngineInstance(request reconcile.Request)
 	instance := &litmuschaosv1alpha1.ChaosEngine{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return nil
-		}
 		// Error reading the object - requeue the request.
 		return err
 	}
@@ -484,7 +486,6 @@ func createClientSet() (*kubernetes.Clientset, error) {
 func checkChaosAnnotation(targetApplicationList *appv1.DeploymentList) error {
 	chaosCandidates := 0
 	if len(targetApplicationList.Items) == 0 {
-		log.Info("No app deployments with matching labels")
 		return errors.New("No app deployments with matching labels")
 	}
 	for _, app := range targetApplicationList.Items {
@@ -499,11 +500,9 @@ func checkChaosAnnotation(targetApplicationList *appv1.DeploymentList) error {
 			chaosCandidates++
 		}
 		if chaosCandidates > 1 {
-			log.Info("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
-			return errors.New("too many arguments")
+			return errors.New("Too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
 		}
 		if chaosCandidates == 0 {
-			log.Info("No chaos candidates found")
 			return errors.New("no chaos-candidate found")
 
 		}
