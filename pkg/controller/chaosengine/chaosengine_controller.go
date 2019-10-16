@@ -108,7 +108,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Use client-Go to obtain a list of apps w/ specified labels
 	clientSet, err := createClientSet()
 	if err != nil {
-		log.Error(err, "Clientset generation failed with error: ")
+		log.Info("Clientset generation failed with error: ", err)
 		return reconcile.Result{}, err
 	}
 	targetApplicationList, err := clientSet.AppsV1().Deployments(engine.appInfo.namespace).List(metav1.ListOptions{LabelSelector: engine.instance.Spec.Appinfo.Applabel, FieldSelector: ""})
