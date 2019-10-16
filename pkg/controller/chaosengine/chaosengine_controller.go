@@ -439,7 +439,7 @@ func (r *ReconcileChaosEngine) getChaosEngineInstance(request reconcile.Request)
 		return err
 	}
 	engine.instance = instance
-	return errors.New("No error")
+	return nil
 }
 
 // Get application details
