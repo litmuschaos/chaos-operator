@@ -150,7 +150,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 }
 
 // Set ChaosEngine instance as the owner and controller of engine-Monitor service
-func setControllerRefrence(recEngine *reconcileEngine, engineMonitor *corev1.Pod, engineMonitorSvc *corev1.Service) error {
+func setControllerReference(recEngine *reconcileEngine, engineMonitor *corev1.Pod, engineMonitorSvc *corev1.Service) error {
 	if err := controllerutil.SetControllerReference(engine.instance, engineMonitor, recEngine.r.scheme); err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (r
 		monitoring:      engine.instance.Spec.Monitoring,
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-Monitor pod
-	err = setControllerRefrence(recEngine, engineMonitor, engineMonitorSvc)
+	err = setControllerReference(recEngine, engineMonitor, engineMonitorSvc)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -445,7 +445,6 @@ func (r *ReconcileChaosEngine) getChaosEngineInstance(request reconcile.Request)
 // Get application details
 func getApplicationDetail() error {
 	applicationInfo := &applicationInfo{}
-	var err error
 	appInfo, err := applicationInfo.initializeApplicationInfo(engine.instance)
 	if err != nil {
 		return err
@@ -470,10 +469,8 @@ func getApplicationDetail() error {
 func createClientSet() (*kubernetes.Clientset, error) {
 	restConfig, err := config.GetConfig()
 	if err != nil {
-		log.Error(err, "unable to get rest kube config")
 		return &kubernetes.Clientset{}, err
 	}
-
 	clientSet, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		log.Error(err, "unable to create clientset using restconfig")
