@@ -17,6 +17,8 @@ type ChaosEngineSpec struct {
 	Experiments []ExperimentList `json:"experiments"`
 	//Monitor Enable Status
 	Monitoring bool `json:"monitoring,omitempty"`
+	//JobCleanUpPolicy decides to retain or delete the jobs
+	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
