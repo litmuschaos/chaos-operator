@@ -549,10 +549,10 @@ func checkMonitoring(engineReconcile *reconcileEngine, reqLogger logr.Logger) (r
 //getImage take the runner and monitor image from engine spec
 func getImage() {
 	if engine.instance.Spec.Components.Monitor.Image == "" {
-		engine.instance.Spec.Components.Monitor.Image = "litmuschaos/chaos-exporter:ci"
+		engine.instance.Spec.Components.Monitor.Image = defaultMonitorImage
 	}
 	if engine.instance.Spec.Components.Runner.Image == "" {
-		engine.instance.Spec.Components.Runner.Image = "litmuschaos/ansible-runner:ci"
+		engine.instance.Spec.Components.Runner.Image = defaultRunnerImage
 	}
 
 }
