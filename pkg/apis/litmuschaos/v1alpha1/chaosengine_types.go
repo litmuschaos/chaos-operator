@@ -13,6 +13,8 @@ type ChaosEngineSpec struct {
 	Appinfo ApplicationParams `json:"appinfo"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
+	//Components contains the image of runnner and monitor pod
+	Components ComponentParams `json:"components"`
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`
 	//Monitor Enable Status
@@ -34,6 +36,26 @@ type ApplicationParams struct {
 	Appns string `json:"appns"`
 	//Unique label of the AUT
 	Applabel string `json:"applabel"`
+}
+
+// ComponentParams defines information about the runner and monitor image
+type ComponentParams struct {
+	//Contains informations of the monitor pod
+	Monitor MonitorInfo `json:"monitor"`
+	//Contains informations of the the runner pod
+	Runner RunnerInfo `json:"runner"`
+}
+
+// MonitorInfo defines the information of the monitor pod
+type MonitorInfo struct {
+	//Image of the monitor pod
+	Image string `json:"image"`
+}
+
+// RunnerInfo defines the information of the runnerinfo pod
+type RunnerInfo struct {
+	//Image of the runner pod
+	Image string `json:"image"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
