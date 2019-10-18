@@ -54,6 +54,7 @@ type applicationInfo struct {
 	label              map[string]string
 	experimentList     []litmuschaosv1alpha1.ExperimentList
 	serviceAccountName string
+	kind               string
 }
 
 // reconcileEngine contains details of reconcileEngine

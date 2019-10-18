@@ -10,13 +10,9 @@ import (
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
-	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -105,24 +101,13 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	// Use client-Go to obtain a list of apps w/ specified labels
-	clientSet, err := createClientSet()
-	if err != nil {
-		log.Info("Clientset generation failed with error: ", err)
-		return reconcile.Result{}, err
-	}
-	targetApplicationList, err := clientSet.AppsV1().Deployments(engine.appInfo.namespace).List(metav1.ListOptions{LabelSelector: engine.instance.Spec.Appinfo.Applabel, FieldSelector: ""})
-	if err != nil {
-		log.Error(err, "unable to list apps matching labels")
-		return reconcile.Result{}, err
-	}
 
 	// Determine whether apps with matching labels have chaos annotation set to true
-	err = checkChaosAnnotation(targetApplicationList)
+	err = checkAnnotation()
 	if err != nil {
-		log.Info("Annotation check failed with error: ", err)
 		return reconcile.Result{}, nil
 	}
+
 	// Define an engineRunner pod which is secondary-resource #1
 	engineRunner, err := newRunnerPodForCR(engine)
 	if err != nil {
@@ -371,6 +356,7 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 	appInfo.namespace = instance.Spec.Appinfo.Appns
 	appInfo.experimentList = instance.Spec.Experiments
 	appInfo.serviceAccountName = instance.Spec.ChaosServiceAccount
+	appInfo.kind = instance.Spec.Appinfo.Appkind
 	return appInfo, nil
 }
 
@@ -462,47 +448,6 @@ func getApplicationDetail() error {
 	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
 	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
 	log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", engine.instance.Spec.Monitoring)
-	return nil
-}
-
-// Use client-Go to obtain a list of apps w/ specified labels
-func createClientSet() (*kubernetes.Clientset, error) {
-	restConfig, err := config.GetConfig()
-	if err != nil {
-		return &kubernetes.Clientset{}, err
-	}
-	clientSet, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return &kubernetes.Clientset{}, err
-	}
-	return clientSet, nil
-}
-
-// Determine whether apps with matching labels have chaos annotation set to true
-func checkChaosAnnotation(targetApplicationList *appv1.DeploymentList) error {
-	chaosCandidates := 0
-	if len(targetApplicationList.Items) == 0 {
-		return errors.New("no app deployments with matching labels")
-	}
-	for _, app := range targetApplicationList.Items {
-		engine.appName = app.ObjectMeta.Name
-		engine.appUUID = app.ObjectMeta.UID
-		//Checks if the annotation is "true" / "false"
-		annotationValue := app.ObjectMeta.GetAnnotations()[chaosAnnotationKey]
-
-		if annotationValue == chaosAnnotationValue {
-			// Add it to the Chaos Candidates, and log the details
-			log.Info("chaos candidate : ", "appName", engine.appName, "appUUID", engine.appUUID)
-			chaosCandidates++
-		}
-		if chaosCandidates > 1 {
-			return errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
-		}
-		if chaosCandidates == 0 {
-			return errors.New("no chaos-candidate found")
-
-		}
-	}
 	return nil
 }
 

@@ -7,9 +7,9 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 # docker info
-DOCKER_REPO ?= litmuschaos
+DOCKER_REPO ?= amitbhatt
 DOCKER_IMAGE ?= chaos-operator
-DOCKER_TAG ?= latest
+DOCKER_TAG ?= test555
 
 .PHONY: help
 help:

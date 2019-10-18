@@ -34,6 +34,8 @@ type ApplicationParams struct {
 	Appns string `json:"appns"`
 	//Unique label of the AUT
 	Applabel string `json:"applabel"`
+	//kind of application
+	Appkind string `json:"appkind"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
