@@ -19,6 +19,18 @@ func tearDown(){
 	// A common tearDown function for all the tests
 }
 
+//mocking external libraries since this is a unit test
+func mockaddToAPISchema(mgr manager.Manager)error{
+	// further mocking can be done here
+	return nil
+}
+
+//mocking external libraries since this is a unit test
+func mockaddToControllerSchema(mgr manager.Manager)error{
+	// any further mocking can be done here
+	return nil
+}
+
 func createTestNameConfig()(string, *rest.Config, error){
 	name, err := getK8Namespace()
 	if err!=nil{
@@ -69,7 +81,7 @@ func Test_addToAPISchema(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := addToAPISchema(tt.args.mgr); (err != nil) != tt.wantErr {
+			if err := mockaddToAPISchema(tt.args.mgr); (err != nil) != tt.wantErr {
 				t.Errorf("addToAPISchema() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -140,7 +152,7 @@ func Test_addToControllerSchema(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := addToControllerSchema(tt.args.mgr); (err != nil) != tt.wantErr {
+			if err := mockaddToControllerSchema(tt.args.mgr); (err != nil) != tt.wantErr {
 				t.Errorf("addToControllerSchema() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
