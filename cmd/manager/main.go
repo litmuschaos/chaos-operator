@@ -65,7 +65,7 @@ func createNewManager(cfg *rest.Config, namespace string)(manager.Manager, error
 }
 
 // Decoupled these statements to create so that unit testing is possible
-func addToApiSchema(mgr manager.Manager)error{
+func addToAPISchema(mgr manager.Manager)error{
 	return apis.AddToScheme(mgr.GetScheme())
 }
 
@@ -82,6 +82,12 @@ func addToMetricsPort(ctx context.Context, metricsPort int32)(* v1.Service, erro
 
 func startCmd(mgr manager.Manager)error{
 	return mgr.Start(signals.SetupSignalHandler())
+}
+
+// This is done so that any future changes to context does not produce any changes in the unit test cases
+// for example
+func getContext() context.Context {
+	return context.TODO()
 }
 
 func main() {
@@ -122,8 +128,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx := context.TODO()
-
+	ctx := getContext()
+	context.Background()
 	// Become the leader before proceeding
 	err = becomeLeader(ctx)
 	if err != nil {
@@ -141,7 +147,7 @@ func main() {
 	log.Info("Registering Components.")
 
 	// Setup Scheme for all resources
-	if err := addToApiSchema(mgr); err != nil {
+	if err := addToAPISchema(mgr); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
