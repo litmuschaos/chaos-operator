@@ -6,6 +6,7 @@ import (
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  corev1 "k8s.io/api/core/v1"
 )
 
 func TestNewRunnerPodForCR(t *testing.T) {
@@ -243,4 +244,67 @@ func TestInitializeApplicationInfo(t *testing.T) {
 			}
 		})
 	}
+}
+func TestGetChaosRunnerENV(t *testing.T) {
+  fakeEngineName  := "Fake Engine"
+  fakeNameSpace   := "fake NameSpace"
+  fakeServiceAcc  := "Fake Service Account"
+  fakeAppLabel    := "fake label"
+  fakeAExList     := []string{"fake string"}
+
+  tests := map[string]struct {
+    instance          *litmuschaosv1alpha1.ChaosEngine
+    aExList           []string
+    expectedResult    []corev1.EnvVar
+  }{
+    "Test Positive": {
+      instance: &litmuschaosv1alpha1.ChaosEngine{
+        Name: fakeEngineName,
+        Namespace: fakeNameSpace,
+        Spec: {
+          ChaosServiceAccount: fakeServiceAcc,
+          Appinfo: {
+            Applabel: fakeAppLabel,
+          },
+        },
+      },
+      aExList:        fakeAExList,
+      expectedResult: []corev1.EnvVar{
+        {
+          Name:  "CHAOSENGINE",
+          Value: fakeEngineName,
+        },
+        {
+          Name:  "APP_LABEL",
+          Value: fakeAppLabel,
+        },
+        {
+          Name:  "APP_NAMESPACE",
+          Value: fakeNameSpace,
+        },
+        {
+          Name:  "EXPERIMENT_LIST",
+          Value: fmt.Sprint(strings.Join(fakeAExList, ",")),
+        },
+        {
+          Name:  "CHAOS_SVC_ACC",
+          Value: fakeServiceAcc,
+        },
+      },
+    },
+  }
+  for name, mock := range tests {
+    name, mock := name, mock
+    t.Run(name, func(t *testing.T) {
+      actualResult := getChaosRunnerENV(mock.instance, mock.aExList)
+      if len(actualResult) != 5 {
+        t.Fatalf("Test %q failed: expected array length to be 5", name)
+      }
+      for result, index := range actualResult {
+        if result.Value != expectedResult[index].Value {
+          t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, expectedResult[index])
+        }
+      }
+    })
+  }
 }
