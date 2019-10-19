@@ -308,3 +308,53 @@ func TestGetChaosRunnerENV(t *testing.T) {
     })
   }
 }
+
+
+func TestGetChaosMonitorENV(t *testing.T) {
+  fakeEngineName  := "Fake Engine"
+  fakeNameSpace   := "fake NameSpace"
+  fakeAUUID       := "fake UUID"
+
+  tests := map[string]struct {
+    instance          *litmuschaosv1alpha1.ChaosEngine
+    aUUID             types.UID
+    expectedResult    []corev1.EnvVar
+  }{
+    "Test Positive": {
+      instance:       &litmuschaosv1alpha1.ChaosEngine{
+                        Name: fakeEngineName,
+                        Namespace: fakeNameSpace,
+                        },
+      aUUID:          fakeAUUID,
+      expectedResult: []corev1.EnvVar{
+                          {
+                            Name:  "CHAOSENGINE",
+                            Value: fakeEngineName,
+                          },
+                          {
+                            Name:  "APP_NAMESPACE",
+                            Value: fakeNameSpace,
+                          },
+                          {
+                            Name:  "APP_UUID",
+                            Value: string(aUUID),
+                          },
+                      },
+    },
+  }
+  for name, mock := range tests {
+    name, mock := name, mock
+    t.Run(name, func(t *testing.T) {
+      actualResult := getChaosMonitorENV(mock.instance, mock.aUUID)
+      if len(actualResult) != 3 {
+        t.Fatalf("Test %q failed: expected array length to be 3", name)
+      }
+      for result, index := range actualResult {
+        if result.Value != expectedResult[index].Value {
+          t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, expectedResult[index])
+        }
+      }
+    })
+  }
+}
+
