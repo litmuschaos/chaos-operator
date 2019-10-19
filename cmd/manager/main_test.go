@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"testing"
+	"os"
 )
 
 // The setup for every test that runs
