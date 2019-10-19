@@ -1,19 +1,36 @@
 package main
 
 import (
-	"context"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
+	"os"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"testing"
-	"os"
+	"errors"
+	"context"
 )
 
+// A global manager to store the manager once created and return it if not nil
+var globMgr manager.Manager
+
+// use these ports while testing the metrics port
+const (
+	mockMetricsPort1 = 8383
+	mockMetricsPort2 = 8384
+)
 // The setup for every test that runs
 func setUp(){
 	//This function can be used in the future to create a common setup
-	os.Setenv("WATCH_NAMESPACE", "default")
+
+	err := os.Setenv("WATCH_NAMESPACE", "default")
+	if err!=nil{
+		panic("Unable to set environment variables")
+	}
+	err = os.Setenv("OPERATOR_NAME", "TestUser")
+	if err!=nil{
+		panic("Unable to set environment variables")
+	}
 }
 
 // The teardown for the project
@@ -33,6 +50,15 @@ func mockaddToControllerSchema(mgr manager.Manager)error{
 	return nil
 }
 
+//mocking the start command cause start command is going to start a
+// web server which is quit only on external signals
+func mockStartCmd(mgr manager.Manager)error{
+	if mgr!=nil{
+		return nil
+	}
+	return errors.New("manager cannot be empty")
+}
+
 func createTestNameConfig()(string, *rest.Config, error){
 	name, err := getK8Namespace()
 	if err!=nil{
@@ -47,15 +73,19 @@ func createTestNameConfig()(string, *rest.Config, error){
 
 // This function returns a temp manager that will be used for testing addToAPISchema  and addToConfigSchema
 // it generates namespace and a config to produce a manager
-func createTestManager()(manager.Manager, error){
+func mockNewManager(port int32)(manager.Manager, error){
+	if globMgr!=nil{
+		return globMgr, nil
+	}
 	name, config, err := createTestNameConfig()
 	if err!=nil{
 		return nil, err
 	}
-	mgr, err:= createNewManager(config, name)
+	mgr, err:= createNewManager(config, name, port)
 	if err!=nil{
 		return nil,err
 	}
+	globMgr = mgr
 	return mgr, err
 }
 
@@ -63,7 +93,8 @@ func createTestManager()(manager.Manager, error){
 func Test_addToAPISchema(t *testing.T) {
 	setUp()
 
-	mgr, err := createTestManager()
+	mgr, err := mockNewManager(mockMetricsPort2)
+	//mgr := gmgr
 	if err!=nil{
 		t.Errorf("createNewManager() error = %v",err)
 	}
@@ -128,7 +159,7 @@ func Test_becomeLeader(t *testing.T) {
 func Test_addToControllerSchema(t *testing.T) {
 	setUp()
 
-	mgr, err := createTestManager()
+	mgr, err := mockNewManager(mockMetricsPort2)
 	if err!=nil{
 		t.Errorf("createNewManager() error = %v",err)
 	}
@@ -182,7 +213,7 @@ func Test_addToMetricsPort(t *testing.T) {
 			name: "addToMetricsPort",
 			args:args{
 				ctx:getContext(),
-				metricsPort:metricsPort,
+				metricsPort:mockMetricsPort1,
 			},
 			// This determines if the value returned by the function needs to be tested against a standard value
 			// by default its false
@@ -219,6 +250,7 @@ func Test_createNewManager(t *testing.T) {
 	type args struct {
 		cfg       *rest.Config
 		namespace string
+		port int32
 	}
 	tests := []struct {
 		name    string
@@ -232,12 +264,13 @@ func Test_createNewManager(t *testing.T) {
 			 args:args{
 				 cfg:      config ,
 				 namespace: name,
+				 port:mockMetricsPort1,
 			 },
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createNewManager(tt.args.cfg, tt.args.namespace)
+			got, err := createNewManager(tt.args.cfg, tt.args.namespace, tt.args.port)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createNewManager() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -253,6 +286,7 @@ func Test_createNewManager(t *testing.T) {
 	tearDown()
 }
 
+// get the namespace set
 func Test_getK8Namespace(t *testing.T) {
 	setUp()
 
@@ -276,9 +310,12 @@ func Test_getK8Namespace(t *testing.T) {
 				t.Errorf("getK8Namespace() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("getK8Namespace() got = %v, want %v", got, tt.want)
+			if tt.testValue{
+				if got != tt.want {
+					t.Errorf("getK8Namespace() got = %v, want %v", got, tt.want)
+				}
 			}
+
 		})
 	}
 
@@ -321,7 +358,7 @@ func Test_getK8RestConfig(t *testing.T) {
 
 func Test_startCmd(t *testing.T) {
 	setUp()
-	mgr, err:= createTestManager()
+	mgr, err:= mockNewManager(mockMetricsPort2)
 	if err!=nil{
 		t.Errorf("createTestManager() -> error:%v",err)
 	}
@@ -343,7 +380,7 @@ func Test_startCmd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := startCmd(tt.args.mgr); (err != nil) != tt.wantErr {
+			if err := mockStartCmd(tt.args.mgr); (err != nil) != tt.wantErr {
 				t.Errorf("startCmd() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
