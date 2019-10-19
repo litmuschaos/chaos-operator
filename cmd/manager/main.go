@@ -21,12 +21,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	"k8s.io/client-go/rest"
+	v1 "k8s.io/api/core/v1"
 )
 
 // Change below variables to serve metrics on different host or port.
+const (
+	host =  "0.0.0.0"
+	port = 8383
+	lockName = "chaos-operator-lock"
+)
 var (
-	metricsHost       = "0.0.0.0"
-	metricsPort int32 = 8383
+	metricsHost       = host
+	metricsPort int32 = port
 )
 var log = logf.Log.WithName("cmd")
 
@@ -34,6 +41,47 @@ func printVersion() {
 	log.Info(fmt.Sprintf("Go Version: %s", runtime.Version()))
 	log.Info(fmt.Sprintf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH))
 	log.Info(fmt.Sprintf("Version of operator-sdk: %v", sdkVersion.Version))
+}
+
+// unit testing is done to these
+func getK8Namespace()(string, error){
+	return k8sutil.GetWatchNamespace()
+}
+
+func getK8RestConfig()(*rest.Config, error){
+	return config.GetConfig()
+}
+
+func becomeLeader(ctx context.Context)error{
+	return leader.Become(ctx, lockName)
+}
+
+//
+func createNewManager(cfg *rest.Config, namespace string)(manager.Manager, error){
+	return manager.New(cfg, manager.Options{
+		Namespace:          namespace,
+		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+	})
+}
+
+// Decoupled these statements to create so that unit testing is possible
+func addToApiSchema(mgr manager.Manager)error{
+	return apis.AddToScheme(mgr.GetScheme())
+}
+
+// Decoupled so that unit testing is possible
+// These packages are gonna have its own kind of unit testing
+func addToControllerSchema(mgr manager.Manager)error{
+	return controller.AddToManager(mgr)
+}
+
+// The function exposes port
+func addToMetricsPort(ctx context.Context, metricsPort int32)(* v1.Service, error){
+	return metrics.ExposeMetricsPort(ctx, metricsPort)
+}
+
+func startCmd(mgr manager.Manager)error{
+	return mgr.Start(signals.SetupSignalHandler())
 }
 
 func main() {
@@ -61,14 +109,14 @@ func main() {
 
 	printVersion()
 
-	namespace, err := k8sutil.GetWatchNamespace()
+	namespace, err := getK8Namespace()
 	if err != nil {
 		log.Error(err, "Failed to get watch namespace")
 		os.Exit(1)
 	}
 
 	// Get a config to talk to the apiserver
-	cfg, err := config.GetConfig()
+	cfg, err := getK8RestConfig()
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
@@ -77,17 +125,14 @@ func main() {
 	ctx := context.TODO()
 
 	// Become the leader before proceeding
-	err = leader.Become(ctx, "chaos-operator-lock")
+	err = becomeLeader(ctx)
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
 
 	// Create a new Cmd to provide shared dependencies and start components
-	mgr, err := manager.New(cfg, manager.Options{
-		Namespace:          namespace,
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
-	})
+	mgr, err := createNewManager(cfg, namespace)
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
@@ -96,19 +141,19 @@ func main() {
 	log.Info("Registering Components.")
 
 	// Setup Scheme for all resources
-	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := addToApiSchema(mgr); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
 
 	// Setup all Controllers
-	if err := controller.AddToManager(mgr); err != nil {
+	if err := addToControllerSchema(mgr); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
 
 	// Create Service object to expose the metrics port.
-	_, err = metrics.ExposeMetricsPort(ctx, metricsPort)
+	_, err = addToMetricsPort(ctx, metricsPort)
 	if err != nil {
 		log.Info(err.Error())
 	}
@@ -116,7 +161,7 @@ func main() {
 	log.Info("Starting the Cmd.")
 
 	// Start the Cmd
-	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+	if err := startCmd(mgr); err != nil {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
