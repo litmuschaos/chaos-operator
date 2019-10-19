@@ -12,6 +12,7 @@ import (
 // The setup for every test that runs
 func setUp(){
 	//This function can be used in the future to create a common setup
+	os.Setenv("WATCH_NAMESPACE", "default")
 }
 
 // The teardown for the project
