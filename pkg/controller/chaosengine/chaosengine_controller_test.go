@@ -3,6 +3,7 @@ package chaosengine
 import (
 	"fmt"
 	"testing"
+  "strings"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -260,7 +261,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
     "Test Positive": {
       instance: &litmuschaosv1alpha1.ChaosEngine{
           ObjectMeta: metav1.ObjectMeta{
-            Name: fakeEngineName,
+            Name:      fakeEngineName,
             Namespace: fakeNameSpace,
           },
           Spec: litmuschaosv1alpha1.ChaosEngineSpec{
@@ -302,7 +303,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
       if len(actualResult) != 5 {
         t.Fatalf("Test %q failed: expected array length to be 5", name)
       }
-      for result, index := range actualResult {
+      for index, result := range actualResult {
         if result.Value != mock.expectedResult[index].Value {
           t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, mock.expectedResult[index])
         }
@@ -325,8 +326,8 @@ func TestGetChaosMonitorENV(t *testing.T) {
     "Test Positive": {
       instance:       &litmuschaosv1alpha1.ChaosEngine{
                         ObjectMeta: metav1.ObjectMeta {
-                          Name: fakeEngineName,
-                          Namespace: fakeNameSpace,
+                          Name:       fakeEngineName,
+                          Namespace:  fakeNameSpace,
                         },
                        },
 
@@ -354,7 +355,7 @@ func TestGetChaosMonitorENV(t *testing.T) {
       if len(actualResult) != 3 {
         t.Fatalf("Test %q failed: expected array length to be 3", name)
       }
-      for result, index := range actualResult {
+      for index, result := range actualResult {
         if result.Value != mock.expectedResult[index].Value {
           t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, mock.expectedResult[index])
         }
