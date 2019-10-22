@@ -38,7 +38,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 			},
 			isErr: false,
 		},
-		"Test Positive-2": {
+		"Test Positive-2 ": {
 			engine: engineInfo{
 				instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
