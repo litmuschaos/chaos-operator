@@ -28,10 +28,12 @@ import (
 // to access the values in the logger.
 
 var (
-	appLabelKey   string
-	appLabelValue string
-	log                                = logf.Log.WithName("controller_chaosengine")
-	_             reconcile.Reconciler = &ReconcileChaosEngine{}
+	appLabelKey         string
+	appLabelValue       string
+	log                                      = logf.Log.WithName("controller_chaosengine")
+	_                   reconcile.Reconciler = &ReconcileChaosEngine{}
+	defaultRunnerImage                       = "litmuschaos/ansible-runner:ci"
+	defaultMonitorImage                      = "litmuschaos/chaos-exporter:ci"
 )
 
 // Annotations on app to enable chaos on it

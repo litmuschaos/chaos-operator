@@ -92,6 +92,10 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		}
 		return reconcile.Result{}, err
 	}
+
+	// Get the image for runner and monitor pod from chaosengine spec
+	getImage()
+
 	// Fetch the app details from ChaosEngine instance. Check if app is present
 	// Also check, if the app is annotated for chaos & that the labels are unique
 
@@ -273,7 +277,7 @@ func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
-				WithImage("litmuschaos/ansible-runner:ci").
+				WithImage(engine.instance.Spec.Components.Runner.Image).
 				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
@@ -304,7 +308,7 @@ func newMonitorPodForCR(engine engineInfo) (*corev1.Pod, error) {
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-monitor").
-				WithImage("litmuschaos/chaos-exporter:ci").
+				WithImage(engine.instance.Spec.Components.Monitor.Image).
 				WithPortsNew([]corev1.ContainerPort{{ContainerPort: 8080, Protocol: "TCP", Name: "metrics"}}).
 				WithEnvsNew(getChaosMonitorENV(engine.instance, engine.appUUID)),
 		).
@@ -448,6 +452,8 @@ func getApplicationDetail() error {
 	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
 	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
 	log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", engine.instance.Spec.Monitoring)
+	log.Info("Runner image derived from chaosengine is", "runnerImage", engine.instance.Spec.Components.Runner.Image)
+	log.Info("exporter image derived from chaosengine is", "exporterImage", engine.instance.Spec.Components.Monitor.Image)
 	return nil
 }
 
@@ -483,4 +489,15 @@ func checkMonitoring(engineReconcile *reconcileEngine, reqLogger logr.Logger) (r
 		reqLogger.Info("Monitoring is disabled")
 	}
 	return reconcile.Result{}, nil
+}
+
+//getImage take the runner and monitor image from engine spec
+func getImage() {
+	if engine.instance.Spec.Components.Monitor.Image == "" {
+		engine.instance.Spec.Components.Monitor.Image = defaultMonitorImage
+	}
+	if engine.instance.Spec.Components.Runner.Image == "" {
+		engine.instance.Spec.Components.Runner.Image = defaultRunnerImage
+	}
+
 }
