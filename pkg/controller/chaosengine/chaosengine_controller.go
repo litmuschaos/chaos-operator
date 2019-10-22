@@ -12,7 +12,9 @@ import (
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -26,6 +28,40 @@ import (
 )
 
 var _ reconcile.Reconciler = &ReconcileChaosEngine{}
+
+// ReconcileChaosEngine reconciles a ChaosEngine object
+type ReconcileChaosEngine struct {
+	// This client, initialized using mgr.Client() above, is a split client
+	// that reads objects from the cache and writes to the apiserver
+	client client.Client
+	scheme *runtime.Scheme
+}
+
+// reconcileEngine contains details of reconcileEngine
+type reconcileEngine struct {
+	r         *ReconcileChaosEngine
+	reqLogger logr.Logger
+}
+
+//podEngineRunner contains the information of pod
+type podEngineRunner struct {
+	pod, engineRunner *corev1.Pod
+	*reconcileEngine
+}
+
+//serviceEngineMonitor contains informatiom of service
+type serviceEngineMonitor struct {
+	service, engineMonitor *corev1.Service
+	*reconcileEngine
+	monitoring bool
+}
+
+//podEngineMonitor contains the information of pod
+type podEngineMonitor struct {
+	pod, engineMonitor *corev1.Pod
+	*reconcileEngine
+	monitoring bool
+}
 
 // Add creates a new ChaosEngine Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
