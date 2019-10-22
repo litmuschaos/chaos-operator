@@ -315,53 +315,53 @@ func TestGetChaosRunnerENV(t *testing.T) {
 
 
 func TestGetChaosMonitorENV(t *testing.T) {
-	fakeEngineName  := "Fake Engine"
-	fakeNameSpace   := "fake NameSpace"
-	fakeAUUID       := "fake UUID"
+  fakeEngineName  := "Fake Engine"
+  fakeNameSpace   := "fake NameSpace"
+  fakeAUUID       := types.UID("fake UUID")
 
-	tests := map[string]struct {
-		instance          *litmuschaosv1alpha1.ChaosEngine
-		aUUID             types.UID
-		expectedResult    []corev1.EnvVar
-	}{
-		"Test Positive": {
-			instance:       &litmuschaosv1alpha1.ChaosEngine{
-												ObjectMeta: metav1.ObjectMeta {
-													Name:       fakeEngineName,
-													Namespace:  fakeNameSpace,
-												},
-											 },
+  tests := map[string]struct {
+    instance          *litmuschaosv1alpha1.ChaosEngine
+    aUUID             types.UID
+    expectedResult    []corev1.EnvVar
+  }{
+    "Test Positive": {
+      instance:       &litmuschaosv1alpha1.ChaosEngine{
+                        ObjectMeta: metav1.ObjectMeta {
+                          Name:       fakeEngineName,
+                          Namespace:  fakeNameSpace,
+                        },
+                       },
 
-			aUUID:          fakeAUUID,
-			expectedResult: []corev1.EnvVar{
-													{
-														Name:  "CHAOSENGINE",
-														Value: fakeEngineName,
-													},
-													{
-														Name:  "APP_NAMESPACE",
-														Value: fakeNameSpace,
-													},
-													{
-														Name:  "APP_UUID",
-														Value: string(aUUID),
-													},
-											},
-		},
-	}
-	for name, mock := range tests {
-		name, mock := name, mock
-		t.Run(name, func(t *testing.T) {
-			actualResult := getChaosMonitorENV(mock.instance, mock.aUUID)
-			if len(actualResult) != 3 {
-				t.Fatalf("Test %q failed: expected array length to be 3", name)
-			}
-			for index, result := range actualResult {
-				if result.Value != mock.expectedResult[index].Value {
-					t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, mock.expectedResult[index])
-				}
-			}
-		})
-	}
+      aUUID:          fakeAUUID,
+      expectedResult: []corev1.EnvVar{
+                          {
+                            Name:  "CHAOSENGINE",
+                            Value: fakeEngineName,
+                          },
+                          {
+                            Name:  "APP_NAMESPACE",
+                            Value: fakeNameSpace,
+                          },
+                          {
+                            Name:  "APP_UUID",
+                            Value: string(aUUID),
+                          },
+                      },
+    },
+  }
+  for name, mock := range tests {
+    name, mock := name, mock
+    t.Run(name, func(t *testing.T) {
+      actualResult := getChaosMonitorENV(mock.instance, mock.aUUID)
+      if len(actualResult) != 3 {
+        t.Fatalf("Test %q failed: expected array length to be 3", name)
+      }
+      for index, result := range actualResult {
+        if result.Value != mock.expectedResult[index].Value {
+          t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, mock.expectedResult[index])
+        }
+      }
+    })
+  }
 }
 
