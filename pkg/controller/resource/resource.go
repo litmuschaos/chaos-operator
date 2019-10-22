@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"strings"
 
-	types "github.com/litmuschaos/chaos-operator/pkg/controller/chaosengine"
+	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	k8s "github.com/litmuschaos/chaos-operator/pkg/kubernetes"
 )
 
+// Annotations on app to enable chaos on it
+const (
+	ChaosAnnotationKey   = "litmuschaos.io/chaos"
+	ChaosAnnotationValue = "true"
+)
+
 // CheckChaosAnnotation will check for the annotation of required resources
-func CheckChaosAnnotation(engine types.EngineInfo) error {
+func CheckChaosAnnotation(engine chaosTypes.EngineInfo) error {
 	// Use client-Go to obtain a list of apps w/ specified labels
 	clientSet, err := k8s.CreateClientSet()
 	if err != nil {
@@ -30,7 +36,7 @@ func CheckChaosAnnotation(engine types.EngineInfo) error {
 
 // ValidateAnnotation will verify the validation require for induce chaos
 func ValidateAnnotation(annotationValue string, chaosCandidates int) (int, error) {
-	if annotationValue == types.ChaosAnnotationValue {
+	if annotationValue == ChaosAnnotationValue {
 		chaosCandidates++
 	} else if chaosCandidates > 1 {
 		return chaosCandidates, errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
