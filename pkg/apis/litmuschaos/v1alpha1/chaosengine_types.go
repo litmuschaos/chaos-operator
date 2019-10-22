@@ -38,6 +38,8 @@ type ApplicationParams struct {
 	Appns string `json:"appns"`
 	//Unique label of the AUT
 	Applabel string `json:"applabel"`
+	//kind of application
+	AppKind string `json:"appkind"`
 }
 
 // ComponentParams defines information about the runner and monitor image

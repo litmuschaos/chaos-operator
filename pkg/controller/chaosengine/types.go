@@ -30,7 +30,10 @@ import (
 var (
 	appLabelKey         string
 	appLabelValue       string
-	log                                      = logf.Log.WithName("controller_chaosengine")
+
+	// Log with default name ie: controller_chaosengine
+	Log                                      = logf.Log.WithName("controller_chaosengine")
+
 	_                   reconcile.Reconciler = &ReconcileChaosEngine{}
 	defaultRunnerImage                       = "litmuschaos/ansible-runner:ci"
 	defaultMonitorImage                      = "litmuschaos/chaos-exporter:ci"
@@ -38,8 +41,8 @@ var (
 
 // Annotations on app to enable chaos on it
 const (
-	chaosAnnotationKey   = "litmuschaos.io/chaos"
-	chaosAnnotationValue = "true"
+	ChaosAnnotationKey   = "litmuschaos.io/chaos"
+	ChaosAnnotationValue = "true"
 )
 
 // ReconcileChaosEngine reconciles a ChaosEngine object
@@ -52,10 +55,11 @@ type ReconcileChaosEngine struct {
 
 // applicationInfo contains the chaos details for target application
 type applicationInfo struct {
-	namespace          string
-	label              map[string]string
-	experimentList     []litmuschaosv1alpha1.ExperimentList
-	serviceAccountName string
+	Namespace          string
+	Label              map[string]string
+	ExperimentList     []litmuschaosv1alpha1.ExperimentList
+	ServiceAccountName string
+	Kind               string
 }
 
 // reconcileEngine contains details of reconcileEngine
@@ -85,10 +89,10 @@ type podEngineMonitor struct {
 }
 
 //engine Related information
-type engineInfo struct {
-	instance       *litmuschaosv1alpha1.ChaosEngine
-	appInfo        *applicationInfo
-	appExperiments []string
-	appName        string
-	appUUID        types.UID
+type EngineInfo struct {
+	Instance       *litmuschaosv1alpha1.ChaosEngine
+	AppInfo        *applicationInfo
+	AppExperiments []string
+	AppName        string
+	AppUUID        types.UID
 }

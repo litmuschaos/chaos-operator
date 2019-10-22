@@ -10,13 +10,9 @@ import (
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
-	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -25,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	resource "github.com/litmuschaos/chaos-operator/pkg/controller/resource"
 )
 
 // Add creates a new ChaosEngine Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -55,7 +52,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-var engine engineInfo
+var engine EngineInfo
 
 // watchSecondaryResources watch's for changes in chaos resources
 func watchChaosResources(handlerForOwner handler.EnqueueRequestForOwner, c controller.Controller) error {
@@ -83,7 +80,7 @@ func watchChaosResources(handlerForOwner handler.EnqueueRequestForOwner, c contr
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	reqLogger := Log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling ChaosEngine")
 	// Fetch the ChaosEngine instance
 	err := r.getChaosEngineInstance(request)
@@ -102,29 +99,15 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	// Fetch the app details from ChaosEngine instance. Check if app is present
 	// Also check, if the app is annotated for chaos & that the labels are unique
-
-	// TODO: Get app kind from chaosengine spec as well. Using "deploy" for now
-	// TODO: Freeze label format in chaosengine( "=" as a const)
 	err = getApplicationDetail()
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	// Use client-Go to obtain a list of apps w/ specified labels
-	clientSet, err := createClientSet()
-	if err != nil {
-		log.Info("Clientset generation failed with error: ", err)
-		return reconcile.Result{}, err
-	}
-	targetApplicationList, err := clientSet.AppsV1().Deployments(engine.appInfo.namespace).List(metav1.ListOptions{LabelSelector: engine.instance.Spec.Appinfo.Applabel, FieldSelector: ""})
-	if err != nil {
-		log.Error(err, "unable to list apps matching labels")
-		return reconcile.Result{}, err
-	}
 
 	// Determine whether apps with matching labels have chaos annotation set to true
-	err = checkChaosAnnotation(targetApplicationList)
+	err = resource.CheckChaosAnnotation(engine)
 	if err != nil {
-		log.Info("Annotation check failed with error: ", err)
+		Log.Info("Annotation check failed with error: ", err)
 		return reconcile.Result{}, nil
 	}
 	// Define an engineRunner pod which is secondary-resource #1
@@ -133,7 +116,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-runner pod
-	if err := controllerutil.SetControllerReference(engine.instance, engineRunner, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(engine.Instance, engineRunner, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 	//Check if the engineRunner pod already exists, else create
@@ -155,10 +138,10 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 // Set ChaosEngine instance as the owner and controller of engine-Monitor service
 func setControllerReference(recEngine *reconcileEngine, engineMonitor *corev1.Pod, engineMonitorSvc *corev1.Service) error {
-	if err := controllerutil.SetControllerReference(engine.instance, engineMonitor, recEngine.r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(engine.Instance, engineMonitor, recEngine.r.scheme); err != nil {
 		return err
 	}
-	if err := controllerutil.SetControllerReference(engine.instance, engineMonitorSvc, recEngine.r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(engine.Instance, engineMonitorSvc, recEngine.r.scheme); err != nil {
 		return err
 	}
 	return nil
@@ -180,7 +163,7 @@ func MonitorServiceAndPod(monitorService *serviceEngineMonitor, monitorPod *podE
 
 // Creates engineMonitor pod and engineMonitor Service
 // Also reconciles those resources
-func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (reconcile.Result, error) {
+func createMonitoringResources(engine EngineInfo, recEngine *reconcileEngine) (reconcile.Result, error) {
 
 	// Define the engine-monitor service which is secondary-resource #3
 	engineMonitorSvc, err := newMonitorServiceForCR(engine)
@@ -198,14 +181,14 @@ func createMonitoringResources(engine engineInfo, recEngine *reconcileEngine) (r
 		service:         &corev1.Service{},
 		engineMonitor:   engineMonitorSvc,
 		reconcileEngine: recEngine,
-		monitoring:      engine.instance.Spec.Monitoring,
+		monitoring:      engine.Instance.Spec.Monitoring,
 	}
 	// Creates an object of monitorPod
 	monitorPod := &podEngineMonitor{
 		pod:             &corev1.Pod{},
 		engineMonitor:   engineMonitor,
 		reconcileEngine: recEngine,
-		monitoring:      engine.instance.Spec.Monitoring,
+		monitoring:      engine.Instance.Spec.Monitoring,
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-Monitor pod
 	err = setControllerReference(recEngine, engineMonitor, engineMonitorSvc)
@@ -276,27 +259,27 @@ func getMonitoringENV() []corev1.ServicePort {
 }
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
-func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
-	if len(engine.appExperiments) == 0 || engine.appUUID == "" {
+func newRunnerPodForCR(engine EngineInfo) (*corev1.Pod, error) {
+	if len(engine.AppExperiments) == 0 || engine.AppUUID == "" {
 		return nil, errors.New("expected aExList not found")
 	}
 	labels := map[string]string{
-		"app": engine.instance.Name,
+		"app": engine.Instance.Name,
 	}
 	podObj, err := pod.NewBuilder().
-		WithName(engine.instance.Name + "-runner").
-		WithNamespace(engine.instance.Namespace).
+		WithName(engine.Instance.Name + "-runner").
+		WithNamespace(engine.Instance.Namespace).
 		WithLabels(labels).
-		WithServiceAccountName(engine.instance.Spec.ChaosServiceAccount).
+		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
-				WithImage(engine.instance.Spec.Components.Runner.Image).
+				WithImage(engine.Instance.Spec.Components.Runner.Image).
 				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
-				WithEnvsNew(getChaosRunnerENV(engine.instance, engine.appExperiments)),
+				WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments)),
 		).
 		Build()
 	if err != nil {
@@ -306,26 +289,26 @@ func newRunnerPodForCR(engine engineInfo) (*corev1.Pod, error) {
 }
 
 // newMonitorPodForCR defines secondary resource #2 in same namespace as CR */
-func newMonitorPodForCR(engine engineInfo) (*corev1.Pod, error) {
-	if engine.instance == nil {
+func newMonitorPodForCR(engine EngineInfo) (*corev1.Pod, error) {
+	if engine.Instance == nil {
 		return nil, errors.New("chaosengine got nil")
 	}
 	labels := map[string]string{
-		"app":        engine.instance.Name,
-		"monitorFor": engine.instance.Name,
+		"app":        engine.Instance.Name,
+		"monitorFor": engine.Instance.Name,
 	}
 	monitorPod, err := pod.NewBuilder().
-		WithName(engine.instance.Name + "-monitor").
-		WithNamespace(engine.instance.Namespace).
+		WithName(engine.Instance.Name + "-monitor").
+		WithNamespace(engine.Instance.Namespace).
 		WithLabels(labels).
-		WithServiceAccountName(engine.instance.Spec.ChaosServiceAccount).
+		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-monitor").
-				WithImage(engine.instance.Spec.Components.Monitor.Image).
+				WithImage(engine.Instance.Spec.Components.Monitor.Image).
 				WithPortsNew([]corev1.ContainerPort{{ContainerPort: 8080, Protocol: "TCP", Name: "metrics"}}).
-				WithEnvsNew(getChaosMonitorENV(engine.instance, engine.appUUID)),
+				WithEnvsNew(getChaosMonitorENV(engine.Instance, engine.AppUUID)),
 		).
 		Build()
 
@@ -336,24 +319,24 @@ func newMonitorPodForCR(engine engineInfo) (*corev1.Pod, error) {
 }
 
 // newMonitorServiceForCR defines secondary resource #2 in same namespace as CR */
-func newMonitorServiceForCR(engine engineInfo) (*corev1.Service, error) {
+func newMonitorServiceForCR(engine EngineInfo) (*corev1.Service, error) {
 
-	if engine.instance == nil {
+	if engine.Instance == nil {
 		return nil, errors.New("nil chaosengine object")
 	}
 	labels := map[string]string{
-		"app":        engine.instance.Name,
-		"monitorFor": engine.instance.Name,
+		"app":        engine.Instance.Name,
+		"monitorFor": engine.Instance.Name,
 	}
 	serviceObj, err := service.NewBuilder().
-		WithName(engine.instance.Name + "-monitor").
-		WithNamespace(engine.instance.Namespace).
+		WithName(engine.Instance.Name + "-monitor").
+		WithNamespace(engine.Instance.Namespace).
 		WithLabels(labels).
 		WithPorts(getMonitoringENV()).
 		WithSelectorsNew(
 			map[string]string{
-				"app":        engine.instance.Name,
-				"monitorFor": engine.instance.Name,
+				"app":        engine.Instance.Name,
+				"monitorFor": engine.Instance.Name,
 			}).
 		Build()
 	if err != nil {
@@ -370,11 +353,12 @@ func (appInfo *applicationInfo) initializeApplicationInfo(instance *litmuschaosv
 	appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
 	appLabelKey = appLabel[0]
 	appLabelValue = appLabel[1]
-	appInfo.label = make(map[string]string)
-	appInfo.label[appLabelKey] = appLabelValue
-	appInfo.namespace = instance.Spec.Appinfo.Appns
-	appInfo.experimentList = instance.Spec.Experiments
-	appInfo.serviceAccountName = instance.Spec.ChaosServiceAccount
+	appInfo.Label = make(map[string]string)
+	appInfo.Label[appLabelKey] = appLabelValue
+	appInfo.Namespace = instance.Spec.Appinfo.Appns
+	appInfo.ExperimentList = instance.Spec.Experiments
+	appInfo.ServiceAccountName = instance.Spec.ChaosServiceAccount
+	appInfo.Kind = instance.Spec.Appinfo.AppKind
 	return appInfo, nil
 }
 
@@ -442,73 +426,32 @@ func (r *ReconcileChaosEngine) getChaosEngineInstance(request reconcile.Request)
 		// Error reading the object - requeue the request.
 		return err
 	}
-	engine.instance = instance
+	engine.Instance = instance
 	return nil
 }
 
 // Get application details
 func getApplicationDetail() error {
 	applicationInfo := &applicationInfo{}
-	appInfo, err := applicationInfo.initializeApplicationInfo(engine.instance)
+	appInfo, err := applicationInfo.initializeApplicationInfo(engine.Instance)
 	if err != nil {
 		return err
 	}
-	engine.appInfo = applicationInfo
+	engine.AppInfo = applicationInfo
 
 	var appExperiments []string
-	for _, exp := range appInfo.experimentList {
+	for _, exp := range appInfo.ExperimentList {
 		appExperiments = append(appExperiments, exp.Name)
 	}
-	engine.appExperiments = appExperiments
+	engine.AppExperiments = appExperiments
 
-	log.Info("App key derived from chaosengine is ", "appLabelKey", appLabelKey)
-	log.Info("App Label derived from Chaosengine is ", "appLabelValue", appLabelValue)
-	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
-	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
-	log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", engine.instance.Spec.Monitoring)
-	log.Info("Runner image derived from chaosengine is", "runnerImage", engine.instance.Spec.Components.Runner.Image)
-	log.Info("exporter image derived from chaosengine is", "exporterImage", engine.instance.Spec.Components.Monitor.Image)
-	return nil
-}
-
-// Use client-Go to obtain a list of apps w/ specified labels
-func createClientSet() (*kubernetes.Clientset, error) {
-	restConfig, err := config.GetConfig()
-	if err != nil {
-		return &kubernetes.Clientset{}, err
-	}
-	clientSet, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return &kubernetes.Clientset{}, err
-	}
-	return clientSet, nil
-}
-
-// Determine whether apps with matching labels have chaos annotation set to true
-func checkChaosAnnotation(targetApplicationList *appv1.DeploymentList) error {
-	chaosCandidates := 0
-	if len(targetApplicationList.Items) == 0 {
-		return errors.New("no app deployments with matching labels")
-	}
-	for _, app := range targetApplicationList.Items {
-		engine.appName = app.ObjectMeta.Name
-		engine.appUUID = app.ObjectMeta.UID
-		//Checks if the annotation is "true" / "false"
-		annotationValue := app.ObjectMeta.GetAnnotations()[chaosAnnotationKey]
-
-		if annotationValue == chaosAnnotationValue {
-			// Add it to the Chaos Candidates, and log the details
-			log.Info("chaos candidate : ", "appName", engine.appName, "appUUID", engine.appUUID)
-			chaosCandidates++
-		}
-		if chaosCandidates > 1 {
-			return errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
-		}
-		if chaosCandidates == 0 {
-			return errors.New("no chaos-candidate found")
-
-		}
-	}
+	Log.Info("App key derived from chaosengine is ", "appLabelKey", appLabelKey)
+	Log.Info("App Label derived from Chaosengine is ", "appLabelValue", appLabelValue)
+	Log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.Namespace)
+	Log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
+	Log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", engine.Instance.Spec.Monitoring)
+	Log.Info("Runner image derived from chaosengine is", "runnerImage", engine.Instance.Spec.Components.Runner.Image)
+	Log.Info("exporter image derived from chaosengine is", "exporterImage", engine.Instance.Spec.Components.Monitor.Image)
 	return nil
 }
 
@@ -535,7 +478,7 @@ func (r *ReconcileChaosEngine) checkEngineRunnerPod(reqLogger logr.Logger, engin
 
 // check monitoring status
 func checkMonitoring(engineReconcile *reconcileEngine, reqLogger logr.Logger) (reconcile.Result, error) {
-	if engine.instance.Spec.Monitoring {
+	if engine.Instance.Spec.Monitoring {
 		reconcileResult, err := createMonitoringResources(engine, engineReconcile)
 		if err != nil {
 			return reconcileResult, err
@@ -548,11 +491,11 @@ func checkMonitoring(engineReconcile *reconcileEngine, reqLogger logr.Logger) (r
 
 //getImage take the runner and monitor image from engine spec
 func getImage() {
-	if engine.instance.Spec.Components.Monitor.Image == "" {
-		engine.instance.Spec.Components.Monitor.Image = defaultMonitorImage
+	if engine.Instance.Spec.Components.Monitor.Image == "" {
+		engine.Instance.Spec.Components.Monitor.Image = defaultMonitorImage
 	}
-	if engine.instance.Spec.Components.Runner.Image == "" {
-		engine.instance.Spec.Components.Runner.Image = defaultRunnerImage
+	if engine.Instance.Spec.Components.Runner.Image == "" {
+		engine.Instance.Spec.Components.Runner.Image = defaultRunnerImage
 	}
 
 }
