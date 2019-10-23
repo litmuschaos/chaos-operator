@@ -476,7 +476,7 @@ func getApplicationDetail() error {
 	if err != nil {
 		return err
 	}
-	engine.AppInfo = applicationInfo
+	engine.AppInfo = appInfo
 
 	var appExperiments []string
 	for _, exp := range appInfo.ExperimentList {
