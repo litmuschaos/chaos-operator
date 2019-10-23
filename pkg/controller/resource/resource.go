@@ -16,22 +16,23 @@ const (
 )
 
 // CheckChaosAnnotation will check for the annotation of required resources
-func CheckChaosAnnotation(engine chaosTypes.EngineInfo) error {
+func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
 	// Use client-Go to obtain a list of apps w/ specified labels
+	//var chaosEngine chaosTypes.EngineInfo
 	clientSet, err := k8s.CreateClientSet()
 	if err != nil {
-		return fmt.Errorf("clientset generation failed with error: %+v", err)
+		return ce, fmt.Errorf("clientset generation failed with error: %+v", err)
 	}
-	switch strings.ToLower(engine.AppInfo.Kind) {
+	switch strings.ToLower(ce.AppInfo.Kind) {
 	case "deployment", "deployments":
-		err = CheckDeploymentAnnotation(clientSet, engine)
+		ce, err = CheckDeploymentAnnotation(clientSet, ce)
 		if err != nil {
-			return fmt.Errorf("no deployement found with required annotation, err: %+v", err)
+			return ce, fmt.Errorf("no deployement found with required annotation, err: %+v", err)
 		}
 	default:
-		return fmt.Errorf("resource type not supported for induce chaos")
+		return ce, fmt.Errorf("resource type not supported for induce chaos")
 	}
-	return nil
+	return ce, nil
 }
 
 // ValidateAnnotation will verify the validation require for induce chaos
