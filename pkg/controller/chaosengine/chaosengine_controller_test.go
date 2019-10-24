@@ -47,7 +47,7 @@ func Testadd(t *testing.T)
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 
-			_, err := Add(mock.engine)
+			_, err := add(mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
