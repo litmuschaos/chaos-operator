@@ -74,6 +74,14 @@ func TestNewRunnerPodForCR(t *testing.T) {
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						Monitoring:          true,
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Monitor: litmuschaosv1alpha1.MonitorInfo{
+								Image: "fake-monitor-image",
+							},
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
 					},
 				},
 				appUUID:        "fake_id",
@@ -81,7 +89,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 			},
 			isErr: false,
 		},
-		"Test Positive-2": {
+		"Test Positive-2 ": {
 			engine: engineInfo{
 				instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -91,6 +99,14 @@ func TestNewRunnerPodForCR(t *testing.T) {
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						Monitoring:          false,
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Monitor: litmuschaosv1alpha1.MonitorInfo{
+								Image: "fake-monitor-image",
+							},
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
 					},
 				},
 				appUUID:        "fake_id",
@@ -141,6 +157,30 @@ func TestNewRunnerPodForCR(t *testing.T) {
 			},
 			isErr: true,
 		},
+		"Test Negative-4 ": {
+			engine: engineInfo{
+				instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Monitor: litmuschaosv1alpha1.MonitorInfo{
+								Image: "",
+							},
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "",
+							},
+						},
+					},
+				},
+				appUUID:        "fake_id",
+				appExperiments: []string{},
+			},
+			isErr: true,
+		},
 	}
 	for name, mock := range tests {
 		name, mock := name, mock
@@ -170,6 +210,14 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						Monitoring:          false,
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Monitor: litmuschaosv1alpha1.MonitorInfo{
+								Image: "fake-monitor-image",
+							},
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
 					},
 				},
 			},
@@ -216,6 +264,14 @@ func TestNewMonitorPodForCR(t *testing.T) {
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						Monitoring:          false,
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Monitor: litmuschaosv1alpha1.MonitorInfo{
+								Image: "fake-monitor-image",
+							},
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
 					},
 				},
 			},
