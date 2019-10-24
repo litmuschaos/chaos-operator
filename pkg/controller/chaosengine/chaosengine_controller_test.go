@@ -400,7 +400,7 @@ func TestGetChaosMonitorENV(t *testing.T) {
                           },
                           {
                             Name:  "APP_UUID",
-                            Value: string(aUUID),
+                            Value: string(fakeAUUID),
                           },
                       },
     },
