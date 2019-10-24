@@ -17,6 +17,7 @@ import (
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -34,6 +35,29 @@ func printVersion() {
 	log.Info(fmt.Sprintf("Go Version: %s", runtime.Version()))
 	log.Info(fmt.Sprintf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH))
 	log.Info(fmt.Sprintf("Version of operator-sdk: %v", sdkVersion.Version))
+}
+
+func registerComponents(cfg *rest.Config, namespace string) (manager.Manager, error) {
+
+	// Create a new Cmd to provide shared dependencies and start components
+	mgr, err := manager.New(cfg, manager.Options{Namespace: namespace, MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort)})
+	if err != nil {
+		return mgr, err
+	}
+
+	log.Info("Registering Components.")
+
+	// Setup Scheme for all resources
+	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+		return mgr, err
+	}
+
+	// Setup all Controllers
+	if err := controller.AddToManager(mgr); err != nil {
+		return mgr, err
+	}
+
+	return mgr, err
 }
 
 func main() {
@@ -84,25 +108,8 @@ func main() {
 	}
 
 	// Create a new Cmd to provide shared dependencies and start components
-	mgr, err := manager.New(cfg, manager.Options{
-		Namespace:          namespace,
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
-	})
+	mgr, err := registerComponents(cfg, namespace)
 	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
-	log.Info("Registering Components.")
-
-	// Setup Scheme for all resources
-	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
-	// Setup all Controllers
-	if err := controller.AddToManager(mgr); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
