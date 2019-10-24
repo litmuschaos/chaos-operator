@@ -395,12 +395,12 @@ func TestGetChaosMonitorENV(t *testing.T) {
                             Value: fakeEngineName,
                           },
                           {
-                            Name:  "APP_NAMESPACE",
-                            Value: fakeNameSpace,
-                          },
-                          {
                             Name:  "APP_UUID",
                             Value: string(fakeAUUID),
+                          },
+                          {
+                            Name:  "APP_NAMESPACE",
+                            Value: fakeNameSpace,
                           },
                       },
     },
