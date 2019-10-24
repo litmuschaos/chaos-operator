@@ -27,10 +27,15 @@ func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 	case "deployment", "deployments":
 		ce, err = CheckDeploymentAnnotation(clientSet, ce)
 		if err != nil {
-			return ce, fmt.Errorf("no deployement found with required annotation, err: %+v", err)
+			return ce, fmt.Errorf("resource type 'deployment', err: %+v", err)
+		}
+	case "statefulset", "statefulsets":
+		ce, err = CheckStatefulSetAnnotation(clientSet, ce)
+		if err != nil {
+			return ce, fmt.Errorf("resource type 'statefulset', err: %+v", err)
 		}
 	default:
-		return ce, fmt.Errorf("resource type not supported for induce chaos")
+		return ce, fmt.Errorf("resource type '%s' not supported for induce chaos", ce.AppInfo.Kind)
 	}
 	return ce, nil
 }
