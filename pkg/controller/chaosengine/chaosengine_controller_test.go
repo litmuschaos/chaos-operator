@@ -5,20 +5,21 @@ import (
 	"testing"
 	"strings"
 
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 )
 
 func TestNewRunnerPodForCR(t *testing.T) {
 	tests := map[string]struct {
-		engine engineInfo
+		engine chaosTypes.EngineInfo
 		isErr  bool
 	}{
 		"Test Positive-1": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
@@ -36,14 +37,14 @@ func TestNewRunnerPodForCR(t *testing.T) {
 						},
 					},
 				},
-				appUUID:        "fake_id",
-				appExperiments: []string{"exp-1"},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
 			},
 			isErr: false,
 		},
-		"Test Positive-2 ": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
@@ -61,25 +62,25 @@ func TestNewRunnerPodForCR(t *testing.T) {
 						},
 					},
 				},
-				appUUID:        "fake_id",
-				appExperiments: []string{"exp-1"},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
 			},
 
 			isErr: false,
 		},
 		"Test Negative-1": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
 				},
-				appUUID:        "fake_id",
-				appExperiments: []string{"exp-1"},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
 		},
 		"Test Negative-2 ": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
@@ -88,14 +89,14 @@ func TestNewRunnerPodForCR(t *testing.T) {
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
-				appUUID:        "",
-				appExperiments: []string{"exp-1"},
+				AppUUID:        "",
+				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
 		},
 		"Test Negative-3 ": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
@@ -104,14 +105,14 @@ func TestNewRunnerPodForCR(t *testing.T) {
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
-				appUUID:        "fake_id",
-				appExperiments: []string{},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{},
 			},
 			isErr: true,
 		},
 		"Test Negative-4 ": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
@@ -128,8 +129,8 @@ func TestNewRunnerPodForCR(t *testing.T) {
 						},
 					},
 				},
-				appUUID:        "fake_id",
-				appExperiments: []string{},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{},
 			},
 			isErr: true,
 		},
@@ -149,12 +150,12 @@ func TestNewRunnerPodForCR(t *testing.T) {
 }
 func TestNewMonitorServiceForCR(t *testing.T) {
 	tests := map[string]struct {
-		engine engineInfo
+		engine chaosTypes.EngineInfo
 		isErr  bool
 	}{
 		"Test Positive": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-monitor",
 						Namespace: "test",
@@ -176,8 +177,8 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 			isErr: false,
 		},
 		"Test Negative": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						Monitoring: true,
@@ -203,12 +204,12 @@ func TestNewMonitorServiceForCR(t *testing.T) {
 }
 func TestNewMonitorPodForCR(t *testing.T) {
 	tests := map[string]struct {
-		engine engineInfo
+		engine chaosTypes.EngineInfo
 		isErr  bool
 	}{
 		"Test Positive": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-monitor",
 						Namespace: "test",
@@ -230,8 +231,8 @@ func TestNewMonitorPodForCR(t *testing.T) {
 			isErr: false,
 		},
 		"Test Negative": {
-			engine: engineInfo{
-				instance: &litmuschaosv1alpha1.ChaosEngine{
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						Monitoring: true,
@@ -282,17 +283,17 @@ func TestInitializeApplicationInfo(t *testing.T) {
 	for name, mock := range tests {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
-			appInfo := &applicationInfo{
-				namespace: "namespace",
-				label:     map[string]string{"fake_id": "aa"},
-				experimentList: []litmuschaosv1alpha1.ExperimentList{
+			appInfo := &chaosTypes.ApplicationInfo{
+				Namespace: "namespace",
+				Label:     map[string]string{"fake_id": "aa"},
+				ExperimentList: []litmuschaosv1alpha1.ExperimentList{
 					{
 						Name: "fake_name",
 					},
 				},
-				serviceAccountName: "fake-serviceaccountname",
+				ServiceAccountName: "fake-service-account-name",
 			}
-			_, err := appInfo.initializeApplicationInfo(mock.instance)
+			_, err := initializeApplicationInfo(mock.instance, appInfo)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
