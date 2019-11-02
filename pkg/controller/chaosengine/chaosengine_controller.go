@@ -96,13 +96,10 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		}
 		return reconcile.Result{}, err
 	}
-<<<<<<< HEAD
-=======
 
 	// Get the image for runner and monitor pod from chaosengine spec
 	getImage()
 
->>>>>>> 0fe98e77487fd1aa976f04d8b69124bae994d237
 	// Fetch the app details from ChaosEngine instance. Check if app is present
 	// Also check, if the app is annotated for chaos & that the labels are unique
 
@@ -469,11 +466,8 @@ func getApplicationDetail() error {
 	log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.namespace)
 	log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
 	log.Info("Monitoring Status derived from chaosengine is", "monitoringstatus", engine.instance.Spec.Monitoring)
-<<<<<<< HEAD
-=======
 	log.Info("Runner image derived from chaosengine is", "runnerImage", engine.instance.Spec.Components.Runner.Image)
 	log.Info("exporter image derived from chaosengine is", "exporterImage", engine.instance.Spec.Components.Monitor.Image)
->>>>>>> 0fe98e77487fd1aa976f04d8b69124bae994d237
 	return nil
 }
 
@@ -551,8 +545,6 @@ func checkMonitoring(engineReconcile *reconcileEngine, reqLogger logr.Logger) (r
 	}
 	return reconcile.Result{}, nil
 }
-<<<<<<< HEAD
-=======
 
 //getImage take the runner and monitor image from engine spec
 func getImage() {
@@ -564,4 +556,3 @@ func getImage() {
 	}
 
 }
->>>>>>> 0fe98e77487fd1aa976f04d8b69124bae994d237
