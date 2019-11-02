@@ -1,3 +1,8 @@
 build/_output
 *.swp
 *.orig
+# ignore ide's
+.idea
+.vscode
+
+.DS_store
