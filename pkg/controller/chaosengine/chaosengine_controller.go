@@ -333,7 +333,7 @@ func newMonitorPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		return nil, errors.New("chaosengine got nil")
 	}
 	labels := map[string]string{
-		"app":        engine.Instance.Name,
+		"app":        "chaos-exporter",
 		"monitorFor": engine.Instance.Name,
 	}
 	monitorPod, err := pod.NewBuilder().
@@ -359,25 +359,15 @@ func newMonitorPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 
 // newMonitorServiceForCR defines secondary resource #2 in same namespace as CR */
 func newMonitorServiceForCR(engine chaosTypes.EngineInfo) (*corev1.Service, error) {
-
 	if engine.Instance == nil {
 		return nil, errors.New("nil chaosengine object")
-	}
-	labels := map[string]string{
-		"app":        engine.Instance.Name,
-		"monitorFor": engine.Instance.Name,
 	}
 	serviceObj, err := service.NewBuilder().
 		WithName(engine.Instance.Name + "-monitor").
 		WithNamespace(engine.Instance.Namespace).
-		WithLabels(labels).
+		WithLabels(map[string]string{"app": "chaos-exporter"}).
 		WithPorts(getMonitoringENV()).
-		WithSelectorsNew(
-			map[string]string{
-				"app":        engine.Instance.Name,
-				"monitorFor": engine.Instance.Name,
-			}).
-		Build()
+		WithSelectorsNew(map[string]string{"monitorFor": engine.Instance.Name}).Build()
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +462,7 @@ func (r *ReconcileChaosEngine) getChaosEngineInstance(request reconcile.Request)
 }
 
 // Get application details
-func getApplicationDetail(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo , error) {
+func getApplicationDetail(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
 	applicationInfo := &chaosTypes.ApplicationInfo{}
 	appInfo, err := initializeApplicationInfo(ce.Instance, applicationInfo)
 	if err != nil {
