@@ -2,7 +2,8 @@ package resource
 
 import (
 	"fmt"
-	"k8s.io/api/apps/v1"
+
+	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -24,7 +25,7 @@ func CheckDeploymentAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.E
 		if err != nil {
 			return ce, err
 		}
-		chaosTypes.Log.Info("Deployment chaos candidate, appName:", ce.AppName," appUUID: ", ce.AppUUID)
+		chaosTypes.Log.Info("Deployment chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
 	}
 	return ce, nil
 }
