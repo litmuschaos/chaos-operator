@@ -17,7 +17,7 @@ jobs:
       CHANGE_MINIKUBE_NONE_USER: true
       REPONAME: litmuschaos
       IMGNAME: chaos-operator
-      IMGTAG: latest
+      IMGTAG: ci
     steps:
       - checkout
       - run:
@@ -41,7 +41,7 @@ jobs:
             echo 'export PATH="$GOPATH/bin:$PATH"' >> workspace/env-vars
             echo 'export REPONAME="litmuschaos"' >> workspace/env-vars
             echo 'export IMGNAME="chaos-operator"' >> workspace/env-vars
-            echo 'export IMGTAG="latest"' >> workspace/env-vars
+            echo 'export IMGTAG="ci"' >> workspace/env-vars
             cat workspace/env-vars >> $BASH_ENV
             source $BASH_ENV
       - run: make deps
@@ -61,7 +61,7 @@ jobs:
     machine: 
       image: circleci/classic:201808-01
     environment:
-      IMGTAG: latest
+      IMGTAG: ci
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     steps: 
       - attach_workspace:
@@ -77,7 +77,7 @@ jobs:
     machine: 
       image: circleci/classic:201808-01
     environment:
-      IMGTAG: latest
+      IMGTAG: ci
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     steps: 
       - attach_workspace:
