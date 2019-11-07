@@ -20,6 +20,9 @@ function push_release_image(){
     echo "Pushing ${REPONAME}/${IMGNAME}:${CIRCLE_TAG} ..."
     docker tag ${IMAGEID} ${REPONAME}/${IMGNAME}:${CIRCLE_TAG}
     docker push ${REPONAME}/${IMGNAME}:${CIRCLE_TAG}
+    echo "Pushing ${REPONAME}/${IMGNAME}:latest ..."
+    docker tag ${IMAGEID} ${REPONAME}/${IMGNAME}:latest
+    docker push ${REPONAME}/${IMGNAME}:latest
   fi;
 
 }
