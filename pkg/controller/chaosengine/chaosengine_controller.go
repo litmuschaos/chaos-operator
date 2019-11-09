@@ -256,7 +256,7 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []
 		},
 		{
 			Name:  "APP_NAMESPACE",
-			Value: cr.Namespace,
+			Value: cr.Spec.Appinfo.Appns,
 		},
 		{
 			Name:  "EXPERIMENT_LIST",
@@ -282,7 +282,7 @@ func getChaosMonitorENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) []
 		},
 		{
 			Name:  "APP_NAMESPACE",
-			Value: cr.Namespace,
+			Value: cr.Spec.Appinfo.Appns,
 		},
 	}
 }
