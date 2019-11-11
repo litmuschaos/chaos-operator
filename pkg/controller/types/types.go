@@ -24,19 +24,19 @@ import (
 
 var (
 	// AppLabelKey contains the application label key
-	AppLabelKey         string
+	AppLabelKey string
 
 	// AppLabelValue contains the application label value
-	AppLabelValue       string
+	AppLabelValue string
 
 	// Log with default name ie: controller_chaosengine
-	Log                                      = logf.Log.WithName("controller_chaosengine")
+	Log = logf.Log.WithName("controller_chaosengine")
 
 	// DefaultRunnerImage contains the default value of runner resource
-	DefaultRunnerImage                       = "litmuschaos/ansible-runner:ci"
+	DefaultRunnerImage = "litmuschaos/ansible-runner:latest"
 
 	// DefaultMonitorImage contains the default value of monitor resource
-	DefaultMonitorImage                      = "litmuschaos/chaos-exporter:ci"
+	DefaultMonitorImage = "litmuschaos/chaos-exporter:latest"
 )
 
 // ApplicationInfo contains the chaos details for target application
