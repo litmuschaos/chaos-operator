@@ -34,6 +34,11 @@ func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 		if err != nil {
 			return ce, fmt.Errorf("resource type 'statefulset', err: %+v", err)
 		}
+	case "daemonset", "daemonsets":
+		ce, err = CheckDaemonSetAnnotation(clientSet, ce)
+		if err != nil {
+			return ce, fmt.Errorf("resource type 'daemonset', err: %+v", err)
+		}
 	default:
 		return ce, fmt.Errorf("resource type '%s' not supported for induce chaos", ce.AppInfo.Kind)
 	}
