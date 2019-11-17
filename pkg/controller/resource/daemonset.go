@@ -21,12 +21,13 @@ func CheckDaemonSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.En
 		ce.AppName = daemonSet.ObjectMeta.Name
 		ce.AppUUID = daemonSet.ObjectMeta.UID
 		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledDaemonSet, err = ValidateAnnotation(annotationValue, chaosEnabledDaemonSet)
-		if err != nil {
-			return ce, err
-		}
-		chaosTypes.Log.Info("DaemonSet chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
+		chaosEnabledDaemonSet = CountTotalChaosEnabled(annotationValue, chaosEnabledDaemonSet)
 	}
+	err = ValidateTotalChaosEnabled(chaosEnabledDaemonSet)
+	if err != nil {
+		return ce, err
+	}
+	chaosTypes.Log.Info("DaemonSet chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
 	return ce, nil
 }
 

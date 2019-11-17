@@ -45,14 +45,20 @@ func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 	return ce, nil
 }
 
-// ValidateAnnotation will verify the validation require for induce chaos
-func ValidateAnnotation(annotationValue string, chaosCandidates int) (int, error) {
+// CountTotalChaosEnabled will count the number of chaos enabled applications
+func CountTotalChaosEnabled(annotationValue string, chaosCandidates int) int {
 	if annotationValue == ChaosAnnotationValue {
 		chaosCandidates++
-	} else if chaosCandidates > 1 {
-		return chaosCandidates, errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
-	} else if chaosCandidates == 0 {
-		return chaosCandidates, errors.New("no chaos-candidate found")
 	}
-	return chaosCandidates, nil
+	return chaosCandidates
+}
+
+// ValidateTotalChaosEnabled will validate the total chaos count
+func ValidateTotalChaosEnabled(chaosCandidates int) error {
+	if chaosCandidates > 1 {
+		return errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
+	} else if chaosCandidates == 0 {
+		return errors.New("no chaos-candidate found")
+	}
+	return nil
 }

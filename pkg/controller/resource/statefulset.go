@@ -21,12 +21,13 @@ func CheckStatefulSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.
 		ce.AppName = statefulset.ObjectMeta.Name
 		ce.AppUUID = statefulset.ObjectMeta.UID
 		annotationValue := statefulset.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledStatefulset, err = ValidateAnnotation(annotationValue, chaosEnabledStatefulset)
-		if err != nil {
-			return ce, err
-		}
-		chaosTypes.Log.Info("Statefulset chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
+		chaosEnabledStatefulset = CountTotalChaosEnabled(annotationValue, chaosEnabledStatefulset)
 	}
+	err = ValidateTotalChaosEnabled(chaosEnabledStatefulset)
+	if err != nil {
+		return ce, err
+	}
+	chaosTypes.Log.Info("Statefulset chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
 	return ce, nil
 }
 

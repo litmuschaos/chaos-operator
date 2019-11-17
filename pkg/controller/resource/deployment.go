@@ -21,12 +21,13 @@ func CheckDeploymentAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.E
 		ce.AppName = deployment.ObjectMeta.Name
 		ce.AppUUID = deployment.ObjectMeta.UID
 		annotationValue := deployment.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledDeployment, err = ValidateAnnotation(annotationValue, chaosEnabledDeployment)
-		if err != nil {
-			return ce, err
-		}
-		chaosTypes.Log.Info("Deployment chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
+		chaosEnabledDeployment = CountTotalChaosEnabled(annotationValue, chaosEnabledDeployment)
 	}
+	err = ValidateTotalChaosEnabled(chaosEnabledDeployment)
+	if err != nil {
+		return ce, err
+	}
+	chaosTypes.Log.Info("Deployment chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
 	return ce, nil
 }
 
