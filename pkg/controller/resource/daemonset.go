@@ -16,13 +16,7 @@ func CheckDaemonSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.En
 	if err != nil {
 		return ce, err
 	}
-	chaosEnabledDaemonSet := 0
-	for _, daemonSet := range targetAppList.Items {
-		ce.AppName = daemonSet.ObjectMeta.Name
-		ce.AppUUID = daemonSet.ObjectMeta.UID
-		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledDaemonSet = CountTotalChaosEnabled(annotationValue, chaosEnabledDaemonSet)
-	}
+	ce, chaosEnabledDaemonSet := checkForEnabledChaos(targetAppList, ce)
 	err = ValidateTotalChaosEnabled(chaosEnabledDaemonSet)
 	if err != nil {
 		return ce, err
@@ -43,4 +37,16 @@ func getDaemonSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInf
 		return nil, fmt.Errorf("no daemonSets apps with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
 	}
 	return targetAppList, err
+}
+
+// This will check and count the total chaos enabled application
+func checkForEnabledChaos(targetAppList *v1.DaemonSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int) {
+	chaosEnabledDaemonSet := 0
+	for _, daemonSet := range targetAppList.Items {
+		ce.AppName = daemonSet.ObjectMeta.Name
+		ce.AppUUID = daemonSet.ObjectMeta.UID
+		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
+		chaosEnabledDaemonSet = CountTotalChaosEnabled(annotationValue, chaosEnabledDaemonSet)
+	}
+	return ce, chaosEnabledDaemonSet
 }
