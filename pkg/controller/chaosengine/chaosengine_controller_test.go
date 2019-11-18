@@ -2,12 +2,13 @@ package chaosengine
 
 import (
 	"fmt"
-	"testing"
 	"strings"
+	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 )
@@ -354,31 +355,32 @@ func TestInitializeApplicationInfo(t *testing.T) {
 	}
 }
 func TestGetChaosRunnerENV(t *testing.T) {
-	fakeEngineName  := "Fake Engine"
-	fakeNameSpace   := "Fake NameSpace"
-	fakeServiceAcc  := "Fake Service Account"
-	fakeAppLabel    := "Fake Label"
-	fakeAExList     := []string{"fake string"}
+	fakeEngineName := "Fake Engine"
+	fakeNameSpace := "Fake NameSpace"
+	fakeServiceAcc := "Fake Service Account"
+	fakeAppLabel := "Fake Label"
+	fakeAExList := []string{"fake string"}
 
 	tests := map[string]struct {
-		instance          *litmuschaosv1alpha1.ChaosEngine
-		aExList           []string
-		expectedResult    []corev1.EnvVar
+		instance       *litmuschaosv1alpha1.ChaosEngine
+		aExList        []string
+		expectedResult []corev1.EnvVar
 	}{
 		"Test Positive": {
 			instance: &litmuschaosv1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      fakeEngineName,
-						Namespace: fakeNameSpace,
-					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						ChaosServiceAccount: fakeServiceAcc,
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: fakeAppLabel,
-						},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fakeEngineName,
+					Namespace: fakeNameSpace,
+				},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					ChaosServiceAccount: fakeServiceAcc,
+					Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Applabel: fakeAppLabel,
+						Appns:    fakeNameSpace,
 					},
 				},
-			aExList:        fakeAExList,
+			},
+			aExList: fakeAExList,
 			expectedResult: []corev1.EnvVar{
 				{
 					Name:  "CHAOSENGINE",
@@ -419,55 +421,58 @@ func TestGetChaosRunnerENV(t *testing.T) {
 	}
 }
 
-
 func TestGetChaosMonitorENV(t *testing.T) {
-  fakeEngineName  := "Fake Engine"
-  fakeNameSpace   := "fake NameSpace"
-  fakeAUUID       := types.UID("fake UUID")
+	fakeEngineName := "Fake Engine"
+	fakeNameSpace := "fake NameSpace"
+	fakeAUUID := types.UID("fake UUID")
 
-  tests := map[string]struct {
-    instance          *litmuschaosv1alpha1.ChaosEngine
-    aUUID             types.UID
-    expectedResult    []corev1.EnvVar
-  }{
-    "Test Positive": {
-      instance:       &litmuschaosv1alpha1.ChaosEngine{
-                        ObjectMeta: metav1.ObjectMeta {
-                          Name:       fakeEngineName,
-                          Namespace:  fakeNameSpace,
-                        },
-                       },
+	tests := map[string]struct {
+		instance       *litmuschaosv1alpha1.ChaosEngine
+		aUUID          types.UID
+		expectedResult []corev1.EnvVar
+	}{
+		"Test Positive": {
+			instance: &litmuschaosv1alpha1.ChaosEngine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fakeEngineName,
+					Namespace: fakeNameSpace,
+				},
+				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appns: fakeNameSpace,
+					},
+				},
+			},
 
-      aUUID:          fakeAUUID,
-      expectedResult: []corev1.EnvVar{
-                          {
-                            Name:  "CHAOSENGINE",
-                            Value: fakeEngineName,
-                          },
-                          {
-                            Name:  "APP_UUID",
-                            Value: string(fakeAUUID),
-                          },
-                          {
-                            Name:  "APP_NAMESPACE",
-                            Value: fakeNameSpace,
-                          },
-                      },
-    },
-  }
-  for name, mock := range tests {
-    name, mock := name, mock
-    t.Run(name, func(t *testing.T) {
-      actualResult := getChaosMonitorENV(mock.instance, mock.aUUID)
-      if len(actualResult) != 3 {
-        t.Fatalf("Test %q failed: expected array length to be 3", name)
-      }
-      for index, result := range actualResult {
-        if result.Value != mock.expectedResult[index].Value {
-          t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, mock.expectedResult[index])
-        }
-      }
-    })
-  }
+			aUUID: fakeAUUID,
+			expectedResult: []corev1.EnvVar{
+				{
+					Name:  "CHAOSENGINE",
+					Value: fakeEngineName,
+				},
+				{
+					Name:  "APP_UUID",
+					Value: string(fakeAUUID),
+				},
+				{
+					Name:  "APP_NAMESPACE",
+					Value: fakeNameSpace,
+				},
+			},
+		},
+	}
+	for name, mock := range tests {
+		name, mock := name, mock
+		t.Run(name, func(t *testing.T) {
+			actualResult := getChaosMonitorENV(mock.instance, mock.aUUID)
+			if len(actualResult) != 3 {
+				t.Fatalf("Test %q failed: expected array length to be 3", name)
+			}
+			for index, result := range actualResult {
+				if result.Value != mock.expectedResult[index].Value {
+					t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, mock.expectedResult[index])
+				}
+			}
+		})
+	}
 }
-
