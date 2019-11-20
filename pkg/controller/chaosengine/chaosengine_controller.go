@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -536,12 +537,16 @@ func checkMonitoring(engineReconcile *reconcileEngine, reqLogger logr.Logger) (r
 	return reconcile.Result{}, nil
 }
 
-//getImage take the runner and monitor image from engine spec
+//getImage take the runner and monitor image from chaos-operator spec
 func getImage() {
+
+	MonitorImage := os.Getenv("MONITOR_IMAGE")
+	RunnerImage := os.Getenv("RUNNER_IMAGE")
+
 	if engine.Instance.Spec.Components.Monitor.Image == "" {
-		engine.Instance.Spec.Components.Monitor.Image = chaosTypes.DefaultMonitorImage
+		engine.Instance.Spec.Components.Monitor.Image = MonitorImage
 	}
 	if engine.Instance.Spec.Components.Runner.Image == "" {
-		engine.Instance.Spec.Components.Runner.Image = chaosTypes.DefaultRunnerImage
+		engine.Instance.Spec.Components.Runner.Image = RunnerImage
 	}
 }
