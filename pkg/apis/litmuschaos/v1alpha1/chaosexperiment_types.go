@@ -21,6 +21,12 @@ type ChaosExperimentStatus struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
 
+// ConfigMap is an simpler implementation of corev1.ConfigMaps, needed for experiments
+type ConfigMap struct {
+	Data map[string]string `json:"data"`
+	Name string            `json:"name"`
+}
+
 // ExperimentDef defines information about nature of chaos & components subjected to it
 type ExperimentDef struct {
 	// Default labels of the executor pod
@@ -34,6 +40,8 @@ type ExperimentDef struct {
 	Command []string `json:"command"`
 	// Defines arguments to executor's entrypoint command
 	Args []string `json:"args"`
+	// ConfigMaps contains a list of ConfigMaps
+	ConfigMaps []ConfigMap `json:"configmaps,omitempty"`
 }
 
 // ENVPair defines env var list to hold chaos params
