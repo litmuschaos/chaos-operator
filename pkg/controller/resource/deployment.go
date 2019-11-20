@@ -17,6 +17,7 @@ limitations under the License.
 package resource
 
 import (
+	"errors"
 	"fmt"
 
 	v1 "k8s.io/api/apps/v1"
@@ -32,16 +33,12 @@ func CheckDeploymentAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.E
 	if err != nil {
 		return ce, err
 	}
-	chaosEnabledDeployment := 0
-	for _, deployment := range targetAppList.Items {
-		ce.AppName = deployment.ObjectMeta.Name
-		ce.AppUUID = deployment.ObjectMeta.UID
-		annotationValue := deployment.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledDeployment = CountTotalChaosEnabled(annotationValue, chaosEnabledDeployment)
-	}
-	err = ValidateTotalChaosEnabled(chaosEnabledDeployment)
+	ce, chaosEnabledDeployment, err := checkForChaosEnabledDeployment(targetAppList, ce)
 	if err != nil {
 		return ce, err
+	}
+	if chaosEnabledDeployment == 0 {
+		return ce, errors.New("no chaos-candidate found")
 	}
 	chaosTypes.Log.Info("Deployment chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
 	return ce, nil
@@ -59,4 +56,19 @@ func getDeploymentLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineIn
 		return nil, fmt.Errorf("no deployments apps with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
 	}
 	return targetAppList, err
+}
+
+// This will check and count the total chaos enabled application
+func checkForChaosEnabledDeployment(targetAppList *v1.DeploymentList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+	chaosEnabledDeployment := 0
+	for _, deployment := range targetAppList.Items {
+		ce.AppName = deployment.ObjectMeta.Name
+		ce.AppUUID = deployment.ObjectMeta.UID
+		annotationValue := deployment.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
+		chaosEnabledDeployment = CountTotalChaosEnabled(annotationValue, chaosEnabledDeployment)
+		if chaosEnabledDeployment > 1 {
+			return ce, chaosEnabledDeployment, errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
+		}
+	}
+	return ce, chaosEnabledDeployment, nil
 }
