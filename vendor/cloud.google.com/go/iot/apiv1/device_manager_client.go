@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/url"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -61,6 +62,8 @@ func defaultDeviceManagerClientOptions() []option.ClientOption {
 	return []option.ClientOption{
 		option.WithEndpoint("cloudiot.googleapis.com:443"),
 		option.WithScopes(DefaultAuthScopes()...),
+		option.WithGRPCDialOption(grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(math.MaxInt32))),
 	}
 }
 
@@ -78,38 +81,25 @@ func defaultDeviceManagerCallOptions() *DeviceManagerCallOptions {
 				})
 			}),
 		},
-		{"rate_limited_aware", "rate_limited_aware"}: {
-			gax.WithRetry(func() gax.Retryer {
-				return gax.OnCodes([]codes.Code{
-					codes.DeadlineExceeded,
-					codes.ResourceExhausted,
-					codes.Unavailable,
-				}, gax.Backoff{
-					Initial:    1000 * time.Millisecond,
-					Max:        60000 * time.Millisecond,
-					Multiplier: 1.3,
-				})
-			}),
-		},
 	}
 	return &DeviceManagerCallOptions{
 		CreateDeviceRegistry:      retry[[2]string{"default", "non_idempotent"}],
 		GetDeviceRegistry:         retry[[2]string{"default", "idempotent"}],
 		UpdateDeviceRegistry:      retry[[2]string{"default", "non_idempotent"}],
-		DeleteDeviceRegistry:      retry[[2]string{"default", "idempotent"}],
+		DeleteDeviceRegistry:      retry[[2]string{"default", "non_idempotent"}],
 		ListDeviceRegistries:      retry[[2]string{"default", "idempotent"}],
 		CreateDevice:              retry[[2]string{"default", "non_idempotent"}],
 		GetDevice:                 retry[[2]string{"default", "idempotent"}],
 		UpdateDevice:              retry[[2]string{"default", "non_idempotent"}],
-		DeleteDevice:              retry[[2]string{"default", "idempotent"}],
+		DeleteDevice:              retry[[2]string{"default", "non_idempotent"}],
 		ListDevices:               retry[[2]string{"default", "idempotent"}],
-		ModifyCloudToDeviceConfig: retry[[2]string{"rate_limited_aware", "rate_limited_aware"}],
+		ModifyCloudToDeviceConfig: retry[[2]string{"default", "non_idempotent"}],
 		ListDeviceConfigVersions:  retry[[2]string{"default", "idempotent"}],
 		ListDeviceStates:          retry[[2]string{"default", "idempotent"}],
 		SetIamPolicy:              retry[[2]string{"default", "non_idempotent"}],
 		GetIamPolicy:              retry[[2]string{"default", "non_idempotent"}],
 		TestIamPermissions:        retry[[2]string{"default", "non_idempotent"}],
-		SendCommandToDevice:       retry[[2]string{"rate_limited_aware", "rate_limited_aware"}],
+		SendCommandToDevice:       retry[[2]string{"default", "non_idempotent"}],
 		BindDeviceToGateway:       retry[[2]string{"default", "non_idempotent"}],
 		UnbindDeviceFromGateway:   retry[[2]string{"default", "non_idempotent"}],
 	}
@@ -172,7 +162,7 @@ func (c *DeviceManagerClient) setGoogleClientInfo(keyval ...string) {
 
 // CreateDeviceRegistry creates a device registry that contains devices.
 func (c *DeviceManagerClient) CreateDeviceRegistry(ctx context.Context, req *iotpb.CreateDeviceRegistryRequest, opts ...gax.CallOption) (*iotpb.DeviceRegistry, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", req.GetParent()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", url.QueryEscape(req.GetParent())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.CreateDeviceRegistry[0:len(c.CallOptions.CreateDeviceRegistry):len(c.CallOptions.CreateDeviceRegistry)], opts...)
 	var resp *iotpb.DeviceRegistry
@@ -189,7 +179,7 @@ func (c *DeviceManagerClient) CreateDeviceRegistry(ctx context.Context, req *iot
 
 // GetDeviceRegistry gets a device registry configuration.
 func (c *DeviceManagerClient) GetDeviceRegistry(ctx context.Context, req *iotpb.GetDeviceRegistryRequest, opts ...gax.CallOption) (*iotpb.DeviceRegistry, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", req.GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.GetDeviceRegistry[0:len(c.CallOptions.GetDeviceRegistry):len(c.CallOptions.GetDeviceRegistry)], opts...)
 	var resp *iotpb.DeviceRegistry
@@ -206,7 +196,7 @@ func (c *DeviceManagerClient) GetDeviceRegistry(ctx context.Context, req *iotpb.
 
 // UpdateDeviceRegistry updates a device registry configuration.
 func (c *DeviceManagerClient) UpdateDeviceRegistry(ctx context.Context, req *iotpb.UpdateDeviceRegistryRequest, opts ...gax.CallOption) (*iotpb.DeviceRegistry, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "device_registry.name", req.GetDeviceRegistry().GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "device_registry.name", url.QueryEscape(req.GetDeviceRegistry().GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.UpdateDeviceRegistry[0:len(c.CallOptions.UpdateDeviceRegistry):len(c.CallOptions.UpdateDeviceRegistry)], opts...)
 	var resp *iotpb.DeviceRegistry
@@ -223,7 +213,7 @@ func (c *DeviceManagerClient) UpdateDeviceRegistry(ctx context.Context, req *iot
 
 // DeleteDeviceRegistry deletes a device registry configuration.
 func (c *DeviceManagerClient) DeleteDeviceRegistry(ctx context.Context, req *iotpb.DeleteDeviceRegistryRequest, opts ...gax.CallOption) error {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", req.GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.DeleteDeviceRegistry[0:len(c.CallOptions.DeleteDeviceRegistry):len(c.CallOptions.DeleteDeviceRegistry)], opts...)
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -236,7 +226,7 @@ func (c *DeviceManagerClient) DeleteDeviceRegistry(ctx context.Context, req *iot
 
 // ListDeviceRegistries lists device registries.
 func (c *DeviceManagerClient) ListDeviceRegistries(ctx context.Context, req *iotpb.ListDeviceRegistriesRequest, opts ...gax.CallOption) *DeviceRegistryIterator {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", req.GetParent()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", url.QueryEscape(req.GetParent())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.ListDeviceRegistries[0:len(c.CallOptions.ListDeviceRegistries):len(c.CallOptions.ListDeviceRegistries)], opts...)
 	it := &DeviceRegistryIterator{}
@@ -269,12 +259,13 @@ func (c *DeviceManagerClient) ListDeviceRegistries(ctx context.Context, req *iot
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	it.pageInfo.MaxSize = int(req.PageSize)
+	it.pageInfo.Token = req.PageToken
 	return it
 }
 
 // CreateDevice creates a device in a device registry.
 func (c *DeviceManagerClient) CreateDevice(ctx context.Context, req *iotpb.CreateDeviceRequest, opts ...gax.CallOption) (*iotpb.Device, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", req.GetParent()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", url.QueryEscape(req.GetParent())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.CreateDevice[0:len(c.CallOptions.CreateDevice):len(c.CallOptions.CreateDevice)], opts...)
 	var resp *iotpb.Device
@@ -291,7 +282,7 @@ func (c *DeviceManagerClient) CreateDevice(ctx context.Context, req *iotpb.Creat
 
 // GetDevice gets details about a device.
 func (c *DeviceManagerClient) GetDevice(ctx context.Context, req *iotpb.GetDeviceRequest, opts ...gax.CallOption) (*iotpb.Device, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", req.GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.GetDevice[0:len(c.CallOptions.GetDevice):len(c.CallOptions.GetDevice)], opts...)
 	var resp *iotpb.Device
@@ -308,7 +299,7 @@ func (c *DeviceManagerClient) GetDevice(ctx context.Context, req *iotpb.GetDevic
 
 // UpdateDevice updates a device.
 func (c *DeviceManagerClient) UpdateDevice(ctx context.Context, req *iotpb.UpdateDeviceRequest, opts ...gax.CallOption) (*iotpb.Device, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "device.name", req.GetDevice().GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "device.name", url.QueryEscape(req.GetDevice().GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.UpdateDevice[0:len(c.CallOptions.UpdateDevice):len(c.CallOptions.UpdateDevice)], opts...)
 	var resp *iotpb.Device
@@ -325,7 +316,7 @@ func (c *DeviceManagerClient) UpdateDevice(ctx context.Context, req *iotpb.Updat
 
 // DeleteDevice deletes a device.
 func (c *DeviceManagerClient) DeleteDevice(ctx context.Context, req *iotpb.DeleteDeviceRequest, opts ...gax.CallOption) error {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", req.GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.DeleteDevice[0:len(c.CallOptions.DeleteDevice):len(c.CallOptions.DeleteDevice)], opts...)
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -338,7 +329,7 @@ func (c *DeviceManagerClient) DeleteDevice(ctx context.Context, req *iotpb.Delet
 
 // ListDevices list devices in a device registry.
 func (c *DeviceManagerClient) ListDevices(ctx context.Context, req *iotpb.ListDevicesRequest, opts ...gax.CallOption) *DeviceIterator {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", req.GetParent()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", url.QueryEscape(req.GetParent())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.ListDevices[0:len(c.CallOptions.ListDevices):len(c.CallOptions.ListDevices)], opts...)
 	it := &DeviceIterator{}
@@ -371,6 +362,7 @@ func (c *DeviceManagerClient) ListDevices(ctx context.Context, req *iotpb.ListDe
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	it.pageInfo.MaxSize = int(req.PageSize)
+	it.pageInfo.Token = req.PageToken
 	return it
 }
 
@@ -378,7 +370,7 @@ func (c *DeviceManagerClient) ListDevices(ctx context.Context, req *iotpb.ListDe
 // the Cloud IoT Core servers. Returns the modified configuration version and
 // its metadata.
 func (c *DeviceManagerClient) ModifyCloudToDeviceConfig(ctx context.Context, req *iotpb.ModifyCloudToDeviceConfigRequest, opts ...gax.CallOption) (*iotpb.DeviceConfig, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", req.GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.ModifyCloudToDeviceConfig[0:len(c.CallOptions.ModifyCloudToDeviceConfig):len(c.CallOptions.ModifyCloudToDeviceConfig)], opts...)
 	var resp *iotpb.DeviceConfig
@@ -396,7 +388,7 @@ func (c *DeviceManagerClient) ModifyCloudToDeviceConfig(ctx context.Context, req
 // ListDeviceConfigVersions lists the last few versions of the device configuration in descending
 // order (i.e.: newest first).
 func (c *DeviceManagerClient) ListDeviceConfigVersions(ctx context.Context, req *iotpb.ListDeviceConfigVersionsRequest, opts ...gax.CallOption) (*iotpb.ListDeviceConfigVersionsResponse, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", req.GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.ListDeviceConfigVersions[0:len(c.CallOptions.ListDeviceConfigVersions):len(c.CallOptions.ListDeviceConfigVersions)], opts...)
 	var resp *iotpb.ListDeviceConfigVersionsResponse
@@ -414,7 +406,7 @@ func (c *DeviceManagerClient) ListDeviceConfigVersions(ctx context.Context, req 
 // ListDeviceStates lists the last few versions of the device state in descending order (i.e.:
 // newest first).
 func (c *DeviceManagerClient) ListDeviceStates(ctx context.Context, req *iotpb.ListDeviceStatesRequest, opts ...gax.CallOption) (*iotpb.ListDeviceStatesResponse, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", req.GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.ListDeviceStates[0:len(c.CallOptions.ListDeviceStates):len(c.CallOptions.ListDeviceStates)], opts...)
 	var resp *iotpb.ListDeviceStatesResponse
@@ -432,7 +424,7 @@ func (c *DeviceManagerClient) ListDeviceStates(ctx context.Context, req *iotpb.L
 // SetIamPolicy sets the access control policy on the specified resource. Replaces any
 // existing policy.
 func (c *DeviceManagerClient) SetIamPolicy(ctx context.Context, req *iampb.SetIamPolicyRequest, opts ...gax.CallOption) (*iampb.Policy, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "resource", req.GetResource()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "resource", url.QueryEscape(req.GetResource())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.SetIamPolicy[0:len(c.CallOptions.SetIamPolicy):len(c.CallOptions.SetIamPolicy)], opts...)
 	var resp *iampb.Policy
@@ -451,7 +443,7 @@ func (c *DeviceManagerClient) SetIamPolicy(ctx context.Context, req *iampb.SetIa
 // Returns an empty policy if the resource exists and does not have a policy
 // set.
 func (c *DeviceManagerClient) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest, opts ...gax.CallOption) (*iampb.Policy, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "resource", req.GetResource()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "resource", url.QueryEscape(req.GetResource())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.GetIamPolicy[0:len(c.CallOptions.GetIamPolicy):len(c.CallOptions.GetIamPolicy)], opts...)
 	var resp *iampb.Policy
@@ -470,7 +462,7 @@ func (c *DeviceManagerClient) GetIamPolicy(ctx context.Context, req *iampb.GetIa
 // If the resource does not exist, this will return an empty set of
 // permissions, not a NOT_FOUND error.
 func (c *DeviceManagerClient) TestIamPermissions(ctx context.Context, req *iampb.TestIamPermissionsRequest, opts ...gax.CallOption) (*iampb.TestIamPermissionsResponse, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "resource", req.GetResource()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "resource", url.QueryEscape(req.GetResource())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.TestIamPermissions[0:len(c.CallOptions.TestIamPermissions):len(c.CallOptions.TestIamPermissions)], opts...)
 	var resp *iampb.TestIamPermissionsResponse
@@ -499,7 +491,7 @@ func (c *DeviceManagerClient) TestIamPermissions(ctx context.Context, req *iampb
 // return OK. If the subscription is QoS 1, at least once delivery will be
 // guaranteed; for QoS 0, no acknowledgment will be expected from the device.
 func (c *DeviceManagerClient) SendCommandToDevice(ctx context.Context, req *iotpb.SendCommandToDeviceRequest, opts ...gax.CallOption) (*iotpb.SendCommandToDeviceResponse, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", req.GetName()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.SendCommandToDevice[0:len(c.CallOptions.SendCommandToDevice):len(c.CallOptions.SendCommandToDevice)], opts...)
 	var resp *iotpb.SendCommandToDeviceResponse
@@ -516,7 +508,7 @@ func (c *DeviceManagerClient) SendCommandToDevice(ctx context.Context, req *iotp
 
 // BindDeviceToGateway associates the device with the gateway.
 func (c *DeviceManagerClient) BindDeviceToGateway(ctx context.Context, req *iotpb.BindDeviceToGatewayRequest, opts ...gax.CallOption) (*iotpb.BindDeviceToGatewayResponse, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", req.GetParent()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", url.QueryEscape(req.GetParent())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.BindDeviceToGateway[0:len(c.CallOptions.BindDeviceToGateway):len(c.CallOptions.BindDeviceToGateway)], opts...)
 	var resp *iotpb.BindDeviceToGatewayResponse
@@ -533,7 +525,7 @@ func (c *DeviceManagerClient) BindDeviceToGateway(ctx context.Context, req *iotp
 
 // UnbindDeviceFromGateway deletes the association between the device and the gateway.
 func (c *DeviceManagerClient) UnbindDeviceFromGateway(ctx context.Context, req *iotpb.UnbindDeviceFromGatewayRequest, opts ...gax.CallOption) (*iotpb.UnbindDeviceFromGatewayResponse, error) {
-	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", req.GetParent()))
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", url.QueryEscape(req.GetParent())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
 	opts = append(c.CallOptions.UnbindDeviceFromGateway[0:len(c.CallOptions.UnbindDeviceFromGateway):len(c.CallOptions.UnbindDeviceFromGateway)], opts...)
 	var resp *iotpb.UnbindDeviceFromGatewayResponse

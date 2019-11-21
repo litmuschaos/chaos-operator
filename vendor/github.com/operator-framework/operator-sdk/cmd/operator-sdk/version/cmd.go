@@ -27,7 +27,11 @@ func NewCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Prints the version of operator-sdk",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("operator-sdk version:", ver.Version)
+			version := ver.GitVersion
+			if version == "unknown" {
+				version = ver.Version
+			}
+			fmt.Printf("operator-sdk version: %q, commit: %q, go version: %q\n", version, ver.GitCommit, ver.GoVersion)
 		},
 	}
 	return versionCmd

@@ -8,9 +8,9 @@ package protocol
 
 import (
 	"fmt"
-	"go/token"
 
 	"golang.org/x/tools/internal/span"
+	errors "golang.org/x/xerrors"
 )
 
 type ColumnMapper struct {
@@ -23,14 +23,6 @@ func NewURI(uri span.URI) string {
 	return string(uri)
 }
 
-func NewColumnMapper(uri span.URI, fset *token.FileSet, f *token.File, content []byte) *ColumnMapper {
-	return &ColumnMapper{
-		URI:       uri,
-		Converter: span.NewTokenConverter(fset, f),
-		Content:   content,
-	}
-}
-
 func (m *ColumnMapper) Location(s span.Span) (Location, error) {
 	rng, err := m.Range(s)
 	if err != nil {
@@ -41,7 +33,7 @@ func (m *ColumnMapper) Location(s span.Span) (Location, error) {
 
 func (m *ColumnMapper) Range(s span.Span) (Range, error) {
 	if span.CompareURI(m.URI, s.URI()) != 0 {
-		return Range{}, fmt.Errorf("column mapper is for file %q instead of %q", m.URI, s.URI())
+		return Range{}, errors.Errorf("column mapper is for file %q instead of %q", m.URI, s.URI())
 	}
 	s, err := s.WithAll(m.Converter)
 	if err != nil {
@@ -101,4 +93,35 @@ func (m *ColumnMapper) Point(p Position) (span.Point, error) {
 	}
 	lineStart := span.NewPoint(line, 1, offset)
 	return span.FromUTF16Column(lineStart, int(p.Character)+1, m.Content)
+}
+
+func IsPoint(r Range) bool {
+	return r.Start.Line == r.End.Line && r.Start.Character == r.End.Character
+}
+
+func CompareRange(a, b Range) int {
+	if r := ComparePosition(a.Start, b.Start); r != 0 {
+		return r
+	}
+	return ComparePosition(a.End, b.End)
+}
+
+func ComparePosition(a, b Position) int {
+	if a.Line < b.Line {
+		return -1
+	}
+	if a.Line > b.Line {
+		return 1
+	}
+	if a.Character < b.Character {
+		return -1
+	}
+	if a.Character > b.Character {
+		return 1
+	}
+	return 0
+}
+
+func (r Range) Format(f fmt.State, _ rune) {
+	fmt.Fprintf(f, "%v:%v-%v:%v", r.Start.Line, r.Start.Character, r.End.Line, r.End.Character)
 }

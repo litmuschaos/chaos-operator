@@ -21,17 +21,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var headerFile string
-
 func newGenerateOpenAPICmd() *cobra.Command {
-	openAPICmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "openapi",
 		Short: "Generates OpenAPI specs for API's",
 		Long: `generate openapi generates OpenAPI validation specs in Go from tagged types
 in all pkg/apis/<group>/<version> directories. Go code is generated under
 pkg/apis/<group>/<version>/zz_generated.openapi.go. CRD's are generated, or
 updated if they exist for a particular group + version + kind, under
-deploy/crds/<group>_<version>_<kind>_crd.yaml; OpenAPI V3 validation YAML
+deploy/crds/<full group>_<resource>_crd.yaml; OpenAPI V3 validation YAML
 is generated as a 'validation' object.
 
 Example:
@@ -42,15 +40,11 @@ Example:
 		└── v1alpha1
 			├── zz_generated.openapi.go
 	$ tree deploy/crds
-	├── deploy/crds/app_v1alpha1_appservice_cr.yaml
-	├── deploy/crds/app_v1alpha1_appservice_crd.yaml
+	├── deploy/crds/app.example.com_v1alpha1_appservice_cr.yaml
+	├── deploy/crds/app.example.com_appservices_crd.yaml
 `,
 		RunE: openAPIFunc,
 	}
-
-	openAPICmd.Flags().StringVar(&headerFile, "header-file", "", "Path to file containing headers for generated files.")
-
-	return openAPICmd
 }
 
 func openAPIFunc(cmd *cobra.Command, args []string) error {
@@ -58,5 +52,5 @@ func openAPIFunc(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("command %s doesn't accept any arguments", cmd.CommandPath())
 	}
 
-	return genutil.OpenAPIGen(headerFile)
+	return genutil.OpenAPIGen()
 }

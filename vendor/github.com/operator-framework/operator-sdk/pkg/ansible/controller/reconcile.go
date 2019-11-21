@@ -27,6 +27,7 @@ import (
 
 	ansiblestatus "github.com/operator-framework/operator-sdk/pkg/ansible/controller/status"
 	"github.com/operator-framework/operator-sdk/pkg/ansible/events"
+	"github.com/operator-framework/operator-sdk/pkg/ansible/metrics"
 	"github.com/operator-framework/operator-sdk/pkg/ansible/proxy/kubeconfig"
 	"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
 	"github.com/operator-framework/operator-sdk/pkg/ansible/runner/eventapi"
@@ -38,8 +39,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 const (
@@ -186,7 +187,21 @@ func (r *AnsibleOperatorReconciler) Reconcile(request reconcile.Request) (reconc
 		return reconcileResult, eventErr
 	}
 
-	// We only want to update the CustomResource once, so we'll track changes and do it at the end
+	// Need to get the unstructured object after ansible
+	// this needs to hit the API
+	err = r.Client.Get(context.TODO(), request.NamespacedName, u)
+	if apierrors.IsNotFound(err) {
+		return reconcile.Result{}, nil
+	}
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// try to get the updated finalizers
+	pendingFinalizers = u.GetFinalizers()
+
+	// We only want to update the CustomResource once, so we'll track changes
+	// and do it at the end
 	runSuccessful := len(failureMessages) == 0
 	// The finalizer has run successfully, time to remove it
 	if deleted && finalizerExists && runSuccessful {
@@ -252,10 +267,11 @@ func (r *AnsibleOperatorReconciler) markRunning(u *unstructured.Unstructured, na
 // i.e Annotations that could be incorrect
 func (r *AnsibleOperatorReconciler) markError(u *unstructured.Unstructured, namespacedName types.NamespacedName, failureMessage string) error {
 	logger := logf.Log.WithName("markError")
+	metrics.ReconcileFailed(r.GVK.String())
 	// Get the latest resource to prevent updating a stale status
 	err := r.Client.Get(context.TODO(), namespacedName, u)
 	if apierrors.IsNotFound(err) {
-		logger.Info("Resource not found, assuming it was deleted", err)
+		logger.Info("Resource not found, assuming it was deleted")
 		return nil
 	}
 	if err != nil {
@@ -294,7 +310,7 @@ func (r *AnsibleOperatorReconciler) markDone(u *unstructured.Unstructured, names
 	// Get the latest resource to prevent updating a stale status
 	err := r.Client.Get(context.TODO(), namespacedName, u)
 	if apierrors.IsNotFound(err) {
-		logger.Info("Resource not found, assuming it was deleted", err)
+		logger.Info("Resource not found, assuming it was deleted")
 		return nil
 	}
 	if err != nil {
@@ -308,6 +324,7 @@ func (r *AnsibleOperatorReconciler) markDone(u *unstructured.Unstructured, names
 	ansibleStatus := ansiblestatus.NewAnsibleResultFromStatusJobEvent(statusEvent)
 
 	if !runSuccessful {
+		metrics.ReconcileFailed(r.GVK.String())
 		sc := ansiblestatus.GetCondition(crStatus, ansiblestatus.RunningConditionType)
 		sc.Status = v1.ConditionFalse
 		ansiblestatus.SetCondition(&crStatus, *sc)
@@ -320,6 +337,7 @@ func (r *AnsibleOperatorReconciler) markDone(u *unstructured.Unstructured, names
 		)
 		ansiblestatus.SetCondition(&crStatus, *c)
 	} else {
+		metrics.ReconcileSucceeded(r.GVK.String())
 		c := ansiblestatus.NewCondition(
 			ansiblestatus.RunningConditionType,
 			v1.ConditionTrue,

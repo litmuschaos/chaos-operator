@@ -12,70 +12,56 @@ import (
 	"golang.org/x/tools/internal/span"
 )
 
-func (s *Server) definition(ctx context.Context, params *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
+func (s *Server) definition(ctx context.Context, params *protocol.DefinitionParams) ([]protocol.Location, error) {
 	uri := span.NewURI(params.TextDocument.URI)
-	view := s.findView(ctx, uri)
-	f, m, err := newColumnMap(ctx, view, uri)
+	view, err := s.session.ViewOf(uri)
 	if err != nil {
 		return nil, err
 	}
-	spn, err := m.PointSpan(params.Position)
+	snapshot := view.Snapshot()
+	f, err := view.GetFile(ctx, uri)
 	if err != nil {
 		return nil, err
 	}
-	rng, err := spn.Range(m.Converter)
+	ident, err := source.Identifier(ctx, snapshot, f, params.Position)
 	if err != nil {
 		return nil, err
 	}
-	ident, err := source.Identifier(ctx, view, f, rng.Start)
+	decRange, err := ident.Declaration.Range()
 	if err != nil {
 		return nil, err
 	}
-	decSpan, err := ident.Declaration.Range.Span()
-	if err != nil {
-		return nil, err
-	}
-	_, decM, err := newColumnMap(ctx, view, decSpan.URI())
-	if err != nil {
-		return nil, err
-	}
-	loc, err := decM.Location(decSpan)
-	if err != nil {
-		return nil, err
-	}
-	return []protocol.Location{loc}, nil
+	return []protocol.Location{
+		{
+			URI:   protocol.NewURI(ident.Declaration.URI()),
+			Range: decRange,
+		},
+	}, nil
 }
 
-func (s *Server) typeDefinition(ctx context.Context, params *protocol.TextDocumentPositionParams) ([]protocol.Location, error) {
+func (s *Server) typeDefinition(ctx context.Context, params *protocol.TypeDefinitionParams) ([]protocol.Location, error) {
 	uri := span.NewURI(params.TextDocument.URI)
-	view := s.findView(ctx, uri)
-	f, m, err := newColumnMap(ctx, view, uri)
+	view, err := s.session.ViewOf(uri)
 	if err != nil {
 		return nil, err
 	}
-	spn, err := m.PointSpan(params.Position)
+	snapshot := view.Snapshot()
+	f, err := view.GetFile(ctx, uri)
 	if err != nil {
 		return nil, err
 	}
-	rng, err := spn.Range(m.Converter)
+	ident, err := source.Identifier(ctx, snapshot, f, params.Position)
 	if err != nil {
 		return nil, err
 	}
-	ident, err := source.Identifier(ctx, view, f, rng.Start)
+	identRange, err := ident.Type.Range()
 	if err != nil {
 		return nil, err
 	}
-	identSpan, err := ident.Type.Range.Span()
-	if err != nil {
-		return nil, err
-	}
-	_, identM, err := newColumnMap(ctx, view, identSpan.URI())
-	if err != nil {
-		return nil, err
-	}
-	loc, err := identM.Location(identSpan)
-	if err != nil {
-		return nil, err
-	}
-	return []protocol.Location{loc}, nil
+	return []protocol.Location{
+		{
+			URI:   protocol.NewURI(ident.Type.URI()),
+			Range: identRange,
+		},
+	}, nil
 }

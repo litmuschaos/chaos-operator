@@ -2,22 +2,39 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package cache implements the caching layer for gopls.
 package cache
 
 import (
 	"context"
+	"fmt"
+	"go/ast"
 	"go/token"
-	"go/types"
 	"os"
+	"os/exec"
+	"reflect"
+	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/tools/go/packages"
+	"golang.org/x/tools/internal/imports"
+	"golang.org/x/tools/internal/lsp/debug"
+	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
-	"golang.org/x/tools/internal/lsp/xlog"
 	"golang.org/x/tools/internal/span"
+	"golang.org/x/tools/internal/telemetry/log"
+	"golang.org/x/tools/internal/telemetry/tag"
+	"golang.org/x/tools/internal/xcontext"
+	errors "golang.org/x/xerrors"
 )
 
-type View struct {
+type view struct {
+	session *session
+	id      string
+
+	options source.Options
+
 	// mu protects all mutable state of the view.
 	mu sync.Mutex
 
@@ -33,188 +50,299 @@ type View struct {
 	// should be stopped.
 	cancel context.CancelFunc
 
-	// the logger to use to communicate back with the client
-	log xlog.Logger
-
 	// Name is the user visible name of this view.
-	Name string
+	name string
 
 	// Folder is the root of this view.
-	Folder span.URI
+	folder span.URI
 
-	// Config is the configuration used for the view's interaction with the
-	// go/packages API. It is shared across all views.
-	Config packages.Config
+	// process is the process env for this view.
+	// Note: this contains cached module and filesystem state.
+	//
+	// TODO(suzmue): the state cached in the process env is specific to each view,
+	// however, there is state that can be shared between views that is not currently
+	// cached, like the module cache.
+	processEnv       *imports.ProcessEnv
+	cacheRefreshTime time.Time
+
+	// modFileVersions stores the last seen versions of the module files that are used
+	// by processEnvs resolver.
+	// TODO(suzmue): These versions may not actually be on disk.
+	modFileVersions map[string]string
 
 	// keep track of files by uri and by basename, a single file may be mapped
 	// to multiple uris, and the same basename may map to multiple files
-	filesByURI  map[span.URI]*File
-	filesByBase map[string][]*File
+	filesByURI  map[span.URI]viewFile
+	filesByBase map[string][]viewFile
 
-	// contentChanges saves the content changes for a given state of the view.
-	// When type information is requested by the view, all of the dirty changes
-	// are applied, potentially invalidating some data in the caches. The
-	// closures  in the dirty slice assume that their caller is holding the
-	// view's mutex.
-	contentChanges map[span.URI]func()
+	snapshotMu sync.Mutex
+	snapshot   *snapshot
 
-	// mcache caches metadata for the packages of the opened files in a view.
-	mcache *metadataCache
+	// builtin is used to resolve builtin types.
+	builtin *builtinPkg
 
-	// pcache caches type information for the packages of the opened files in a view.
-	pcache *packageCache
+	// ignoredURIs is the set of URIs of files that we ignore.
+	ignoredURIsMu sync.Mutex
+	ignoredURIs   map[span.URI]struct{}
 }
 
-type metadataCache struct {
-	mu       sync.Mutex
-	packages map[string]*metadata
+func (v *view) Session() source.Session {
+	return v.session
 }
 
-type metadata struct {
-	id, pkgPath, name string
-	files             []string
-	typesSizes        types.Sizes
-	parents, children map[string]bool
+// Name returns the user visible name of this view.
+func (v *view) Name() string {
+	return v.name
 }
 
-type packageCache struct {
-	mu       sync.Mutex
-	packages map[string]*entry
+// Folder returns the root of this view.
+func (v *view) Folder() span.URI {
+	return v.folder
 }
 
-type entry struct {
-	pkg   *Package
-	err   error
-	ready chan struct{} // closed to broadcast ready condition
+func (v *view) Options() source.Options {
+	return v.options
 }
 
-func NewView(ctx context.Context, log xlog.Logger, name string, folder span.URI, config *packages.Config) *View {
-	backgroundCtx, cancel := context.WithCancel(ctx)
-	v := &View{
-		baseCtx:        ctx,
-		backgroundCtx:  backgroundCtx,
-		cancel:         cancel,
-		log:            log,
-		Config:         *config,
-		Name:           name,
-		Folder:         folder,
-		filesByURI:     make(map[span.URI]*File),
-		filesByBase:    make(map[string][]*File),
-		contentChanges: make(map[span.URI]func()),
-		mcache: &metadataCache{
-			packages: make(map[string]*metadata),
-		},
-		pcache: &packageCache{
-			packages: make(map[string]*entry),
-		},
+func minorOptionsChange(a, b source.Options) bool {
+	// Check if any of the settings that modify our understanding of files have been changed
+	if !reflect.DeepEqual(a.Env, b.Env) {
+		return false
 	}
-	return v
+	if !reflect.DeepEqual(a.BuildFlags, b.BuildFlags) {
+		return false
+	}
+	// the rest of the options are benign
+	return true
 }
 
-func (v *View) BackgroundContext() context.Context {
+func (v *view) SetOptions(ctx context.Context, options source.Options) (source.View, error) {
+	// no need to rebuild the view if the options were not materially changed
+	if minorOptionsChange(v.options, options) {
+		v.options = options
+		return v, nil
+	}
+	newView, _, err := v.session.updateView(ctx, v, options)
+	return newView, err
+}
+
+// Config returns the configuration used for the view's interaction with the
+// go/packages API. It is shared across all views.
+func (v *view) Config(ctx context.Context) *packages.Config {
+	// TODO: Should we cache the config and/or overlay somewhere?
+	return &packages.Config{
+		Dir:        v.folder.Filename(),
+		Context:    ctx,
+		Env:        v.options.Env,
+		BuildFlags: v.options.BuildFlags,
+		Mode: packages.NeedName |
+			packages.NeedFiles |
+			packages.NeedCompiledGoFiles |
+			packages.NeedImports |
+			packages.NeedDeps |
+			packages.NeedTypesSizes,
+		Fset:    v.session.cache.fset,
+		Overlay: v.session.buildOverlay(),
+		ParseFile: func(*token.FileSet, string, []byte) (*ast.File, error) {
+			panic("go/packages must not be used to parse files")
+		},
+		Logf: func(format string, args ...interface{}) {
+			if v.options.VerboseOutput {
+				log.Print(ctx, fmt.Sprintf(format, args...))
+			}
+		},
+		Tests: true,
+	}
+}
+
+func (v *view) RunProcessEnvFunc(ctx context.Context, fn func(*imports.Options) error, opts *imports.Options) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.processEnv == nil {
+		var err error
+		if v.processEnv, err = v.buildProcessEnv(ctx); err != nil {
+			return err
+		}
+	}
+
+	// Before running the user provided function, clear caches in the resolver.
+	if v.modFilesChanged() {
+		v.processEnv.GetResolver().(*imports.ModuleResolver).ClearForNewMod()
+	}
+
+	// Run the user function.
+	opts.Env = v.processEnv
+	if err := fn(opts); err != nil {
+		return err
+	}
+	if v.cacheRefreshTime.IsZero() {
+		v.cacheRefreshTime = time.Now()
+	}
+
+	// If applicable, store the file versions of the 'go.mod' files that are
+	// looked at by the resolver.
+	v.storeModFileVersions()
+
+	if time.Since(v.cacheRefreshTime) > 30*time.Second {
+		go func() {
+			v.mu.Lock()
+			defer v.mu.Unlock()
+
+			log.Print(context.Background(), "background imports cache refresh starting")
+			v.processEnv.GetResolver().ClearForNewScan()
+			_, err := imports.GetAllCandidates("", opts)
+			v.cacheRefreshTime = time.Now()
+			log.Print(context.Background(), "background refresh finished with err: ", tag.Of("err", err))
+		}()
+	}
+
+	return nil
+}
+
+func (v *view) buildProcessEnv(ctx context.Context) (*imports.ProcessEnv, error) {
+	cfg := v.Config(ctx)
+	env := &imports.ProcessEnv{
+		WorkingDir: cfg.Dir,
+		Logf: func(format string, args ...interface{}) {
+			log.Print(ctx, fmt.Sprintf(format, args...))
+		},
+		LocalPrefix: v.options.LocalPrefix,
+		Debug:       v.options.VerboseOutput,
+	}
+	for _, kv := range cfg.Env {
+		split := strings.Split(kv, "=")
+		if len(split) < 2 {
+			continue
+		}
+		switch split[0] {
+		case "GOPATH":
+			env.GOPATH = split[1]
+		case "GOROOT":
+			env.GOROOT = split[1]
+		case "GO111MODULE":
+			env.GO111MODULE = split[1]
+		case "GOPROXY":
+			env.GOPROXY = split[1]
+		case "GOFLAGS":
+			env.GOFLAGS = split[1]
+		case "GOSUMDB":
+			env.GOSUMDB = split[1]
+		}
+	}
+
+	if env.GOPATH == "" {
+		cmd := exec.CommandContext(ctx, "go", "env", "GOPATH")
+		cmd.Env = cfg.Env
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return nil, err
+		} else {
+			env.GOPATH = strings.TrimSpace(string(out))
+		}
+	}
+	return env, nil
+}
+
+func (v *view) modFilesChanged() bool {
+	// Check the versions of the 'go.mod' files of the main module
+	// and modules included by a replace directive. Return true if
+	// any of these file versions do not match.
+	for filename, version := range v.modFileVersions {
+		if version != v.fileVersion(filename, source.Mod) {
+			return true
+		}
+	}
+	return false
+}
+
+func (v *view) storeModFileVersions() {
+	// Store the mod files versions, if we are using a ModuleResolver.
+	r, moduleMode := v.processEnv.GetResolver().(*imports.ModuleResolver)
+	if !moduleMode || !r.Initialized {
+		return
+	}
+	v.modFileVersions = make(map[string]string)
+
+	// Get the file versions of the 'go.mod' files of the main module
+	// and modules included by a replace directive in the resolver.
+	for _, mod := range r.ModsByModPath {
+		if (mod.Main || mod.Replace != nil) && mod.GoMod != "" {
+			v.modFileVersions[mod.GoMod] = v.fileVersion(mod.GoMod, source.Mod)
+		}
+	}
+}
+
+func (v *view) fileVersion(filename string, kind source.FileKind) string {
+	uri := span.FileURI(filename)
+	fh := v.session.GetFile(uri, kind)
+	return fh.Identity().String()
+}
+
+func (v *view) Shutdown(ctx context.Context) {
+	v.session.removeView(ctx, v)
+}
+
+func (v *view) shutdown(context.Context) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.cancel != nil {
+		v.cancel()
+		v.cancel = nil
+	}
+	debug.DropView(debugView{v})
+}
+
+// Ignore checks if the given URI is a URI we ignore.
+// As of right now, we only ignore files in the "builtin" package.
+func (v *view) Ignore(uri span.URI) bool {
+	v.ignoredURIsMu.Lock()
+	defer v.ignoredURIsMu.Unlock()
+
+	_, ok := v.ignoredURIs[uri]
+	return ok
+}
+
+func (v *view) BackgroundContext() context.Context {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
 	return v.backgroundCtx
 }
 
-func (v *View) FileSet() *token.FileSet {
-	return v.Config.Fset
+func (v *view) BuiltinPackage() source.BuiltinPackage {
+	return v.builtin
+}
+
+func (v *view) Snapshot() source.Snapshot {
+	return v.getSnapshot()
+}
+
+func (v *view) getSnapshot() *snapshot {
+	v.snapshotMu.Lock()
+	defer v.snapshotMu.Unlock()
+
+	return v.snapshot
 }
 
 // SetContent sets the overlay contents for a file.
-func (v *View) SetContent(ctx context.Context, uri span.URI, content []byte) error {
+func (v *view) SetContent(ctx context.Context, uri span.URI, version float64, content []byte) (bool, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+
 	// Cancel all still-running previous requests, since they would be
 	// operating on stale data.
 	v.cancel()
 	v.backgroundCtx, v.cancel = context.WithCancel(v.baseCtx)
 
-	v.contentChanges[uri] = func() {
-		v.applyContentChange(uri, content)
+	if v.Ignore(uri) {
+		return false, nil
 	}
 
-	return nil
-}
-
-// applyContentChanges applies all of the changed content stored in the view.
-// It is assumed that the caller has locked both the view's and the mcache's
-// mutexes.
-func (v *View) applyContentChanges(ctx context.Context) error {
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	v.pcache.mu.Lock()
-	defer v.pcache.mu.Unlock()
-
-	for uri, change := range v.contentChanges {
-		change()
-		delete(v.contentChanges, uri)
-	}
-
-	return nil
-}
-
-// setContent applies a content update for a given file. It assumes that the
-// caller is holding the view's mutex.
-func (v *View) applyContentChange(uri span.URI, content []byte) {
-	f, err := v.getFile(uri)
-	if err != nil {
-		return
-	}
-	f.content = content
-
-	// TODO(rstambler): Should we recompute these here?
-	f.ast = nil
-	f.token = nil
-
-	// Remove the package and all of its reverse dependencies from the cache.
-	if f.pkg != nil {
-		v.remove(f.pkg.pkgPath, map[string]struct{}{})
-	}
-
-	switch {
-	case f.active && content == nil:
-		// The file was active, so we need to forget its content.
-		f.active = false
-		delete(f.view.Config.Overlay, f.filename)
-		f.content = nil
-	case content != nil:
-		// This is an active overlay, so we update the map.
-		f.active = true
-		f.view.Config.Overlay[f.filename] = f.content
-	}
-}
-
-// remove invalidates a package and its reverse dependencies in the view's
-// package cache. It is assumed that the caller has locked both the mutexes
-// of both the mcache and the pcache.
-func (v *View) remove(pkgPath string, seen map[string]struct{}) {
-	if _, ok := seen[pkgPath]; ok {
-		return
-	}
-	m, ok := v.mcache.packages[pkgPath]
-	if !ok {
-		return
-	}
-	seen[pkgPath] = struct{}{}
-	for parentPkgPath := range m.parents {
-		v.remove(parentPkgPath, seen)
-	}
-	// All of the files in the package may also be holding a pointer to the
-	// invalidated package.
-	for _, filename := range m.files {
-		if f, _ := v.findFile(span.FileURI(filename)); f != nil {
-			f.pkg = nil
-		}
-	}
-	delete(v.pcache.packages, pkgPath)
+	kind := source.DetectLanguage("", uri.Filename())
+	return v.session.SetOverlay(uri, kind, version, content), nil
 }
 
 // FindFile returns the file if the given URI is already a part of the view.
-func (v *View) FindFile(ctx context.Context, uri span.URI) *File {
+func (v *view) FindFile(ctx context.Context, uri span.URI) source.File {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	f, err := v.findFile(uri)
@@ -226,32 +354,32 @@ func (v *View) FindFile(ctx context.Context, uri span.URI) *File {
 
 // GetFile returns a File for the given URI. It will always succeed because it
 // adds the file to the managed set if needed.
-func (v *View) GetFile(ctx context.Context, uri span.URI) (source.File, error) {
+func (v *view) GetFile(ctx context.Context, uri span.URI) (source.File, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-
-	return v.getFile(uri)
+	// TODO(rstambler): Should there be a version that provides a kind explicitly?
+	kind := source.DetectLanguage("", uri.Filename())
+	return v.getFile(ctx, uri, kind)
 }
 
 // getFile is the unlocked internal implementation of GetFile.
-func (v *View) getFile(uri span.URI) (*File, error) {
-	if f, err := v.findFile(uri); err != nil {
+func (v *view) getFile(ctx context.Context, uri span.URI, kind source.FileKind) (viewFile, error) {
+	f, err := v.findFile(uri)
+	if err != nil {
 		return nil, err
 	} else if f != nil {
 		return f, nil
 	}
-	filename, err := uri.Filename()
-	if err != nil {
-		return nil, err
+	f = &fileBase{
+		view:  v,
+		fname: uri.Filename(),
+		kind:  kind,
 	}
-	f := &File{
-		view:     v,
-		filename: filename,
-	}
+	v.session.filesWatchMap.Watch(uri, func(action source.FileAction) bool {
+		ctx := xcontext.Detach(ctx)
+		return v.invalidateContent(ctx, f, kind, action)
+	})
 	v.mapFile(uri, f)
 	return f, nil
 }
@@ -260,27 +388,25 @@ func (v *View) getFile(uri span.URI) (*File, error) {
 //
 // An error is only returned for an irreparable failure, for example, if the
 // filename in question does not exist.
-func (v *View) findFile(uri span.URI) (*File, error) {
+func (v *view) findFile(uri span.URI) (viewFile, error) {
 	if f := v.filesByURI[uri]; f != nil {
 		// a perfect match
 		return f, nil
 	}
 	// no exact match stored, time to do some real work
 	// check for any files with the same basename
-	fname, err := uri.Filename()
-	if err != nil {
-		return nil, err
-	}
+	fname := uri.Filename()
 	basename := basename(fname)
 	if candidates := v.filesByBase[basename]; candidates != nil {
 		pathStat, err := os.Stat(fname)
 		if os.IsNotExist(err) {
 			return nil, err
-		} else if err != nil {
+		}
+		if err != nil {
 			return nil, nil // the file may exist, return without an error
 		}
 		for _, c := range candidates {
-			if cStat, err := os.Stat(c.filename); err == nil {
+			if cStat, err := os.Stat(c.filename()); err == nil {
 				if os.SameFile(pathStat, cStat) {
 					// same file, map it
 					v.mapFile(uri, c)
@@ -293,15 +419,84 @@ func (v *View) findFile(uri span.URI) (*File, error) {
 	return nil, nil
 }
 
-func (v *View) mapFile(uri span.URI, f *File) {
-	v.filesByURI[uri] = f
+func (f *fileBase) addURI(uri span.URI) int {
 	f.uris = append(f.uris, uri)
-	if f.basename == "" {
-		f.basename = basename(f.filename)
-		v.filesByBase[f.basename] = append(v.filesByBase[f.basename], f)
+	return len(f.uris)
+}
+
+func (v *view) mapFile(uri span.URI, f viewFile) {
+	v.filesByURI[uri] = f
+	if f.addURI(uri) == 1 {
+		basename := basename(f.filename())
+		v.filesByBase[basename] = append(v.filesByBase[basename], f)
 	}
 }
 
-func (v *View) Logger() xlog.Logger {
-	return v.log
+func (v *view) FindPosInPackage(searchpkg source.Package, pos token.Pos) (*ast.File, *protocol.ColumnMapper, source.Package, error) {
+	tok := v.session.cache.fset.File(pos)
+	if tok == nil {
+		return nil, nil, nil, errors.Errorf("no file for pos in package %s", searchpkg.ID())
+	}
+	uri := span.FileURI(tok.Position(pos).Filename)
+
+	// Special case for ignored files.
+	var (
+		ph  source.ParseGoHandle
+		pkg source.Package
+		err error
+	)
+	if v.Ignore(uri) {
+		ph, pkg, err = v.findIgnoredFile(uri)
+	} else {
+		ph, pkg, err = findFileInPackage(searchpkg, uri)
+	}
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	file, m, _, err := ph.Cached()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !(file.Pos() <= pos && pos <= file.End()) {
+		return nil, nil, nil, err
+	}
+	return file, m, pkg, nil
 }
+
+func (v *view) findIgnoredFile(uri span.URI) (source.ParseGoHandle, source.Package, error) {
+	// Check the builtin package.
+	for _, h := range v.BuiltinPackage().CompiledGoFiles() {
+		if h.File().Identity().URI == uri {
+			return h, nil, nil
+		}
+	}
+	return nil, nil, errors.Errorf("no ignored file for %s", uri)
+}
+
+func findFileInPackage(pkg source.Package, uri span.URI) (source.ParseGoHandle, source.Package, error) {
+	queue := []source.Package{pkg}
+	seen := make(map[string]bool)
+
+	for len(queue) > 0 {
+		pkg := queue[0]
+		queue = queue[1:]
+		seen[pkg.ID()] = true
+
+		for _, ph := range pkg.CompiledGoFiles() {
+			if ph.File().Identity().URI == uri {
+				return ph, pkg, nil
+			}
+		}
+		for _, dep := range pkg.Imports() {
+			if !seen[dep.ID()] {
+				queue = append(queue, dep)
+			}
+		}
+	}
+	return nil, nil, errors.Errorf("no file for %s in package %s", uri, pkg.ID())
+}
+
+type debugView struct{ *view }
+
+func (v debugView) ID() string             { return v.id }
+func (v debugView) Session() debug.Session { return debugSession{v.session} }
