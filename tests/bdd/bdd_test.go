@@ -205,7 +205,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 					Appinfo: v1alpha1.ApplicationParams{
 						Appns:    "litmus",
 						Applabel: "app=nginx",
-						AppKind: "deployment",
+						AppKind:  "deployment",
 					},
 					ChaosServiceAccount: "litmus",
 					Monitoring:          true,

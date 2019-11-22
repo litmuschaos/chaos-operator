@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
- // CreateClientSet will generate the kubernetes clientset using config
+// CreateClientSet will generate the kubernetes clientset using config
 func CreateClientSet() (*kubernetes.Clientset, error) {
 	restConfig, err := config.GetConfig()
 	if err != nil {
