@@ -39,8 +39,9 @@ type ChaosExperimentStatus struct {
 
 // ConfigMap is an simpler implementation of corev1.ConfigMaps, needed for experiments
 type ConfigMap struct {
-	Data map[string]string `json:"data"`
-	Name string            `json:"name"`
+	Data      map[string]string `json:"data"`
+	Name      string            `json:"name"`
+	MountPath string            `json:"mountpath"`
 }
 
 // ExperimentDef defines information about nature of chaos & components subjected to it
