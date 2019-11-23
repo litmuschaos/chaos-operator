@@ -151,7 +151,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Get the image for runner and monitor pod from chaosengine spec
-	getChaosMonitorRunnerImage()
+	setChaosResourceImage()
 
 	// Fetch the app details from ChaosEngine instance. Check if app is present
 	// Also check, if the app is annotated for chaos & that the labels are unique
@@ -537,8 +537,8 @@ func checkMonitoring(engineReconcile *reconcileEngine, reqLogger logr.Logger) (r
 	return reconcile.Result{}, nil
 }
 
-//getChaosMonitorRunnerImage take the runner and monitor image from chaos-operator spec
-func getChaosMonitorRunnerImage() {
+//setChaosResourceImage take the runner and monitor image from chaos-operator spec
+func setChaosResourceImage() {
 
 	ChaosMonitorImage := os.Getenv("CHAOS_MONITOR_IMAGE")
 	ChaosRunnerImage := os.Getenv("CHAOS_RUNNER_IMAGE")
