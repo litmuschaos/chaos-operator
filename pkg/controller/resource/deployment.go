@@ -67,7 +67,7 @@ func checkForChaosEnabledDeployment(targetAppList *v1.DeploymentList, ce *chaosT
 		annotationValue := deployment.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		chaosEnabledDeployment = CountTotalChaosEnabled(annotationValue, chaosEnabledDeployment)
 		if chaosEnabledDeployment > 1 {
-			return ce, chaosEnabledDeployment, errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
+			return ce, chaosEnabledDeployment, errors.New("too many deployments with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
 		}
 	}
 	return ce, chaosEnabledDeployment, nil

@@ -66,7 +66,7 @@ func checkForChaosEnabledDaemonSet(targetAppList *v1.DaemonSetList, ce *chaosTyp
 		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		chaosEnabledDaemonSet = CountTotalChaosEnabled(annotationValue, chaosEnabledDaemonSet)
 		if chaosEnabledDaemonSet > 1 {
-			return ce, chaosEnabledDaemonSet, errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
+			return ce, chaosEnabledDaemonSet, errors.New("too many daemonsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
 		}
 	}
 	return ce, chaosEnabledDaemonSet, nil

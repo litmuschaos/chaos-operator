@@ -67,7 +67,7 @@ func checkForChaosEnabledStatefulSet(targetAppList *v1.StatefulSetList, ce *chao
 		annotationValue := statefulSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		chaosEnabledStatefulSet = CountTotalChaosEnabled(annotationValue, chaosEnabledStatefulSet)
 		if chaosEnabledStatefulSet > 1 {
-			return ce, chaosEnabledStatefulSet, errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
+			return ce, chaosEnabledStatefulSet, errors.New("too many statefulsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
 		}
 	}
 	return ce, chaosEnabledStatefulSet, nil
