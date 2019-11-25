@@ -17,7 +17,6 @@ limitations under the License.
 package resource
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -58,6 +57,7 @@ func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 	default:
 		return ce, fmt.Errorf("resource type '%s' not supported for induce chaos", ce.AppInfo.Kind)
 	}
+	chaosTypes.Log.Info("chaos candidate of", "kind:", ce.AppInfo.Kind ,"appName: ", ce.AppName, "appUUID: ", ce.AppUUID)
 	return ce, nil
 }
 
@@ -67,14 +67,4 @@ func CountTotalChaosEnabled(annotationValue string, chaosCandidates int) int {
 		chaosCandidates++
 	}
 	return chaosCandidates
-}
-
-// ValidateTotalChaosEnabled will validate the total chaos count
-func ValidateTotalChaosEnabled(chaosCandidates int) error {
-	if chaosCandidates > 1 {
-		return errors.New("too many chaos candidates with same label, either provide unique labels or annotate only desired app for chaos")
-	} else if chaosCandidates == 0 {
-		return errors.New("no chaos-candidate found")
-	}
-	return nil
 }
