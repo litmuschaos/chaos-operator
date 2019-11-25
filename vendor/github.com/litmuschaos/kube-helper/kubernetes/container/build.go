@@ -186,3 +186,26 @@ func (b *Builder) WithPortsNew(ports []corev1.ContainerPort) *Builder {
 	b.con.object.Ports = newports
 	return b
 }
+
+// WithVolumeMountsNew sets the command arguments of the container
+func (b *Builder) WithVolumeMountsNew(volumeMounts []corev1.VolumeMount) *Builder {
+	if volumeMounts == nil {
+		b.errors = append(
+			b.errors,
+			errors.New("failed to build container object: nil volumemounts"),
+		)
+		return b
+	}
+
+	if len(volumeMounts) == 0 {
+		b.errors = append(
+			b.errors,
+			errors.New("failed to build container object: missing volumemounts"),
+		)
+		return b
+	}
+	newvolumeMounts := []corev1.VolumeMount{}
+	newvolumeMounts = append(newvolumeMounts, volumeMounts...)
+	b.con.object.VolumeMounts = newvolumeMounts
+	return b
+}

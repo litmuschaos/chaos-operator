@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	container "github.com/litmuschaos/kube-helper/kubernetes/container"
+	volume "github.com/litmuschaos/kube-helper/kubernetes/volume/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -342,9 +343,7 @@ func (b *Builder) WithContainerBuilders(
 
 // WithVolumeBuilders builds the list of volumebuilders provided
 // and merges it to the volumes field of podtemplatespec.
-/*func (b *Builder) WithVolumeBuilders(
-	volumeBuilderList ...*volume.Builder,
-) *Builder {
+func (b *Builder) WithVolumeBuilders(volumeBuilderList []*volume.Builder) *Builder {
 	if volumeBuilderList == nil {
 		b.errs = append(
 			b.errs,
@@ -357,7 +356,8 @@ func (b *Builder) WithContainerBuilders(
 		if err != nil {
 			b.errs = append(
 				b.errs,
-				errors.Wrap(err, "failed to build podtemplatespec"),
+				errors.New(err.Error()),
+				//errors.append(err, "failed to build podtemplatespec"),
 			)
 			return b
 		}
@@ -369,7 +369,7 @@ func (b *Builder) WithContainerBuilders(
 	}
 	return b
 }
-*/
+
 // WithContainerBuildersNew builds the list of containerbuilder
 // provided and sets the containers field of the podtemplatespec
 func (b *Builder) WithContainerBuildersNew(
@@ -408,46 +408,6 @@ func (b *Builder) WithContainerBuildersNew(
 	return b
 }
 
-// WithVolumeBuildersNew builds the list of volumebuilders provided
-// and sets Volumes field of podtemplatespec.
-/*
-func (b *Builder) WithVolumeBuildersNew(
-	volumeBuilderList ...*volume.Builder,
-) *Builder {
-	if volumeBuilderList == nil {
-		b.errs = append(
-			b.errs,
-			errors.New("failed to build podtemplatespec: nil volumeBuilderList"),
-		)
-		return b
-	}
-	if len(volumeBuilderList) == 0 {
-		b.errs = append(
-			b.errs,
-			errors.New("failed to build podtemplatespec: missing volumeBuilderList"),
-		)
-		return b
-	}
-	volList := []corev1.Volume{}
-	for _, volumeBuilder := range volumeBuilderList {
-		vol, err := volumeBuilder.Build()
-		if err != nil {
-			b.errs = append(
-				b.errs,
-				errors.Wrap(err, "failed to build podtemplatespec"),
-			)
-			return b
-		}
-		newvol := *vol
-		volList = append(
-			volList,
-			newvol,
-		)
-	}
-	b.podtemplatespec.Object.Spec.Volumes = volList
-	return b
-}
-*/
 // Build returns a deployment instance
 func (b *Builder) Build() (*PodTemplateSpec, error) {
 	err := b.validate()

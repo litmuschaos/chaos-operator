@@ -7,13 +7,11 @@ required = [
   "k8s.io/code-generator/cmd/informer-gen",
   "k8s.io/kube-openapi/cmd/openapi-gen",
   "k8s.io/gengo/args",
-  "sigs.k8s.io/controller-tools/pkg/crd/generator",
 ]
 
 [[override]]
   name = "k8s.io/code-generator"
   version = "kubernetes-1.15.4"
-  # revision = "c2090bec4d9b1fb25de3812f868accc2bc9ecbae"
 
 [[override]]
   name = "k8s.io/kube-openapi"
@@ -25,7 +23,7 @@ required = [
 
 [[override]]
   name = "sigs.k8s.io/controller-tools"
-  version = "=v0.1.8"
+  version = "=v0.2.2"
 
 [[override]]
   name = "k8s.io/api"
@@ -49,7 +47,7 @@ required = [
 
 [[override]]
   name = "sigs.k8s.io/controller-runtime"
-  version = "=v0.2.0"
+  version = "=v0.3.0"
 
 [[override]]
   name = "gopkg.in/fsnotify.v1"
