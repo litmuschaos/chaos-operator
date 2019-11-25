@@ -27,7 +27,8 @@ func Format(ctx context.Context, snapshot Snapshot, f File) ([]protocol.TextEdit
 	ctx, done := trace.StartSpan(ctx, "source.Format")
 	defer done()
 
-	cphs, err := snapshot.PackageHandles(ctx, f)
+	fh := snapshot.Handle(ctx, f)
+	cphs, err := snapshot.PackageHandles(ctx, fh)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +102,8 @@ func AllImportsFixes(ctx context.Context, snapshot Snapshot, f File) (allFixEdit
 	ctx, done := trace.StartSpan(ctx, "source.AllImportsFixes")
 	defer done()
 
-	cphs, err := snapshot.PackageHandles(ctx, f)
+	fh := snapshot.Handle(ctx, f)
+	cphs, err := snapshot.PackageHandles(ctx, fh)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -285,8 +287,13 @@ func trimToImports(fset *token.FileSet, f *ast.File, src []byte) ([]byte, int) {
 	if firstImport == nil {
 		return nil, 0
 	}
+	tok := fset.File(f.Pos())
 	start := firstImport.Pos()
-	end := fset.File(f.Pos()).LineStart(fset.Position(lastImport.End()).Line + 1)
+	end := lastImport.End()
+	if tok.LineCount() > fset.Position(end).Line {
+		end = fset.File(f.Pos()).LineStart(fset.Position(lastImport.End()).Line + 1)
+	}
+
 	startLineOffset := fset.Position(start).Line - 1 // lines are 1-indexed.
 	return src[fset.Position(firstImport.Pos()).Offset:fset.Position(end).Offset], startLineOffset
 }

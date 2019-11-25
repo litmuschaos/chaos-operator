@@ -65,7 +65,7 @@ func (i *IdentifierInfo) Implementation(ctx context.Context) ([]protocol.Locatio
 		if pkgs[obj] == nil || len(pkg.CompiledGoFiles()) == 0 {
 			continue
 		}
-		file, _, _, err := i.Snapshot.View().FindPosInPackage(pkgs[obj], obj.Pos())
+		file, _, err := i.Snapshot.View().FindPosInPackage(pkgs[obj], obj.Pos())
 		if err != nil {
 			return nil, err
 		}
@@ -76,6 +76,10 @@ func (i *IdentifierInfo) Implementation(ctx context.Context) ([]protocol.Locatio
 		decRange, err := ident.Declaration.Range()
 		if err != nil {
 			return nil, err
+		}
+		// Do not add interface itself to the list.
+		if ident.Declaration.spanRange == i.Declaration.spanRange {
+			continue
 		}
 		locations = append(locations, protocol.Location{
 			URI:   protocol.NewURI(ident.Declaration.URI()),

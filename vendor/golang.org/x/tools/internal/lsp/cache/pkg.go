@@ -22,6 +22,7 @@ type pkg struct {
 	pkgPath packagePath
 	mode    source.ParseMode
 
+	goFiles         []source.ParseGoHandle
 	compiledGoFiles []source.ParseGoHandle
 	errors          []*source.Error
 	imports         map[packagePath]*pkg
@@ -49,7 +50,12 @@ func (p *pkg) CompiledGoFiles() []source.ParseGoHandle {
 }
 
 func (p *pkg) File(uri span.URI) (source.ParseGoHandle, error) {
-	for _, ph := range p.CompiledGoFiles() {
+	for _, ph := range p.compiledGoFiles {
+		if ph.File().Identity().URI == uri {
+			return ph, nil
+		}
+	}
+	for _, ph := range p.goFiles {
 		if ph.File().Identity().URI == uri {
 			return ph, nil
 		}
@@ -104,28 +110,30 @@ func (p *pkg) Imports() []source.Package {
 	return result
 }
 
-func (s *snapshot) FindAnalysisError(ctx context.Context, id string, diag protocol.Diagnostic) (*source.Error, error) {
-	acts := s.getActionHandles(packageID(id), source.ParseFull)
-	if len(acts) == 0 {
-		return nil, errors.Errorf("no action handles for %v", id)
+func (s *snapshot) FindAnalysisError(ctx context.Context, pkgID, analyzerName, msg string, rng protocol.Range) (*source.Error, error) {
+	analyzer, ok := s.View().Options().Analyzers[analyzerName]
+	if !ok {
+		return nil, errors.Errorf("unexpected analyzer: %s", analyzerName)
 	}
-	for _, act := range acts {
-		errors, _, err := act.analyze(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, err := range errors {
-			if err.Category != diag.Source {
-				continue
-			}
-			if err.Message != diag.Message {
-				continue
-			}
-			if protocol.CompareRange(err.Range, diag.Range) != 0 {
-				continue
-			}
-			return err, nil
-		}
+	act, err := s.actionHandle(ctx, packageID(pkgID), source.ParseFull, analyzer)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.Errorf("no matching diagnostic for %v", diag)
+	errs, _, err := act.analyze(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, err := range errs {
+		if err.Category != analyzerName {
+			continue
+		}
+		if err.Message != msg {
+			continue
+		}
+		if protocol.CompareRange(err.Range, rng) != 0 {
+			continue
+		}
+		return err, nil
+	}
+	return nil, errors.Errorf("no matching diagnostic for %s:%v", pkgID, analyzerName)
 }

@@ -31,14 +31,14 @@ type Snapshot interface {
 
 	// FindAnalysisError returns the analysis error represented by the diagnostic.
 	// This is used to get the SuggestedFixes associated with that error.
-	FindAnalysisError(ctx context.Context, id string, diag protocol.Diagnostic) (*Error, error)
+	FindAnalysisError(ctx context.Context, pkgID, analyzerName, msg string, rng protocol.Range) (*Error, error)
 
 	// PackageHandle returns the CheckPackageHandle for the given package ID.
 	PackageHandle(ctx context.Context, id string) (CheckPackageHandle, error)
 
 	// PackageHandles returns the CheckPackageHandles for the packages
 	// that this file belongs to.
-	PackageHandles(ctx context.Context, f File) ([]CheckPackageHandle, error)
+	PackageHandles(ctx context.Context, fh FileHandle) ([]CheckPackageHandle, error)
 
 	// GetActiveReverseDeps returns the active files belonging to the reverse
 	// dependencies of this file's package.
@@ -126,7 +126,9 @@ type View interface {
 
 	// FindFileInPackage returns the AST and type information for a file that may
 	// belong to or be part of a dependency of the given package.
-	FindPosInPackage(pkg Package, pos token.Pos) (*ast.File, *protocol.ColumnMapper, Package, error)
+	FindPosInPackage(pkg Package, pos token.Pos) (*ast.File, Package, error)
+
+	FindMapperInPackage(pkg Package, uri span.URI) (*protocol.ColumnMapper, error)
 
 	// Snapshot returns the current snapshot for the view.
 	Snapshot() Snapshot
@@ -289,7 +291,9 @@ type FileIdentity struct {
 }
 
 func (fileID FileIdentity) String() string {
-	return fmt.Sprintf("%s%f%s%s", fileID.URI, fileID.Version, fileID.Identifier, fileID.Kind)
+	// Version is not part of the FileIdentity string,
+	// as it can remain change even if the file does not.
+	return fmt.Sprintf("%s%s%s", fileID.URI, fileID.Identifier, fileID.Kind)
 }
 
 // File represents a source file of any type.

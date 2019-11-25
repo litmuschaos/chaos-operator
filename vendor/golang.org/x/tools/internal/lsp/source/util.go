@@ -30,6 +30,18 @@ type mappedRange struct {
 	protocolRange *protocol.Range
 }
 
+func newMappedRange(fset *token.FileSet, m *protocol.ColumnMapper, start, end token.Pos) mappedRange {
+	return mappedRange{
+		spanRange: span.Range{
+			FileSet:   fset,
+			Start:     start,
+			End:       end,
+			Converter: m.Converter,
+		},
+		m: m,
+	}
+}
+
 func (s mappedRange) Range() (protocol.Range, error) {
 	if s.protocolRange == nil {
 		spn, err := s.spanRange.Span()
@@ -157,7 +169,8 @@ func nodeToMappedRange(view View, m *protocol.ColumnMapper, n ast.Node) (mappedR
 }
 
 func posToMappedRange(v View, pkg Package, pos, end token.Pos) (mappedRange, error) {
-	_, m, _, err := v.FindPosInPackage(pkg, pos)
+	logicalFilename := v.Session().Cache().FileSet().File(pos).Position(pos).Filename
+	m, err := v.FindMapperInPackage(pkg, span.FileURI(logicalFilename))
 	if err != nil {
 		return mappedRange{}, err
 	}
@@ -171,10 +184,7 @@ func posToRange(view View, m *protocol.ColumnMapper, pos, end token.Pos) (mapped
 	if !end.IsValid() {
 		return mappedRange{}, errors.Errorf("invalid position for %v", end)
 	}
-	return mappedRange{
-		m:         m,
-		spanRange: span.NewRange(view.Session().Cache().FileSet(), pos, end),
-	}, nil
+	return newMappedRange(view.Session().Cache().FileSet(), m, pos, end), nil
 }
 
 // Matches cgo generated comment as well as the proposed standard:
@@ -380,6 +390,17 @@ func typeConversion(call *ast.CallExpr, info *types.Info) types.Type {
 	return nil
 }
 
+// fieldsAccessible returns whether s has at least one field accessible by p.
+func fieldsAccessible(s *types.Struct, p *types.Package) bool {
+	for i := 0; i < s.NumFields(); i++ {
+		f := s.Field(i)
+		if f.Exported() || f.Pkg() == p {
+			return true
+		}
+	}
+	return false
+}
+
 func formatParams(s Snapshot, pkg Package, sig *types.Signature, qf types.Qualifier) []string {
 	params := make([]string, 0, sig.Params().Len())
 	for i := 0; i < sig.Params().Len(); i++ {
@@ -404,7 +425,7 @@ func formatParams(s Snapshot, pkg Package, sig *types.Signature, qf types.Qualif
 }
 
 func formatFieldType(s Snapshot, srcpkg Package, obj types.Object, qf types.Qualifier) (string, error) {
-	file, _, pkg, err := s.View().FindPosInPackage(srcpkg, obj.Pos())
+	file, pkg, err := s.View().FindPosInPackage(srcpkg, obj.Pos())
 	if err != nil {
 		return "", err
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package resource
 
 import (
+	"errors"
 	"fmt"
 
 	v1 "k8s.io/api/apps/v1"
@@ -32,16 +33,12 @@ func CheckStatefulSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.
 	if err != nil {
 		return ce, err
 	}
-	chaosEnabledStatefulset := 0
-	for _, statefulset := range targetAppList.Items {
-		ce.AppName = statefulset.ObjectMeta.Name
-		ce.AppUUID = statefulset.ObjectMeta.UID
-		annotationValue := statefulset.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledStatefulset = CountTotalChaosEnabled(annotationValue, chaosEnabledStatefulset)
-	}
-	err = ValidateTotalChaosEnabled(chaosEnabledStatefulset)
+	ce, chaosEnabledStatefulSet, err := checkForChaosEnabledStatefulSet(targetAppList, ce)
 	if err != nil {
 		return ce, err
+	}
+	if chaosEnabledStatefulSet == 0 {
+		return ce, errors.New("no chaos-candidate found")
 	}
 	chaosTypes.Log.Info("Statefulset chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
 	return ce, nil
@@ -59,4 +56,19 @@ func getStatefulSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineI
 		return nil, fmt.Errorf("no statefulset apps with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
 	}
 	return targetAppList, err
+}
+
+// This will check and count the total chaos enabled application
+func checkForChaosEnabledStatefulSet(targetAppList *v1.StatefulSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+	chaosEnabledStatefulSet := 0
+	for _, statefulSet := range targetAppList.Items {
+		ce.AppName = statefulSet.ObjectMeta.Name
+		ce.AppUUID = statefulSet.ObjectMeta.UID
+		annotationValue := statefulSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
+		chaosEnabledStatefulSet = CountTotalChaosEnabled(annotationValue, chaosEnabledStatefulSet)
+		if chaosEnabledStatefulSet > 1 {
+			return ce, chaosEnabledStatefulSet, errors.New("too many statefulsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
+		}
+	}
+	return ce, chaosEnabledStatefulSet, nil
 }

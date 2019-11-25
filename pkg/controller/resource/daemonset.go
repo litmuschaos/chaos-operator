@@ -17,6 +17,7 @@ limitations under the License.
 package resource
 
 import (
+	"errors"
 	"fmt"
 
 	v1 "k8s.io/api/apps/v1"
@@ -32,12 +33,13 @@ func CheckDaemonSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.En
 	if err != nil {
 		return ce, err
 	}
-	ce, chaosEnabledDaemonSet := checkForEnabledChaos(targetAppList, ce)
-	err = ValidateTotalChaosEnabled(chaosEnabledDaemonSet)
+	ce, chaosEnabledDaemonSet, err := checkForChaosEnabledDaemonSet(targetAppList, ce)
 	if err != nil {
 		return ce, err
 	}
-	chaosTypes.Log.Info("DaemonSet chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
+	if chaosEnabledDaemonSet == 0 {
+		return ce, errors.New("no chaos-candidate found")
+	}
 	return ce, nil
 }
 
@@ -56,13 +58,16 @@ func getDaemonSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInf
 }
 
 // This will check and count the total chaos enabled application
-func checkForEnabledChaos(targetAppList *v1.DaemonSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int) {
+func checkForChaosEnabledDaemonSet(targetAppList *v1.DaemonSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDaemonSet := 0
 	for _, daemonSet := range targetAppList.Items {
 		ce.AppName = daemonSet.ObjectMeta.Name
 		ce.AppUUID = daemonSet.ObjectMeta.UID
 		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		chaosEnabledDaemonSet = CountTotalChaosEnabled(annotationValue, chaosEnabledDaemonSet)
+		if chaosEnabledDaemonSet > 1 {
+			return ce, chaosEnabledDaemonSet, errors.New("too many daemonsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
+		}
 	}
-	return ce, chaosEnabledDaemonSet
+	return ce, chaosEnabledDaemonSet, nil
 }

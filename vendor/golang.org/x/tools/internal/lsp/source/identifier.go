@@ -50,7 +50,8 @@ func Identifier(ctx context.Context, snapshot Snapshot, f File, pos protocol.Pos
 	ctx, done := trace.StartSpan(ctx, "source.Identifier")
 	defer done()
 
-	cphs, err := snapshot.PackageHandles(ctx, f)
+	fh := snapshot.Handle(ctx, f)
+	cphs, err := snapshot.PackageHandles(ctx, fh)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +243,7 @@ func hasErrorType(obj types.Object) bool {
 }
 
 func objToNode(v View, pkg Package, obj types.Object) (ast.Decl, error) {
-	declAST, _, _, err := v.FindPosInPackage(pkg, obj.Pos())
+	declAST, _, err := v.FindPosInPackage(pkg, obj.Pos())
 	if err != nil {
 		return nil, err
 	}

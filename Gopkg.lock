@@ -294,7 +294,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b3b438249ccf1d451c8ebfe265c09476df30b9a3128067a19c9f89a4eb7a640c"
+  digest = "1:dd92abba77efa61fe1bb15a99d85f8e84fffbe027b2786ef3ca8331e887ec5b9"
   name = "github.com/litmuschaos/kube-helper"
   packages = [
     "kubernetes/container",
@@ -302,7 +302,7 @@
     "kubernetes/service",
   ]
   pruneopts = "NT"
-  revision = "78fac1edfa07536b4236b0bbe3800936f4e792a2"
+  revision = "301b911234e87707aceb7ebc4f811c3e6fb17efb"
 
 [[projects]]
   digest = "1:5181790e1f11c6b9cb42c70c5b902926c5e696b1e71bc24d4f82e6862ab3d078"
@@ -443,7 +443,7 @@
   version = "v0.7.0"
 
 [[projects]]
-  digest = "1:c5423a2a24072fbad89ed56904bf42faef5b69f1ddfd56813430f172ab469685"
+  digest = "1:55bcf4202ec2033988abce4932b6ad0f424fbd3d408e80368c24a23c406998d8"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
@@ -451,8 +451,8 @@
     "internal/util",
   ]
   pruneopts = "NT"
-  revision = "3a8122e6a950185a58d8d6a909450a575602becd"
-  version = "v0.0.7"
+  revision = "6d489fc7f1d9cd890a250f3ea3431b1744b9623f"
+  version = "v0.0.8"
 
 [[projects]]
   digest = "1:d115708a27806831d1babbc6f28a7478ddf8e32a7095507c816e2515fb03a810"
@@ -518,11 +518,11 @@
     "golint",
   ]
   pruneopts = "NT"
-  revision = "16217165b5de779cb6a5e4fc81fa9c1166fda457"
+  revision = "fdd1cda4f05fd1fd86124f0ef9ce31a0b72c8448"
 
 [[projects]]
   branch = "master"
-  digest = "1:efcb28d1c6cbf468f93554cfc87473d5c2d4431f769fb7f84b794b76e117b8b6"
+  digest = "1:084711ae3f329d5383921bc91b294e136a7b83f1e3bbf8de2bd646c6426cd3d2"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -536,7 +536,7 @@
     "idna",
   ]
   pruneopts = "NT"
-  revision = "72fef5d5e2669f4168d6502d99cf32dcd6deaaa0"
+  revision = "ffdde105785063a81acd95bdf89ea53f6e0aac2d"
 
 [[projects]]
   branch = "master"
@@ -611,7 +611,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6b0303337689ce7f27bb2b676c59083496fc8bc051e0262ecf5d47cbdd281766"
+  digest = "1:c5a3d5afec7035d3b94cf293883c2816012037a10869acd478194815a3af35e1"
   name = "golang.org/x/tools"
   packages = [
     "go/analysis",
@@ -634,7 +634,7 @@
     "internal/span",
   ]
   pruneopts = "NT"
-  revision = "cc15fab314e3fe03e3ef345304e9e0dd5cd4ce26"
+  revision = "b0650ceb63d94ec56d3a00dbdd5e37d944dbeabf"
 
 [[projects]]
   branch = "master"

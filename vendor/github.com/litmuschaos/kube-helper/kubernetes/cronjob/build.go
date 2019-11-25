@@ -86,6 +86,45 @@ func (b *Builder) WithLabels(labels map[string]string) *Builder {
 	return b
 }
 
+// WithSchedule sets the Schedule field of CronJob with provided value.
+func (b *Builder) WithSchedule(schedule string) *Builder {
+	if len(schedule) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New("failed to build Job object: missing schedule"),
+		)
+		return b
+	}
+	b.cronjob.object.Spec.Schedule = schedule
+	return b
+}
+
+// WithSuccessfulJobHistoryLimit sets the SuccessfulJobHistoryLimit field of CronJob with provided value.
+func (b *Builder) WithSuccessfulJobHistoryLimit(limit *int32) *Builder {
+	if int(*limit) < 0 {
+		b.errs = append(
+			b.errs,
+			errors.New("failed to build Job: invalid successfulJobHistoryLimit "),
+		)
+		return b
+	}
+	b.cronjob.object.Spec.SuccessfulJobsHistoryLimit = limit
+	return b
+}
+
+// WithFailedJobHistoryLimit sets the FailedJobHistoryLimit field of CronJob with provided value.
+func (b *Builder) WithFailedJobHistoryLimit(limit *int32) *Builder {
+	if int(*limit) < 0 {
+		b.errs = append(
+			b.errs,
+			errors.New("failed to build Job: invalid failedJobHistoryLimit "),
+		)
+		return b
+	}
+	b.cronjob.object.Spec.FailedJobsHistoryLimit = limit
+	return b
+}
+
 // WithJobTemplateSpecBuilder sets the jobtemplate of this cronjob
 func (b *Builder) WithJobTemplateSpecBuilder(tmplbuilder *jobtemplatespec.Builder) *Builder {
 	if tmplbuilder == nil {

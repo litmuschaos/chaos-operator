@@ -103,10 +103,6 @@ func (r *runner) PrepareRename(t *testing.T, src span.Span, want *source.Prepare
 	//TODO: add command line prepare rename tests when it works
 }
 
-func (r *runner) Implementation(t *testing.T, spn span.Span, imp tests.Implementations) {
-	//TODO: add implements tests when it works
-}
-
 func (r *runner) RunGoplsCmd(t testing.TB, args ...string) (string, string) {
 	rStdout, wStdout, err := os.Pipe()
 	if err != nil {
@@ -128,8 +124,9 @@ func (r *runner) RunGoplsCmd(t testing.TB, args ...string) (string, string) {
 	}()
 	os.Stdout = wStdout
 	os.Stderr = wStderr
+	app := cmd.New("gopls-test", r.data.Config.Dir, r.data.Exported.Config.Env, r.options)
 	err = tool.Run(tests.Context(t),
-		cmd.New("gopls-test", r.data.Config.Dir, r.data.Exported.Config.Env, r.options),
+		app,
 		append([]string{"-remote=internal"}, args...))
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
