@@ -5,199 +5,266 @@
 package lsp
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"os"
 	"path"
-	"strings"
 
-	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/internal/jsonrpc2"
-	"golang.org/x/tools/internal/lsp/cache"
+	"golang.org/x/tools/internal/lsp/debug"
 	"golang.org/x/tools/internal/lsp/protocol"
+	"golang.org/x/tools/internal/lsp/source"
 	"golang.org/x/tools/internal/span"
+	"golang.org/x/tools/internal/telemetry/log"
+	errors "golang.org/x/xerrors"
 )
 
-func (s *Server) initialize(ctx context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {
-	s.initializedMu.Lock()
-	defer s.initializedMu.Unlock()
-	if s.isInitialized {
+func (s *Server) initialize(ctx context.Context, params *protocol.ParamInitialize) (*protocol.InitializeResult, error) {
+	s.stateMu.Lock()
+	state := s.state
+	s.stateMu.Unlock()
+	if state >= serverInitializing {
 		return nil, jsonrpc2.NewErrorf(jsonrpc2.CodeInvalidRequest, "server already initialized")
 	}
-	s.isInitialized = true // mark server as initialized now
+	s.stateMu.Lock()
+	s.state = serverInitializing
+	s.stateMu.Unlock()
 
-	// TODO(rstambler): Change this default to protocol.Incremental (or add a
-	// flag). Disabled for now to simplify debugging.
-	s.textDocumentSyncKind = protocol.Full
+	options := s.session.Options()
+	defer func() { s.session.SetOptions(options) }()
 
-	s.setClientCapabilities(params.Capabilities)
+	// TODO: Handle results here.
+	source.SetOptions(&options, params.InitializationOptions)
+	options.ForClientCapabilities(params.Capabilities)
 
-	// We need a "detached" context so it does not get timeout cancelled.
-	// TODO(iancottrell): Do we need to copy any values across?
-	viewContext := context.Background()
-	folders := params.WorkspaceFolders
-	if len(folders) == 0 {
+	s.pendingFolders = params.WorkspaceFolders
+	if len(s.pendingFolders) == 0 {
 		if params.RootURI != "" {
-			folders = []protocol.WorkspaceFolder{{
+			s.pendingFolders = []protocol.WorkspaceFolder{{
 				URI:  params.RootURI,
 				Name: path.Base(params.RootURI),
 			}}
 		} else {
-			// no folders and no root, single file mode
-			//TODO(iancottrell): not sure how to do single file mode yet
-			//issue: golang.org/issue/31168
-			return nil, fmt.Errorf("single file mode not supported yet")
+			// No folders and no root--we are in single file mode.
+			// TODO: https://golang.org/issue/34160.
+			return nil, errors.Errorf("gopls does not yet support editing a single file. Please open a directory.")
 		}
-	}
-	for _, folder := range folders {
-		uri := span.NewURI(folder.URI)
-		folderPath, err := uri.Filename()
-		if err != nil {
-			return nil, err
-		}
-		s.views = append(s.views, cache.NewView(viewContext, s.log, folder.Name, uri, &packages.Config{
-			Context: ctx,
-			Dir:     folderPath,
-			Env:     os.Environ(),
-			Mode:    packages.LoadImports,
-			Fset:    token.NewFileSet(),
-			Overlay: make(map[string][]byte),
-			ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
-				return parser.ParseFile(fset, filename, src, parser.AllErrors|parser.ParseComments)
-			},
-			Tests: true,
-		}))
 	}
 
+	var codeActionProvider interface{}
+	if ca := params.Capabilities.TextDocument.CodeAction; len(ca.CodeActionLiteralSupport.CodeActionKind.ValueSet) > 0 {
+		// If the client has specified CodeActionLiteralSupport,
+		// send the code actions we support.
+		//
+		// Using CodeActionOptions is only valid if codeActionLiteralSupport is set.
+		codeActionProvider = &protocol.CodeActionOptions{
+			CodeActionKinds: s.getSupportedCodeActions(),
+		}
+	} else {
+		codeActionProvider = true
+	}
+	// This used to be interface{}, when r could be nil
+	var renameOpts protocol.RenameOptions
+	r := params.Capabilities.TextDocument.Rename
+	renameOpts = protocol.RenameOptions{
+		PrepareProvider: r.PrepareSupport,
+	}
 	return &protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
-			CodeActionProvider: true,
-			CompletionProvider: &protocol.CompletionOptions{
+			CodeActionProvider: codeActionProvider,
+			CompletionProvider: protocol.CompletionOptions{
 				TriggerCharacters: []string{"."},
 			},
-			DefinitionProvider:              true,
-			DocumentFormattingProvider:      true,
-			DocumentRangeFormattingProvider: true,
-			DocumentSymbolProvider:          true,
-			HoverProvider:                   true,
-			DocumentHighlightProvider:       true,
-			SignatureHelpProvider: &protocol.SignatureHelpOptions{
+			DefinitionProvider:         true,
+			TypeDefinitionProvider:     true,
+			ImplementationProvider:     true,
+			DocumentFormattingProvider: true,
+			DocumentSymbolProvider:     true,
+			ExecuteCommandProvider: protocol.ExecuteCommandOptions{
+				Commands: options.SupportedCommands,
+			},
+			FoldingRangeProvider:      true,
+			HoverProvider:             true,
+			DocumentHighlightProvider: true,
+			DocumentLinkProvider:      protocol.DocumentLinkOptions{},
+			ReferencesProvider:        true,
+			RenameProvider:            renameOpts,
+			SignatureHelpProvider: protocol.SignatureHelpOptions{
 				TriggerCharacters: []string{"(", ","},
 			},
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
-				Change:    s.textDocumentSyncKind,
+				Change:    options.TextDocumentSyncKind,
 				OpenClose: true,
+				Save: protocol.SaveOptions{
+					IncludeText: false,
+				},
 			},
-			TypeDefinitionProvider: true,
+			Workspace: protocol.WorkspaceGn{
+				WorkspaceFolders: protocol.WorkspaceFoldersGn{
+					Supported:           true,
+					ChangeNotifications: "workspace/didChangeWorkspaceFolders",
+				},
+			},
 		},
 	}, nil
 }
 
-func (s *Server) setClientCapabilities(caps protocol.ClientCapabilities) {
-	// Check if the client supports snippets in completion items.
-	s.insertTextFormat = protocol.PlainTextTextFormat
-	if caps.TextDocument.Completion.CompletionItem.SnippetSupport {
-		s.insertTextFormat = protocol.SnippetTextFormat
-	}
-	// Check if the client supports configuration messages.
-	s.configurationSupported = caps.Workspace.Configuration
-	s.dynamicConfigurationSupported = caps.Workspace.DidChangeConfiguration.DynamicRegistration
-
-	// Check which types of content format are supported by this client.
-	s.preferredContentFormat = protocol.PlainText
-	if len(caps.TextDocument.Hover.ContentFormat) > 0 {
-		s.preferredContentFormat = caps.TextDocument.Hover.ContentFormat[0]
-	}
-}
-
 func (s *Server) initialized(ctx context.Context, params *protocol.InitializedParams) error {
-	if s.configurationSupported {
-		if s.dynamicConfigurationSupported {
-			s.client.RegisterCapability(ctx, &protocol.RegistrationParams{
-				Registrations: []protocol.Registration{{
-					ID:     "workspace/didChangeConfiguration",
-					Method: "workspace/didChangeConfiguration",
+	s.stateMu.Lock()
+	s.state = serverInitialized
+	s.stateMu.Unlock()
+
+	options := s.session.Options()
+	defer func() { s.session.SetOptions(options) }()
+
+	var registrations []protocol.Registration
+	if options.ConfigurationSupported && options.DynamicConfigurationSupported {
+		registrations = append(registrations,
+			protocol.Registration{
+				ID:     "workspace/didChangeConfiguration",
+				Method: "workspace/didChangeConfiguration",
+			},
+			protocol.Registration{
+				ID:     "workspace/didChangeWorkspaceFolders",
+				Method: "workspace/didChangeWorkspaceFolders",
+			},
+		)
+	}
+
+	if options.WatchFileChanges && options.DynamicWatchedFilesSupported {
+		registrations = append(registrations, protocol.Registration{
+			ID:     "workspace/didChangeWatchedFiles",
+			Method: "workspace/didChangeWatchedFiles",
+			RegisterOptions: protocol.DidChangeWatchedFilesRegistrationOptions{
+				Watchers: []protocol.FileSystemWatcher{{
+					GlobPattern: "**/*.go",
+					Kind:        float64(protocol.WatchChange + protocol.WatchDelete + protocol.WatchCreate),
 				}},
-			})
+			},
+		})
+	}
+
+	if len(registrations) > 0 {
+		s.client.RegisterCapability(ctx, &protocol.RegistrationParams{
+			Registrations: registrations,
+		})
+	}
+
+	buf := &bytes.Buffer{}
+	debug.PrintVersionInfo(buf, true, debug.PlainText)
+	log.Print(ctx, buf.String())
+
+	s.addFolders(ctx, s.pendingFolders)
+	s.pendingFolders = nil
+
+	return nil
+}
+
+func (s *Server) addFolders(ctx context.Context, folders []protocol.WorkspaceFolder) {
+	originalViews := len(s.session.Views())
+	viewErrors := make(map[span.URI]error)
+
+	for _, folder := range folders {
+		uri := span.NewURI(folder.URI)
+		view, workspacePackages, err := s.addView(ctx, folder.Name, span.NewURI(folder.URI))
+		if err != nil {
+			viewErrors[uri] = err
+			continue
 		}
-		for _, view := range s.views {
-			config, err := s.client.Configuration(ctx, &protocol.ConfigurationParams{
-				Items: []protocol.ConfigurationItem{{
-					ScopeURI: protocol.NewURI(view.Folder),
-					Section:  "gopls",
-				}},
-			})
-			if err != nil {
-				return err
+		go s.diagnoseSnapshot(view.Snapshot(), workspacePackages)
+	}
+	if len(viewErrors) > 0 {
+		errMsg := fmt.Sprintf("Error loading workspace folders (expected %v, got %v)\n", len(folders), len(s.session.Views())-originalViews)
+		for uri, err := range viewErrors {
+			errMsg += fmt.Sprintf("failed to load view for %s: %v\n", uri, err)
+		}
+		s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+			Type:    protocol.Error,
+			Message: errMsg,
+		})
+	}
+}
+
+func (s *Server) fetchConfig(ctx context.Context, name string, folder span.URI, o *source.Options) error {
+	if !s.session.Options().ConfigurationSupported {
+		return nil
+	}
+	v := protocol.ParamConfiguration{
+		ConfigurationParams: protocol.ConfigurationParams{
+			Items: []protocol.ConfigurationItem{{
+				ScopeURI: protocol.NewURI(folder),
+				Section:  "gopls",
+			}, {
+				ScopeURI: protocol.NewURI(folder),
+				Section:  fmt.Sprintf("gopls-%s", name),
+			}},
+		},
+	}
+	configs, err := s.client.Configuration(ctx, &v)
+	if err != nil {
+		return err
+	}
+	for _, config := range configs {
+		results := source.SetOptions(o, config)
+		for _, result := range results {
+			if result.Error != nil {
+				s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+					Type:    protocol.Error,
+					Message: result.Error.Error(),
+				})
 			}
-			if err := s.processConfig(view, config[0]); err != nil {
-				return err
+			switch result.State {
+			case source.OptionUnexpected:
+				s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+					Type:    protocol.Error,
+					Message: fmt.Sprintf("unexpected config %s", result.Name),
+				})
+			case source.OptionDeprecated:
+				msg := fmt.Sprintf("config %s is deprecated", result.Name)
+				if result.Replacement != "" {
+					msg = fmt.Sprintf("%s, use %s instead", msg, result.Replacement)
+				}
+				s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+					Type:    protocol.Warning,
+					Message: msg,
+				})
 			}
 		}
 	}
 	return nil
-}
-
-func (s *Server) processConfig(view *cache.View, config interface{}) error {
-	// TODO: We should probably store and process more of the config.
-	if config == nil {
-		return nil // ignore error if you don't have a config
-	}
-	c, ok := config.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("invalid config gopls type %T", config)
-	}
-	// Get the environment for the go/packages config.
-	if env := c["env"]; env != nil {
-		menv, ok := env.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("invalid config gopls.env type %T", env)
-		}
-		for k, v := range menv {
-			view.Config.Env = applyEnv(view.Config.Env, k, v)
-		}
-	}
-	// Check if placeholders are enabled.
-	if usePlaceholders, ok := c["usePlaceholders"].(bool); ok {
-		s.usePlaceholders = usePlaceholders
-	}
-	// Check if enhancedHover is enabled.
-	if enhancedHover, ok := c["enhancedHover"].(bool); ok {
-		s.enhancedHover = enhancedHover
-	}
-	return nil
-}
-
-func applyEnv(env []string, k string, v interface{}) []string {
-	prefix := k + "="
-	value := prefix + fmt.Sprint(v)
-	for i, s := range env {
-		if strings.HasPrefix(s, prefix) {
-			env[i] = value
-			return env
-		}
-	}
-	return append(env, value)
 }
 
 func (s *Server) shutdown(ctx context.Context) error {
-	// TODO(rstambler): Cancel contexts here?
-	s.initializedMu.Lock()
-	defer s.initializedMu.Unlock()
-	if !s.isInitialized {
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
+	if s.state < serverInitialized {
 		return jsonrpc2.NewErrorf(jsonrpc2.CodeInvalidRequest, "server not initialized")
 	}
-	s.isInitialized = false
+	// drop all the active views
+	s.session.Shutdown(ctx)
+	s.state = serverShutDown
 	return nil
 }
 
 func (s *Server) exit(ctx context.Context) error {
-	if s.isInitialized {
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
+	if s.state != serverShutDown {
 		os.Exit(1)
 	}
 	os.Exit(0)
 	return nil
+}
+
+func setBool(b *bool, m map[string]interface{}, name string) {
+	if v, ok := m[name].(bool); ok {
+		*b = v
+	}
+}
+
+func setNotBool(b *bool, m map[string]interface{}, name string) {
+	if v, ok := m[name].(bool); ok {
+		*b = !v
+	}
 }

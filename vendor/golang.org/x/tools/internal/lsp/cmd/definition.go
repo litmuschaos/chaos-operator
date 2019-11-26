@@ -16,6 +16,7 @@ import (
 	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/span"
 	"golang.org/x/tools/internal/tool"
+	errors "golang.org/x/xerrors"
 )
 
 // A Definition is the result of a 'definition' query.
@@ -59,46 +60,52 @@ func (d *definition) Run(ctx context.Context, args ...string) error {
 	if len(args) != 1 {
 		return tool.CommandLineErrorf("definition expects 1 argument")
 	}
-	client := &baseClient{}
-	server, err := d.query.app.connect(ctx, client)
+	conn, err := d.query.app.connect(ctx)
 	if err != nil {
 		return err
 	}
+	defer conn.terminate(ctx)
 	from := span.Parse(args[0])
-	m, err := client.AddFile(ctx, from.URI())
+	file := conn.AddFile(ctx, from.URI())
+	if file.err != nil {
+		return file.err
+	}
+	loc, err := file.mapper.Location(from)
 	if err != nil {
 		return err
 	}
-	loc, err := m.Location(from)
-	if err != nil {
-		return err
-	}
-	p := protocol.TextDocumentPositionParams{
+	tdpp := protocol.TextDocumentPositionParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: loc.URI},
 		Position:     loc.Range.Start,
 	}
-	locs, err := server.Definition(ctx, &p)
+	p := protocol.DefinitionParams{
+		TextDocumentPositionParams: tdpp,
+	}
+	locs, err := conn.Definition(ctx, &p)
 	if err != nil {
-		return fmt.Errorf("%v: %v", from, err)
+		return errors.Errorf("%v: %v", from, err)
 	}
 
 	if len(locs) == 0 {
-		return fmt.Errorf("%v: not an identifier", from)
+		return errors.Errorf("%v: not an identifier", from)
 	}
-	hover, err := server.Hover(ctx, &p)
+	q := protocol.HoverParams{
+		TextDocumentPositionParams: tdpp,
+	}
+	hover, err := conn.Hover(ctx, &q)
 	if err != nil {
-		return fmt.Errorf("%v: %v", from, err)
+		return errors.Errorf("%v: %v", from, err)
 	}
 	if hover == nil {
-		return fmt.Errorf("%v: not an identifier", from)
+		return errors.Errorf("%v: not an identifier", from)
 	}
-	m, err = client.AddFile(ctx, span.NewURI(locs[0].URI))
-	if err != nil {
-		return fmt.Errorf("%v: %v", from, err)
+	file = conn.AddFile(ctx, span.NewURI(locs[0].URI))
+	if file.err != nil {
+		return errors.Errorf("%v: %v", from, file.err)
 	}
-	definition, err := m.Span(locs[0])
+	definition, err := file.mapper.Span(locs[0])
 	if err != nil {
-		return fmt.Errorf("%v: %v", from, err)
+		return errors.Errorf("%v: %v", from, err)
 	}
 	description := strings.TrimSpace(hover.Contents.Value)
 	var result interface{}
@@ -115,7 +122,7 @@ func (d *definition) Run(ctx context.Context, args ...string) error {
 			Desc:   description,
 		}
 	default:
-		return fmt.Errorf("unknown emulation for definition: %s", d.query.Emulate)
+		return errors.Errorf("unknown emulation for definition: %s", d.query.Emulate)
 	}
 	if err != nil {
 		return err
@@ -131,7 +138,7 @@ func (d *definition) Run(ctx context.Context, args ...string) error {
 	case *guru.Definition:
 		fmt.Printf("%s: defined here as %s", d.ObjPos, d.Desc)
 	default:
-		return fmt.Errorf("no printer for type %T", result)
+		return errors.Errorf("no printer for type %T", result)
 	}
 	return nil
 }

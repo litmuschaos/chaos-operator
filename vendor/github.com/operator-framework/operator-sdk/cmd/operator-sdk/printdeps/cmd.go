@@ -17,12 +17,12 @@ package printdeps
 import (
 	"fmt"
 
-	"github.com/operator-framework/operator-sdk/internal/pkg/scaffold"
-
+	"github.com/operator-framework/operator-sdk/internal/scaffold"
+	"github.com/operator-framework/operator-sdk/internal/scaffold/ansible"
+	"github.com/operator-framework/operator-sdk/internal/scaffold/helm"
+	"github.com/operator-framework/operator-sdk/internal/util/projutil"
 	"github.com/spf13/cobra"
 )
-
-var asFile bool
 
 func NewCmd() *cobra.Command {
 	printDepsCmd := &cobra.Command{
@@ -30,16 +30,10 @@ func NewCmd() *cobra.Command {
 		Short: "Print Golang packages and versions required to run the operator",
 		Long: `The operator-sdk print-deps command prints all Golang packages and versions expected
 by this version of the Operator SDK. Versions for these packages should match
-those in an operators' Gopkg.toml file.
-
-print-deps prints in columnar format by default. Use the --as-file flag to
-print in Gopkg.toml file format.
+those in an operator's go.mod file.
 `,
 		RunE: printDepsFunc,
 	}
-
-	printDepsCmd.Flags().BoolVar(&asFile, "as-file", false, "Print dependencies in Gopkg.toml file format.")
-
 	return printDepsCmd
 }
 
@@ -47,10 +41,25 @@ func printDepsFunc(cmd *cobra.Command, args []string) error {
 	if len(args) != 0 {
 		return fmt.Errorf("command %s doesn't accept any arguments", cmd.CommandPath())
 	}
-	if asFile {
-		scaffold.PrintDepsAsFile()
-	} else if err := scaffold.PrintDeps(); err != nil {
-		return fmt.Errorf("print deps failed: (%v)", err)
+	projutil.MustInProjectRoot()
+
+	if err := printDeps(); err != nil {
+		return fmt.Errorf("print deps failed: %v", err)
 	}
 	return nil
+}
+
+func printDeps() (err error) {
+	// Migrated Ansible and Helm projects will be of type OperatorTypeGo but
+	// their deps files will differ from a vanilla Go project.
+	switch {
+	case projutil.IsOperatorAnsible():
+		return ansible.PrintGoMod()
+	case projutil.IsOperatorHelm():
+		return helm.PrintGoMod()
+	case projutil.IsOperatorGo():
+		return scaffold.PrintGoMod()
+	}
+
+	return projutil.ErrUnknownOperatorType{}
 }

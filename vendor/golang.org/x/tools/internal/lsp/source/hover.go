@@ -1,55 +1,118 @@
-// Copyright 201p The Go Authors. All rights reserved.
+// Copyright 2019 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"go/ast"
+	"go/doc"
 	"go/format"
-	"go/token"
 	"go/types"
+	"strings"
+
+	"golang.org/x/tools/internal/telemetry/trace"
+	errors "golang.org/x/xerrors"
 )
 
-// formatter returns the a hover value formatted with its documentation.
-type formatter func(interface{}, *ast.CommentGroup) (string, error)
+type HoverInformation struct {
+	// Signature is the symbol's signature.
+	Signature string `json:"signature"`
 
-func (i *IdentifierInfo) Hover(ctx context.Context, qf types.Qualifier, enhancedHover, markdownSupported bool) (string, error) {
-	file := i.File.GetAST(ctx)
-	if qf == nil {
-		pkg := i.File.GetPackage(ctx)
-		qf = qualifier(file, pkg.GetTypes(), pkg.GetTypesInfo())
-	}
-	b := bytes.NewBuffer(nil)
-	f := func(x interface{}, c *ast.CommentGroup) (string, error) {
-		return writeHover(x, i.File.GetFileSet(ctx), b, c, markdownSupported, qf)
-	}
-	obj := i.Declaration.Object
-	// TODO(rstambler): Remove this configuration when hover behavior is stable.
-	if enhancedHover {
-		switch node := i.Declaration.Node.(type) {
-		case *ast.GenDecl:
-			switch obj := obj.(type) {
-			case *types.TypeName, *types.Var, *types.Const, *types.Func:
-				return formatGenDecl(node, obj, obj.Type(), f)
-			}
-		case *ast.FuncDecl:
-			if _, ok := obj.(*types.Func); ok {
-				return f(obj, node.Doc)
-			}
-		}
-	}
-	return f(obj, nil)
+	// SingleLine is a single line describing the symbol.
+	// This is recommended only for use in clients that show a single line for hover.
+	SingleLine string `json:"singleLine"`
+
+	// Synopsis is a single sentence synopsis of the symbol's documentation.
+	Synopsis string `json:"synopsis"`
+
+	// FullDocumentation is the symbol's full documentation.
+	FullDocumentation string `json:"fullDocumentation"`
+
+	source  interface{}
+	comment *ast.CommentGroup
 }
 
-func formatGenDecl(node *ast.GenDecl, obj types.Object, typ types.Type, f formatter) (string, error) {
+func (i *IdentifierInfo) Hover(ctx context.Context) (*HoverInformation, error) {
+	ctx, done := trace.StartSpan(ctx, "source.Hover")
+	defer done()
+
+	h, err := i.Declaration.hover(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Determine the symbol's signature.
+	switch x := h.source.(type) {
+	case ast.Node:
+		var b strings.Builder
+		if err := format.Node(&b, i.Snapshot.View().Session().Cache().FileSet(), x); err != nil {
+			return nil, err
+		}
+		h.Signature = b.String()
+	case types.Object:
+		h.Signature = objectString(x, i.qf)
+	}
+
+	// Set the documentation.
+	if i.Declaration.obj != nil {
+		h.SingleLine = objectString(i.Declaration.obj, i.qf)
+	}
+	if h.comment != nil {
+		h.FullDocumentation = h.comment.Text()
+		h.Synopsis = doc.Synopsis(h.FullDocumentation)
+	}
+	return h, nil
+}
+
+// objectString is a wrapper around the types.ObjectString function.
+// It handles adding more information to the object string.
+func objectString(obj types.Object, qf types.Qualifier) string {
+	str := types.ObjectString(obj, qf)
+	switch obj := obj.(type) {
+	case *types.Const:
+		str = fmt.Sprintf("%s = %s", str, obj.Val())
+	}
+	return str
+}
+
+func (d Declaration) hover(ctx context.Context) (*HoverInformation, error) {
+	_, done := trace.StartSpan(ctx, "source.hover")
+	defer done()
+
+	obj := d.obj
+	switch node := d.node.(type) {
+	case *ast.ImportSpec:
+		return &HoverInformation{source: node}, nil
+	case *ast.GenDecl:
+		switch obj := obj.(type) {
+		case *types.TypeName, *types.Var, *types.Const, *types.Func:
+			return formatGenDecl(node, obj, obj.Type())
+		}
+	case *ast.TypeSpec:
+		if obj.Parent() == types.Universe {
+			if obj.Name() == "error" {
+				return &HoverInformation{source: node}, nil
+			}
+			return &HoverInformation{source: node.Name}, nil // comments not needed for builtins
+		}
+	case *ast.FuncDecl:
+		switch obj.(type) {
+		case *types.Func:
+			return &HoverInformation{source: obj, comment: node.Doc}, nil
+		case *types.Builtin:
+			return &HoverInformation{source: node.Type, comment: node.Doc}, nil
+		}
+	}
+	return &HoverInformation{source: obj}, nil
+}
+
+func formatGenDecl(node *ast.GenDecl, obj types.Object, typ types.Type) (*HoverInformation, error) {
 	if _, ok := typ.(*types.Named); ok {
 		switch typ.Underlying().(type) {
 		case *types.Interface, *types.Struct:
-			return formatGenDecl(node, obj, typ.Underlying(), f)
+			return formatGenDecl(node, obj, typ.Underlying())
 		}
 	}
 	var spec ast.Spec
@@ -60,31 +123,31 @@ func formatGenDecl(node *ast.GenDecl, obj types.Object, typ types.Type, f format
 		}
 	}
 	if spec == nil {
-		return "", fmt.Errorf("no spec for node %v at position %v", node, obj.Pos())
+		return nil, errors.Errorf("no spec for node %v at position %v", node, obj.Pos())
 	}
 	// If we have a field or method.
 	switch obj.(type) {
 	case *types.Var, *types.Const, *types.Func:
-		return formatVar(spec, obj, f)
+		return formatVar(spec, obj, node), nil
 	}
 	// Handle types.
 	switch spec := spec.(type) {
 	case *ast.TypeSpec:
-		// If multiple types are declared in the same block.
 		if len(node.Specs) > 1 {
-			return f(spec.Type, spec.Doc)
+			// If multiple types are declared in the same block.
+			return &HoverInformation{source: spec.Type, comment: spec.Doc}, nil
 		} else {
-			return f(spec, node.Doc)
+			return &HoverInformation{source: spec, comment: node.Doc}, nil
 		}
 	case *ast.ValueSpec:
-		return f(spec, spec.Doc)
+		return &HoverInformation{source: spec, comment: spec.Doc}, nil
 	case *ast.ImportSpec:
-		return f(spec, spec.Doc)
+		return &HoverInformation{source: spec, comment: spec.Doc}, nil
 	}
-	return "", fmt.Errorf("unable to format spec %v (%T)", spec, spec)
+	return nil, errors.Errorf("unable to format spec %v (%T)", spec, spec)
 }
 
-func formatVar(node ast.Spec, obj types.Object, f formatter) (string, error) {
+func formatVar(node ast.Spec, obj types.Object, decl *ast.GenDecl) *HoverInformation {
 	var fieldList *ast.FieldList
 	if spec, ok := node.(*ast.TypeSpec); ok {
 		switch t := spec.Type.(type) {
@@ -97,40 +160,23 @@ func formatVar(node ast.Spec, obj types.Object, f formatter) (string, error) {
 	// If we have a struct or interface declaration,
 	// we need to match the object to the corresponding field or method.
 	if fieldList != nil {
-		for i := 0; i < fieldList.NumFields(); i++ {
+		for i := 0; i < len(fieldList.List); i++ {
 			field := fieldList.List[i]
 			if field.Pos() <= obj.Pos() && obj.Pos() <= field.End() {
 				if field.Doc.Text() != "" {
-					return f(obj, field.Doc)
+					return &HoverInformation{source: obj, comment: field.Doc}
 				} else if field.Comment.Text() != "" {
-					return f(obj, field.Comment)
+					return &HoverInformation{source: obj, comment: field.Comment}
 				}
 			}
 		}
 	}
-	// If we weren't able to find documentation for the object.
-	return f(obj, nil)
-}
+	// If we have a package level variable that does have a
+	// comment group attached to it but not in the ast.spec.
+	if decl.Doc.Text() != "" {
+		return &HoverInformation{source: obj, comment: decl.Doc}
+	}
 
-// writeHover writes the hover for a given node and its documentation.
-func writeHover(x interface{}, fset *token.FileSet, b *bytes.Buffer, c *ast.CommentGroup, markdownSupported bool, qf types.Qualifier) (string, error) {
-	if c != nil {
-		b.WriteString(c.Text())
-		b.WriteRune('\n')
-	}
-	if markdownSupported {
-		b.WriteString("```go\n")
-	}
-	switch x := x.(type) {
-	case ast.Node:
-		if err := format.Node(b, fset, x); err != nil {
-			return "", err
-		}
-	case types.Object:
-		b.WriteString(types.ObjectString(x, qf))
-	}
-	if markdownSupported {
-		b.WriteString("\n```")
-	}
-	return b.String(), nil
+	// If we weren't able to find documentation for the object.
+	return &HoverInformation{source: obj}
 }

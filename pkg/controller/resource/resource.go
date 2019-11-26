@@ -57,7 +57,7 @@ func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 	default:
 		return ce, fmt.Errorf("resource type '%s' not supported for induce chaos", ce.AppInfo.Kind)
 	}
-	chaosTypes.Log.Info("chaos candidate of", "kind:", ce.AppInfo.Kind ,"appName: ", ce.AppName, "appUUID: ", ce.AppUUID)
+	chaosTypes.Log.Info("chaos candidate of", "kind:", ce.AppInfo.Kind, "appName: ", ce.AppName, "appUUID: ", ce.AppUUID)
 	return ce, nil
 }
 

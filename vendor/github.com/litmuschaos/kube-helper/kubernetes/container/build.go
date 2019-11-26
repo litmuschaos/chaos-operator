@@ -1,3 +1,19 @@
+/*
+Copyright 2019 LitmusChaos Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package container
 
 import (
@@ -168,5 +184,28 @@ func (b *Builder) WithPortsNew(ports []corev1.ContainerPort) *Builder {
 	newports = append(newports, ports...)
 
 	b.con.object.Ports = newports
+	return b
+}
+
+// WithVolumeMountsNew sets the command arguments of the container
+func (b *Builder) WithVolumeMountsNew(volumeMounts []corev1.VolumeMount) *Builder {
+	if volumeMounts == nil {
+		b.errors = append(
+			b.errors,
+			errors.New("failed to build container object: nil volumemounts"),
+		)
+		return b
+	}
+
+	if len(volumeMounts) == 0 {
+		b.errors = append(
+			b.errors,
+			errors.New("failed to build container object: missing volumemounts"),
+		)
+		return b
+	}
+	newvolumeMounts := []corev1.VolumeMount{}
+	newvolumeMounts = append(newvolumeMounts, volumeMounts...)
+	b.con.object.VolumeMounts = newvolumeMounts
 	return b
 }
