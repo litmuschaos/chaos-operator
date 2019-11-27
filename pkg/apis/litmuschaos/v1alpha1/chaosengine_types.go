@@ -76,6 +76,8 @@ type MonitorInfo struct {
 type RunnerInfo struct {
 	//Image of the runner pod
 	Image string `json:"image"`
+	//Type of Executor
+	Type string `json:"type,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
