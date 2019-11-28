@@ -56,7 +56,7 @@ func (in *ChaosEngine) DeepCopyObject() runtime.Object {
 func (in *ChaosEngineList) DeepCopyInto(out *ChaosEngineList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ChaosEngine, len(*in))
@@ -165,7 +165,7 @@ func (in *ChaosExperiment) DeepCopyObject() runtime.Object {
 func (in *ChaosExperimentList) DeepCopyInto(out *ChaosExperimentList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ChaosExperiment, len(*in))
@@ -259,7 +259,7 @@ func (in *ChaosResult) DeepCopyObject() runtime.Object {
 func (in *ChaosResultList) DeepCopyInto(out *ChaosResultList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ChaosResult, len(*in))
