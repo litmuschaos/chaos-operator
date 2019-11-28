@@ -28,8 +28,6 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	LitmuschaosV1alpha1() litmuschaosv1alpha1.LitmuschaosV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Litmuschaos() litmuschaosv1alpha1.LitmuschaosV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -41,12 +39,6 @@ type Clientset struct {
 
 // LitmuschaosV1alpha1 retrieves the LitmuschaosV1alpha1Client
 func (c *Clientset) LitmuschaosV1alpha1() litmuschaosv1alpha1.LitmuschaosV1alpha1Interface {
-	return c.litmuschaosV1alpha1
-}
-
-// Deprecated: Litmuschaos retrieves the default version of LitmuschaosClient.
-// Please explicitly pick a version.
-func (c *Clientset) Litmuschaos() litmuschaosv1alpha1.LitmuschaosV1alpha1Interface {
 	return c.litmuschaosV1alpha1
 }
 
