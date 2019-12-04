@@ -319,6 +319,46 @@ func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	if len(ce.AppExperiments) == 0 || ce.AppUUID == "" {
 		return nil, errors.New("expected aExList not found")
 	}
+	var podObj *corev1.Pod
+	var err error
+	//Initiate the Engine Info, with the type of executor to be used
+	//Switch the PodObj , if the type of Executor is specified for GO
+	if ce.Instance.Spec.Components.Runner.Type == "go" {
+		podObj, err = newGoRunnerPodForCR(ce)
+	} else {
+		podObj, err = newAnsibleRunnerPodForCR(ce)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return podObj, nil
+}
+
+func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
+	labels := map[string]string{
+		"app": ce.Instance.Name,
+	}
+	podObj, err := pod.NewBuilder().
+		WithName(ce.Instance.Name + "-runner").
+		WithNamespace(ce.Instance.Namespace).
+		WithLabels(labels).
+		WithServiceAccountName(ce.Instance.Spec.ChaosServiceAccount).
+		WithRestartPolicy("OnFailure").
+		WithContainerBuilder(
+			container.NewBuilder().
+				WithName("chaos-runner").
+				WithImage(ce.Instance.Spec.Components.Runner.Image).
+				WithImagePullPolicy(corev1.PullIfNotPresent).
+				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments)),
+		).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+	return podObj, nil
+}
+
+func newAnsibleRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	labels := map[string]string{
 		"app": ce.Instance.Name,
 	}
