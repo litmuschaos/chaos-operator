@@ -41,7 +41,7 @@ type ChaosExperimentStatus struct {
 type ConfigMap struct {
 	Data      map[string]string `json:"data,omitempty"`
 	Name      string            `json:"name"`
-	MountPath string            `json:"mountpath"`
+	MountPath string            `json:"mountPath"`
 }
 
 // ExperimentDef defines information about nature of chaos & components subjected to it
