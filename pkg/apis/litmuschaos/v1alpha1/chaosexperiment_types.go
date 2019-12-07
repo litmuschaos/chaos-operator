@@ -41,7 +41,13 @@ type ChaosExperimentStatus struct {
 type ConfigMap struct {
 	Data      map[string]string `json:"data,omitempty"`
 	Name      string            `json:"name"`
-	MountPath string            `json:"mountpath"`
+	MountPath string            `json:"mountPath"`
+}
+
+// Secret is an simpler implementation of corev1.Secret
+type Secret struct {
+	Name      string `json:"name"`
+	MountPath string `json:"mountPath"`
 }
 
 // ExperimentDef defines information about nature of chaos & components subjected to it
@@ -59,6 +65,8 @@ type ExperimentDef struct {
 	Args []string `json:"args"`
 	// ConfigMaps contains a list of ConfigMaps
 	ConfigMaps []ConfigMap `json:"configmaps,omitempty"`
+	// Secrets contains a list of Secrets
+	Secrets []Secret `json:"secrets,omitempty"`
 }
 
 // ENVPair defines env var list to hold chaos params
