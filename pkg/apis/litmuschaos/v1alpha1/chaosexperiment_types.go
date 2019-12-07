@@ -66,7 +66,7 @@ type ExperimentDef struct {
 	// ConfigMaps contains a list of ConfigMaps
 	ConfigMaps []ConfigMap `json:"configmaps,omitempty"`
 	// Secrets contains a list of Secrets
-	Secrets []Secret `json:"secret,omitempty"`
+	Secrets []Secret `json:"secrets,omitempty"`
 }
 
 // ENVPair defines env var list to hold chaos params
