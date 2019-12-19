@@ -11,6 +11,7 @@ spec:
     singular: chaosengine
   scope: Namespaced
   subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       properties:
@@ -28,6 +29,63 @@ spec:
           type: object
         spec:
           type: object
+          properties:
+            monitoring: 
+              type: boolean
+            jobCleanUpPolicy: 
+              type: string
+              pattern: ^(delete|retain)$
+              # alternate ways to do this in case of complex pattern matches
+              #oneOf:
+              #  - pattern: '^delete$'
+              #  - pattern: '^retain$'
+            appinfo:
+              type: object
+              properties:
+                appkind: 
+                  type: string
+                  pattern: ^(deployment|statefulset|daemonset)$
+                applabel: 
+                  type: string
+                appns: 
+                  type: string
+            chaosServiceAccount:
+              type: string
+            components:
+              type: object
+              properties: 
+                monitor: 
+                  type: object
+                  properties: 
+                    image: 
+                      type: string
+                runner: 
+                  type: object
+                  properties:
+                    image: 
+                      type: string
+                    type:
+                      type: string
+                      pattern: ^(go|ansible)$
+            experiments:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: 
+                    type: string
+                  spec:
+                    type: object
+                    properties:
+                      components: 
+                        type: array
+                        items:
+                          type: object
+                          properties:  
+                            name: 
+                              type: string
+                            value: 
+                              type: string 
         status:
           type: object
   version: v1alpha1
