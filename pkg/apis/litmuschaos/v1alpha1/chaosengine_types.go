@@ -37,6 +37,8 @@ type ChaosEngineSpec struct {
 	Monitoring bool `json:"monitoring,omitempty"`
 	//JobCleanUpPolicy decides to retain or delete the jobs
 	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
+	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
+	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
