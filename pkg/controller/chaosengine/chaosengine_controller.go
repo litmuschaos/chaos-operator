@@ -106,6 +106,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+	analytics.TriggerAnalytics()
 	return nil
 }
 
@@ -169,8 +170,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	reqLogger.Info("Testing Analytics")
-	analytics.Test()
 	// Define an engineRunner pod which is secondary-resource #1
 	engineRunner, err := newRunnerPodForCR(*engine)
 	if err != nil {

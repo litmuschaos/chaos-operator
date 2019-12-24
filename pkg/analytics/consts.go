@@ -2,22 +2,22 @@ package analytics
 
 const (
 	// GAclientID contains TrackingID of the application
-	GAclientID string = "UA-127388617-2"
+	GAclientID string = "UA-92076314-21"
 
 	// supported event categories
 
-	// Install event is sent when install occurs
-	Install string = "install"
+	// CategoryLI category notifies installation of a component of Litmus Infrastructure
+	CategoryLI string = "Litmus-Infra"
+	// CategoryCE category notifies installation of a Litmus Experiment
+	CategoryCE string = "Chaos-Experiment"
 
-	// ChaosOperator event is sent when Reconcile function ends its job
-	ChaosOperator string = "chaos-operator"
+	// supported event actions
 
-	// Ping event is sent periodically
-	Ping string = "ping"
+	// ActionI is sent when the installation is triggered
+	ActionI string = "Installation"
 
-	// RunnerCreation event is sent when a Runner pod is created
-	RunnerCreation string = "runner-creation"
+	// supported event labels
 
-	// AppName event
-	AppName string = "litmus-installations"
+	// LabelO denotes event is associated to which Litmus component
+	LabelO string = "Chaos-Operator"
 )
