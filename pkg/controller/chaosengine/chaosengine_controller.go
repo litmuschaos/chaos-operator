@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/chaos-operator/pkg/controller/resource"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
@@ -162,10 +163,14 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	// Determine whether apps with matching labels have chaos annotation set to true
 	engine, err = resource.CheckChaosAnnotation(engine)
+
 	if err != nil {
 		chaosTypes.Log.Info("Annotation check failed with error: ", err)
 		return reconcile.Result{}, nil
 	}
+
+	reqLogger.Info("Testing Analytics")
+	analytics.Test()
 	// Define an engineRunner pod which is secondary-resource #1
 	engineRunner, err := newRunnerPodForCR(*engine)
 	if err != nil {
@@ -180,6 +185,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
 	// If monitoring is set to true,
 	// Define an engineMonitor pod which is secondary-resource #2 and
 	// Define an engineMonitor service which is secondary-resource #3
