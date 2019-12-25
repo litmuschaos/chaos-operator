@@ -1,0 +1,66 @@
+---
+stages:
+  - setup
+  - build
+  - push
+  - cleanup
+  
+ClusterSetup:
+
+  stage: setup
+  tags:
+    - setup
+  script: 
+    - chmod 755 ./stages/1-cluster-setup/gcp
+    - ./stages/1-cluster-setup/gcp
+    
+  artifacts:
+    when: always
+    paths:
+      - .kube/
+
+Build:
+  
+  stage: build
+  tags:
+    - build
+  script:
+    - export COMMIT=${CI_COMMIT_SHORT_SHA}
+    - export GOPATH=$HOME/go
+    - export GOROOT=/usr/local/go
+    - export PATH=$HOME/go/bin:$PATH
+    - mkdir -p $HOME/go/src/github.com/litmuschaos/chaos-operator
+    - rsync -az --delete ${CI_PROJECT_DIR}/ ${HOME}/go/src/github.com/litmuschaos/chaos-operator/ #CI_PROJECT_DIR is full path where project is cloned
+    - go env
+    - ls $GOPATH
+    - pwd
+    - cd ${HOME}/go/src/github.com/litmuschaos/chaos-operator
+    - pwd
+    - make deps
+    - make gotasks
+    - sudo docker build . -f build/Dockerfile -t litmuschaos/chaos-operator:ci
+    - make test
+
+Push:
+
+  stage: push
+  tags: 
+    - push
+  script:
+    - cd ~/go/src/github.com/litmuschaos/chaos-operator
+    - sudo make dockerops
+
+ClusterCleanup:
+      
+  stage: cleanup
+  tags:
+    - cleanup
+  script: 
+    - chmod 755 ./stages/2-cluster-cleanup/cluster-cleanup
+    - ./stages/2-cluster-cleanup/cluster-cleanup
+    
+  artifacts:
+    when: always
+    paths:
+      - .kube/
+

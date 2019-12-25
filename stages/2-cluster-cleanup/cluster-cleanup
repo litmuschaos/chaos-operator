@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+path=$(pwd)
+echo $SDK_TOKEN > key.json
+gcloud auth activate-service-account --key-file=key.json
+gcloud config set project openebs-ci
+export GOOGLE_APPLICATION_CREDENTIALS="$path/key.json"
+cp $path/.kube/clusters ~/logs
+cp $path/.kube/vpc ~/logs
+git clone https://github.com/mayadata-io/litmus.git
+cd litmus/k8s/gcp/k8s-installer/
+echo "CLEANUP ------------------------------------------------------------------------"
+
+# Fetching cluster name
+cluster_name=$(cat ~/logs/clusters)
+
+# Delete k8s cluster
+ansible-playbook delete-k8s-cluster.yml
+
+# Delete firewall-rule
+# Export VPC network name
+VPC=`cat $path/.kube/vpc`
+echo $VPC
+FIREWALL_VPC="$VPC-firewall"
+gcloud compute firewall-rules delete $FIREWALL_VPC
+
+# Delete VPC
+ansible-playbook delete-vpc.yml --extra-vars "project=openebs-ci"
+
+echo $cluster_name
+cd ~/logs
+rm -rf litmus
