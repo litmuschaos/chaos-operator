@@ -36,7 +36,7 @@ import (
 	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 )
 
-var kubeconfig = "/home/circleci/.kube/config"
+var kubeconfig = "/home/gitlab-runner/.kube/config"
 var config, _ = clientcmd.BuildConfigFromFlags("", kubeconfig)
 var client, _ = kubernetes.NewForConfig(config)
 var clientSet, _ = chaosClient.NewForConfig(config)

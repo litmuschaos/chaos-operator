@@ -8,7 +8,6 @@ gcloud auth activate-service-account --key-file=key.json
 gcloud config set project openebs-ci
 export GOOGLE_APPLICATION_CREDENTIALS="$path/key.json"
 
-
 cd ~/logs
 truncate -s 0 vpc
 truncate -s 0 clusters

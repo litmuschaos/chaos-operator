@@ -33,9 +33,7 @@ Build:
     - rsync -az --delete ${CI_PROJECT_DIR}/ ${HOME}/go/src/github.com/litmuschaos/chaos-operator/ #CI_PROJECT_DIR is full path where project is cloned
     - go env
     - ls $GOPATH
-    - pwd
     - cd ${HOME}/go/src/github.com/litmuschaos/chaos-operator
-    - pwd
     - make deps
     - make gotasks
     - sudo docker build . -f build/Dockerfile -t litmuschaos/chaos-operator:ci
