@@ -21,6 +21,8 @@ import (
 	"os/exec"
 	"testing"
 	"time"
+	"os"
+	
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,14 +34,16 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
 
+	restclient "k8s.io/client-go/rest"
 	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 )
-
-var kubeconfig = "/home/gitlab-runner/.kube/config"
-var config, _ = clientcmd.BuildConfigFromFlags("", kubeconfig)
-var client, _ = kubernetes.NewForConfig(config)
-var clientSet, _ = chaosClient.NewForConfig(config)
+var (
+	kubeconfig string
+	config *restclient.Config
+	client *kubernetes.Clientset
+	clientSet *chaosClient.LitmuschaosV1alpha1Client
+)
 
 func TestChaos(t *testing.T) {
 
@@ -49,11 +53,31 @@ func TestChaos(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 
-	err := v1alpha1.AddToScheme(scheme.Scheme)
+	var err error
+	kubeconfig = os.Getenv("HOME") + "/.kube/config"
+	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+
+	if err != nil {
+		Expect(err).To(BeNil(),"failed to get config")
+	}
+
+	client, err = kubernetes.NewForConfig(config)
+
+	if err != nil {
+		Expect(err).To(BeNil(),"failed to get client")
+	}
+
+	clientSet, err = chaosClient.NewForConfig(config)
+
+	if err != nil {
+		Expect(err).To(BeNil(),"failed to get clientSet")
+	}
+
+	err = v1alpha1.AddToScheme(scheme.Scheme)
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	
 	//Creating crds
 	By("creating chaosengine crd")
 	err = exec.Command("kubectl", "create", "-f", "../../deploy/chaos_crds.yaml").Run()
