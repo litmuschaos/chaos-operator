@@ -2,25 +2,26 @@
 stages:
   - setup
   - build
+  - test
   - push
   - cleanup
-  
+
 ClusterSetup:
 
   stage: setup
   tags:
     - setup
   script: 
-    - chmod 755 ./stages/1-cluster-setup/gcp
-    - ./stages/1-cluster-setup/gcp
-    
+    - chmod 755 ./build/gitlab/stages/1-cluster-setup/gcp
+    - ./build/gitlab/stages/1-cluster-setup/gcp
+
   artifacts:
     when: always
     paths:
       - .kube/
 
 Build:
-  
+
   stage: build
   tags:
     - build
@@ -29,14 +30,20 @@ Build:
     - export GOPATH=$HOME/go
     - export GOROOT=/usr/local/go
     - export PATH=$HOME/go/bin:$PATH
-    - mkdir -p $HOME/go/src/github.com/litmuschaos/chaos-operator
-    - rsync -az --delete ${CI_PROJECT_DIR}/ ${HOME}/go/src/github.com/litmuschaos/chaos-operator/ #CI_PROJECT_DIR is full path where project is cloned
+    - mkdir -p $HOME/go/src/github.com/${REPONAME}/${IMAGENAME}
+    - rsync -az --delete ${CI_PROJECT_DIR}/ ${GOPATH}/src/github.com/${REPONAME}/${IMAGENAME}/ #CI_PROJECT_DIR is full path where project is cloned
     - go env
-    - ls $GOPATH
-    - cd ${HOME}/go/src/github.com/litmuschaos/chaos-operator
+    - cd ${GOPATH}/src/github.com/${REPONAME}/${IMAGENAME}
     - make deps
     - make gotasks
-    - sudo docker build . -f build/Dockerfile -t litmuschaos/chaos-operator:ci
+    
+Test: 
+
+  stage: test
+  tags:
+    - test
+  script:
+    - cd ${HOME}/go/src/github.com/${REPONAME}/${IMAGENAME}
     - make test
 
 Push:
@@ -45,20 +52,20 @@ Push:
   tags: 
     - push
   script:
-    - cd ~/go/src/github.com/litmuschaos/chaos-operator
+    - cd ${HOME}/go/src/github.com/${REPONAME}/${IMAGENAME}
     - sudo make dockerops
 
 ClusterCleanup:
-      
+
+  when: always
   stage: cleanup
   tags:
     - cleanup
   script: 
-    - chmod 755 ./stages/2-cluster-cleanup/cluster-cleanup
-    - ./stages/2-cluster-cleanup/cluster-cleanup
-    
+    - chmod 755 ./build/gitlab/stages/2-cluster-cleanup/cluster-cleanup
+    - ./build/gitlab/stages/2-cluster-cleanup/cluster-cleanup
+
   artifacts:
     when: always
     paths:
       - .kube/
-
