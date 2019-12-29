@@ -42,6 +42,9 @@ var (
 	// AppLabelKey contains the application label key
 	AppLabelKey string
 
+	// DefaultChaosType contains the type of chaos - infra/app
+	DefaultChaosType = "app"
+
 	// AppLabelValue contains the application label value
 	AppLabelValue string
 
