@@ -291,6 +291,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []
 			Name:  "CHAOS_SVC_ACC",
 			Value: cr.Spec.ChaosServiceAccount,
 		},
+		{
+			Name:  "AUXILIARY_APPINFO",
+			Value: cr.Spec.AuxiliaryAppInfo,
+		},
 	}
 }
 
