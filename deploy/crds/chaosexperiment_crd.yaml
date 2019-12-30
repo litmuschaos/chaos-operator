@@ -29,6 +29,75 @@ spec:
           type: object
         spec:
           type: object
+          properties:
+            definition: 
+              type: object
+              properties:
+                args: 
+                  type: array
+                  items: 
+                    type: string
+                command: 
+                  type: array
+                  items: 
+                    type: string
+                env:
+                  type: array
+                  items:
+                    type: object
+                    properties: 
+                      name: 
+                        type: string
+                      value: 
+                        type: string 
+                image: 
+                  type: string
+                labels:
+                  type: object
+                  properties: 
+                    name: 
+                      type: string
+                permissions: 
+                  type: object
+                  properties: 
+                    apiGroups: 
+                      type: array
+                      items: 
+                        type: string
+                    resources: 
+                      type: array
+                      items: 
+                        type: string
+                    verbs: 
+                      type: array
+                      items: 
+                        type: string
+                configmaps: 
+                  type: array
+                  items: 
+                    type: object
+                    properties:
+                      name: 
+                        type: string
+                        allowEmptyValue: false
+                        minLength: 1
+                      mountPath: 
+                        type: string
+                        allowEmptyValue: false
+                        minLength: 1
+                secrets: 
+                  type: array
+                  items: 
+                    type: object
+                    properties:
+                      name: 
+                        type: string
+                        allowEmptyValue: false
+                        minLength: 1
+                      mountPath: 
+                        type: string
+                        allowEmptyValue: false
+                        minLength: 1
         status:
           type: object
   version: v1alpha1
@@ -36,3 +105,4 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
+

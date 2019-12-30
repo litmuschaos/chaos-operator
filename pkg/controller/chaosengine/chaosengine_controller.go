@@ -155,6 +155,12 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Get the image for runner and monitor pod from chaosengine spec,operator env or default values.
 	setChaosResourceImage()
 
+	//getChaosType fetch the chaosType from engine spec
+	err = getChaosType()
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Fetch the app details from ChaosEngine instance. Check if app is present
 	// Also check, if the app is annotated for chaos & that the labels are unique
 	engine, err := getApplicationDetail(engine)
@@ -162,12 +168,13 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	// Determine whether apps with matching labels have chaos annotation set to true
-	engine, err = resource.CheckChaosAnnotation(engine)
-
-	if err != nil {
-		chaosTypes.Log.Info("Annotation check failed with error: ", err)
-		return reconcile.Result{}, nil
+	if engine.Instance.Spec.ChaosType == "app" {
+		// Determine whether apps with matching labels have chaos annotation set to true
+		engine, err = resource.CheckChaosAnnotation(engine)
+		if err != nil {
+			chaosTypes.Log.Info("Annotation check failed with error: ", err)
+			return reconcile.Result{}, nil
+		}
 	}
 
 	// Define an engineRunner pod which is secondary-resource #1
@@ -288,6 +295,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []
 			Name:  "CHAOS_SVC_ACC",
 			Value: cr.Spec.ChaosServiceAccount,
 		},
+		{
+			Name:  "AUXILIARY_APPINFO",
+			Value: cr.Spec.AuxiliaryAppInfo,
+		},
 	}
 }
 
@@ -319,10 +330,10 @@ func getMonitoringENV() []corev1.ServicePort {
 	}
 }
 
-// newRunnerPodForCR defines secondary resource #1 in same namespace as CR */
+// newRunnerPodForCR defines secondary resource #1 in same namespace as CR
 func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
-	if len(ce.AppExperiments) == 0 || ce.AppUUID == "" {
-		return nil, errors.New("expected aExList not found")
+	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.ChaosType == "app" {
+		return nil, errors.New("Application experiment list or UUID is empty")
 	}
 	var podObj *corev1.Pod
 	var err error
@@ -545,6 +556,7 @@ func getApplicationDetail(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 	chaosTypes.Log.Info("Monitoring Status derived from chaosengine is", "monitoringStatus", ce.Instance.Spec.Monitoring)
 	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", ce.Instance.Spec.Components.Runner.Image)
 	chaosTypes.Log.Info("exporter image derived from chaosengine is", "exporterImage", ce.Instance.Spec.Components.Monitor.Image)
+	chaosTypes.Log.Info("chaos type is ", "chaostype", ce.Instance.Spec.ChaosType)
 	return ce, nil
 }
 
@@ -600,4 +612,16 @@ func setChaosResourceImage() {
 	} else if engine.Instance.Spec.Components.Runner.Image == "" {
 		engine.Instance.Spec.Components.Runner.Image = ChaosRunnerImage
 	}
+}
+
+func getChaosType() error {
+
+	if engine.Instance.Spec.ChaosType == "" {
+		engine.Instance.Spec.ChaosType = chaosTypes.DefaultChaosType
+
+	}
+	if engine.Instance.Spec.ChaosType != "app" && engine.Instance.Spec.ChaosType != "infra" {
+		return fmt.Errorf("chaos type '%s', is not supported it should be app or infra", engine.Instance.Spec.ChaosType)
+	}
+	return nil
 }
