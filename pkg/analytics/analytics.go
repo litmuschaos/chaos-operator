@@ -56,7 +56,6 @@ func UUIDGenerator() (string, error) {
 
 // TriggerAnalytics is reponsible for sending out events
 func TriggerAnalytics() error {
-
 	client, err := ga.NewClient(clientID)
 	if err != nil {
 		return fmt.Errorf("new client generation failed, error : %s", err)
@@ -66,7 +65,6 @@ func TriggerAnalytics() error {
 		return fmt.Errorf("uuid generation failed, error: %s", err)
 	}
 	client.ClientID(uuid)
-
 	err = client.Send(ga.NewEvent(category, action).Label(label))
 	if err != nil {
 		return fmt.Errorf("analytics event sending failed, error: %s", err)
