@@ -24,6 +24,9 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/pkg/controller/resource"
+	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
@@ -38,11 +41,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	"github.com/litmuschaos/chaos-operator/pkg/controller/resource"
-	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 )
 
 var _ reconcile.Reconciler = &ReconcileChaosEngine{}
@@ -106,7 +104,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-	
 	return nil
 }
 

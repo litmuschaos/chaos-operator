@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	"github.com/litmuschaos/chaos-operator/pkg/analytics"
@@ -126,6 +127,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	TrackingStatus := strings.ToUpper(os.Getenv("TRACKING_STATUS"))
+	// Check if the TrackingStatus env has been negated or not
+	if TrackingStatus == "TRUE" {
+		err := analytics.TriggerAnalytics()
+		if err != nil {
+			log.Error(err, "")
+		}
+	}
+
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := registerComponents(cfg, namespace)
 	if err != nil {
@@ -149,8 +159,5 @@ func main() {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
-	msg, err := analytics.TriggerAnalytics()
-	if err != nil {
-		log.Error(msg, err)
-	}
+
 }

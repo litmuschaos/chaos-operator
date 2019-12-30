@@ -23,6 +23,26 @@ import (
 	ga "github.com/jpillora/go-ogle-analytics"
 )
 
+const (
+	// ClientID contains TrackingID of the application
+	ClientID = "UA-92076314-21"
+
+	// supported event categories
+
+	// Category category notifies installation of a component of Litmus Infrastructure
+	Category = "Litmus-Infra"
+
+	// supported event actions
+
+	// Action is sent when the installation is triggered
+	Action = "Installation"
+
+	// supported event labels
+
+	// Label denotes event is associated to which Litmus component
+	Label = "Chaos-Operator"
+)
+
 // UUIDGenerator creates a new UUID each time a new user triggers an event
 func UUIDGenerator() (string, error) {
 	b := make([]byte, 16)
@@ -31,43 +51,25 @@ func UUIDGenerator() (string, error) {
 		return "", err
 	}
 	uuid := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
-	return uuid, err
+	return uuid, nil
 }
 
 // TriggerAnalytics is reponsible for sending out events
-func TriggerAnalytics() (string, error) {
+func TriggerAnalytics() error {
 
-	// GAclientID contains TrackingID of the application
-	GAclientID := "UA-92076314-21"
-
-	// supported event categories
-
-	// CategoryLI category notifies installation of a component of Litmus Infrastructure
-	CategoryLI := "Litmus-Infra"
-
-	// supported event actions
-
-	// ActionI is sent when the installation is triggered
-	ActionI := "Installation"
-
-	// supported event labels
-
-	// LabelO denotes event is associated to which Litmus component
-	LabelO := "Chaos-Operator"
-
-	client, err := ga.NewClient(GAclientID)
+	client, err := ga.NewClient(ClientID)
 	if err != nil {
-		return "GA Client ID Error", err
+		return fmt.Errorf("new client generation failed, error : %s", err)
 	}
 	uuid, err := UUIDGenerator()
 	if err != nil {
-		return "UUID cannot be generated", err
+		return fmt.Errorf("uuid generation failed, error: %s", err)
 	}
 	client.ClientID(uuid)
 
-	err = client.Send(ga.NewEvent(CategoryLI, ActionI).Label(LabelO))
+	err = client.Send(ga.NewEvent(Category, Action).Label(Label))
 	if err != nil {
-		return "Unable to send GA event", err
+		return fmt.Errorf("analytics event sending failed, error: %s", err)
 	}
-	l
+	return nil
 }
