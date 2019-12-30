@@ -142,7 +142,6 @@ func main() {
 		log.Error(err, "")
 		os.Exit(1)
 	}
-
 	// Create Service object to expose the metrics port(s).
 	servicePorts := []v1.ServicePort{
 		{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},

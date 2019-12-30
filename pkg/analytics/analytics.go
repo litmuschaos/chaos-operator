@@ -17,7 +17,6 @@ limitations under the License.
 package analytics
 
 import (
-	"crypto/rand"
 	"fmt"
 
 	ga "github.com/jpillora/go-ogle-analytics"
@@ -43,28 +42,17 @@ const (
 	label = "Chaos-Operator"
 )
 
-// UUIDGenerator creates a new UUID each time a new user triggers an event
-func UUIDGenerator() (string, error) {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-	uuid := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
-	return uuid, nil
-}
-
 // TriggerAnalytics is reponsible for sending out events
 func TriggerAnalytics() error {
 	client, err := ga.NewClient(clientID)
 	if err != nil {
 		return fmt.Errorf("new client generation failed, error : %s", err)
 	}
-	uuid, err := UUIDGenerator()
-	if err != nil {
+
+	if !(ClientUUID != "") {
 		return fmt.Errorf("uuid generation failed, error: %s", err)
 	}
-	client.ClientID(uuid)
+	client.ClientID(ClientUUID)
 	err = client.Send(ga.NewEvent(category, action).Label(label))
 	if err != nil {
 		return fmt.Errorf("analytics event sending failed, error: %s", err)

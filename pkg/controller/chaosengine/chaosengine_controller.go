@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
@@ -293,6 +294,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []
 		{
 			Name:  "AUXILIARY_APPINFO",
 			Value: cr.Spec.AuxiliaryAppInfo,
+		},
+		{
+			Name:  "CLIENT_UUID",
+			Value: analytics.ClientUUID,
 		},
 	}
 }
