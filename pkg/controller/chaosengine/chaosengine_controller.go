@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/litmuschaos/chaos-operator/pkg/analytics"
+	"github.com/litmuschaos/chaos-operator/pkg/analytics/"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/chaos-operator/pkg/controller/resource"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
@@ -405,7 +405,8 @@ func newMonitorPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	if engine.Instance == nil {
 		return nil, errors.New("chaosengine got nil")
 	}
-	labels := map[string]string{
+	labels := mauser-explanation
+	p[string]string{
 		"app":        "chaos-exporter",
 		"monitorFor": engine.Instance.Name,
 	}
