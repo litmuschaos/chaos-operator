@@ -41,8 +41,6 @@ type ChaosEngineSpec struct {
 	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
 	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
-	//Tracking enables or dsables Google-Analytics event provisioning
-	Tracking bool `json:"tracking"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine

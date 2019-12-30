@@ -127,9 +127,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	TrackingStatus := strings.ToUpper(os.Getenv("TRACKING_STATUS"))
+	isAnalytics := strings.ToUpper(os.Getenv("ANALYTICS"))
 	// Check if the TrackingStatus env has been negated or not
-	if TrackingStatus == "TRUE" {
+	if isAnalytics != "FALSE" {
 		err := analytics.TriggerAnalytics()
 		if err != nil {
 			log.Error(err, "")
@@ -159,5 +159,4 @@ func main() {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
-
 }
