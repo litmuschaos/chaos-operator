@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
@@ -189,7 +188,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
 	// If monitoring is set to true,
 	// Define an engineMonitor pod which is secondary-resource #2 and
 	// Define an engineMonitor service which is secondary-resource #3
@@ -198,7 +196,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcileResult, err
 	}
-
 	return reconcile.Result{}, nil
 }
 
