@@ -16,7 +16,10 @@ func UUIDGenerator() string {
 	return uuid
 }
 
-var (
-	// ClientUUID contains the UUID generated for the Google-Analytics
-	ClientUUID = UUIDGenerator()
-)
+// var (
+// 	// ClientUUID contains the UUID generated for the Google-Analytics
+// 	ClientUUID = UUIDGenerator()
+// )
+
+// ClientUUID contains the UUID generated for the Google-Analytics
+var ClientUUID = UUIDGenerator()
