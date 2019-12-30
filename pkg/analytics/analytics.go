@@ -25,22 +25,22 @@ import (
 
 const (
 	// ClientID contains TrackingID of the application
-	ClientID = "UA-92076314-21"
+	clientID = "UA-92076314-21"
 
 	// supported event categories
 
 	// Category category notifies installation of a component of Litmus Infrastructure
-	Category = "Litmus-Infra"
+	category = "Litmus-Infra"
 
 	// supported event actions
 
 	// Action is sent when the installation is triggered
-	Action = "Installation"
+	action = "Installation"
 
 	// supported event labels
 
 	// Label denotes event is associated to which Litmus component
-	Label = "Chaos-Operator"
+	label = "Chaos-Operator"
 )
 
 // UUIDGenerator creates a new UUID each time a new user triggers an event
@@ -57,7 +57,7 @@ func UUIDGenerator() (string, error) {
 // TriggerAnalytics is reponsible for sending out events
 func TriggerAnalytics() error {
 
-	client, err := ga.NewClient(ClientID)
+	client, err := ga.NewClient(clientID)
 	if err != nil {
 		return fmt.Errorf("new client generation failed, error : %s", err)
 	}
@@ -67,7 +67,7 @@ func TriggerAnalytics() error {
 	}
 	client.ClientID(uuid)
 
-	err = client.Send(ga.NewEvent(Category, Action).Label(Label))
+	err = client.Send(ga.NewEvent(category, action).Label(label))
 	if err != nil {
 		return fmt.Errorf("analytics event sending failed, error: %s", err)
 	}
