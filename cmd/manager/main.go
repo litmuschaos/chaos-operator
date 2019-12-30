@@ -24,6 +24,7 @@ import (
 	"runtime"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	"github.com/litmuschaos/chaos-operator/pkg/apis"
 	"github.com/litmuschaos/chaos-operator/pkg/controller"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -147,5 +148,9 @@ func main() {
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
+	}
+	msg, err := analytics.TriggerAnalytics()
+	if err != nil {
+		log.Error(msg, err)
 	}
 }

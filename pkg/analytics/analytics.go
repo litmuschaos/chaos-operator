@@ -21,23 +21,21 @@ import (
 	"fmt"
 
 	ga "github.com/jpillora/go-ogle-analytics"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 // UUIDGenerator creates a new UUID each time a new user triggers an event
-func UUIDGenerator() string {
+func UUIDGenerator() (string, error) {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
-		logf.Log.Error(err, "UUID cannot be generated")
+		return "", err
 	}
-
 	uuid := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
-	return uuid
+	return uuid, err
 }
 
 // TriggerAnalytics is reponsible for sending out events
-func TriggerAnalytics() {
+func TriggerAnalytics() (string, error) {
 
 	// GAclientID contains TrackingID of the application
 	GAclientID := "UA-92076314-21"
@@ -59,14 +57,17 @@ func TriggerAnalytics() {
 
 	client, err := ga.NewClient(GAclientID)
 	if err != nil {
-		logf.Log.Error(err, "GA Client ID Error")
+		return "GA Client ID Error", err
 	}
-	uuid := UUIDGenerator()
+	uuid, err := UUIDGenerator()
+	if err != nil {
+		return "UUID cannot be generated", err
+	}
 	client.ClientID(uuid)
 
 	err = client.Send(ga.NewEvent(CategoryLI, ActionI).Label(LabelO))
 	if err != nil {
-		logf.Log.Info("Unable to send GA event")
+		return "Unable to send GA event", err
 	}
-	logf.Log.Info("Successful GA event sent !")
+	l
 }
