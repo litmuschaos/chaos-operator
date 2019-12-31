@@ -328,6 +328,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
 	fakeAppLabel := "Fake Label"
 	fakeAExList := []string{"fake string"}
 	fakeAuxilaryAppInfo := "ns1:name=percona,ns2:run=nginx"
+	fakeClientUUID := "12345678-9012-3456-7890-123456789012"
 
 	tests := map[string]struct {
 		instance       *litmuschaosv1alpha1.ChaosEngine
@@ -374,6 +375,10 @@ func TestGetChaosRunnerENV(t *testing.T) {
 				{
 					Name:  "AUXILIARY_APPINFO",
 					Value: fakeAuxilaryAppInfo,
+				},
+				{
+					Name:  "CLIENT_UUID",
+					Value: fakeClientUUID,
 				},
 			},
 		},
