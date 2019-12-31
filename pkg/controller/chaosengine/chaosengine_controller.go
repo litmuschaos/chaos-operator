@@ -321,7 +321,7 @@ func getChaosMonitorENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) []
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR
 func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.ChaosType == "app" {
-		return nil, errors.New("Application experiment list or UUID is empty")
+		return nil, errors.New("application experiment list or UUID is empty")
 	}
 	var podObj *corev1.Pod
 	var err error
@@ -342,7 +342,7 @@ func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	labels := map[string]string{
 		"app": ce.Instance.Name,
 	}
-	podObj, err := pod.NewBuilder().
+	return pod.NewBuilder().
 		WithName(ce.Instance.Name + "-runner").
 		WithNamespace(ce.Instance.Namespace).
 		WithLabels(labels).
@@ -350,26 +350,18 @@ func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
+				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments,  analytics.ClientUUID)).
 				WithName("chaos-runner").
 				WithImage(ce.Instance.Spec.Components.Runner.Image).
-				WithImagePullPolicy(corev1.PullIfNotPresent).
-				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)),
-		).
-		Build()
-	if err != nil {
-		return nil, err
-	}
-	return podObj, nil
+				WithImagePullPolicy(corev1.PullIfNotPresent),
+		).Build()
 }
 
 func newAnsibleRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
-	labels := map[string]string{
-		"app": ce.Instance.Name,
-	}
-	podObj, err := pod.NewBuilder().
+	return pod.NewBuilder().
 		WithName(ce.Instance.Name + "-runner").
 		WithNamespace(ce.Instance.Namespace).
-		WithLabels(labels).
+		WithLabels(map[string]string{"app": ce.Instance.Name}).
 		WithServiceAccountName(ce.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
@@ -380,12 +372,7 @@ func newAnsibleRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
 				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)),
-		).
-		Build()
-	if err != nil {
-		return nil, err
-	}
-	return podObj, nil
+		).Build()
 }
 
 // newMonitorPodForCR defines secondary resource #2 in same namespace as CR */

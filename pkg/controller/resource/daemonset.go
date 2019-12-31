@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "k8s.io/api/apps/v1"
+	appsV1 "k8s.io/api/apps/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -44,7 +44,7 @@ func CheckDaemonSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.En
 }
 
 // getDaemonSetLists will list the daemonSets which having the chaos label
-func getDaemonSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*v1.DaemonSetList, error) {
+func getDaemonSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*appsV1.DaemonSetList, error) {
 	targetAppList, err := clientSet.AppsV1().DaemonSets(ce.AppInfo.Namespace).List(metaV1.ListOptions{
 		LabelSelector: ce.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
@@ -58,7 +58,7 @@ func getDaemonSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInf
 }
 
 // This will check and count the total chaos enabled application
-func checkForChaosEnabledDaemonSet(targetAppList *v1.DaemonSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+func checkForChaosEnabledDaemonSet(targetAppList *appsV1.DaemonSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDaemonSet := 0
 	for _, daemonSet := range targetAppList.Items {
 		ce.AppName = daemonSet.ObjectMeta.Name
