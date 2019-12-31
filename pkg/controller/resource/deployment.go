@@ -20,8 +20,8 @@ import (
 	"errors"
 	"fmt"
 
+	v1 "k8s.io/api/apps/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	appsV1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes"
 
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
@@ -45,7 +45,7 @@ func CheckDeploymentAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.E
 }
 
 // getDeploymentLists will list the deployments which having the chaos label
-func getDeploymentLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*appsV1.DeploymentList, error) {
+func getDeploymentLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*v1.DeploymentList, error) {
 	targetAppList, err := clientSet.AppsV1().Deployments(ce.AppInfo.Namespace).List(metaV1.ListOptions{
 		LabelSelector: ce.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
@@ -59,7 +59,7 @@ func getDeploymentLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineIn
 }
 
 // This will check and count the total chaos enabled application
-func checkForChaosEnabledDeployment(targetAppList *appsV1.DeploymentList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+func checkForChaosEnabledDeployment(targetAppList *v1.DeploymentList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDeployment := 0
 	for _, deployment := range targetAppList.Items {
 		ce.AppName = deployment.ObjectMeta.Name

@@ -218,8 +218,7 @@ func MonitorServiceAndPod(monitorService *serviceEngineMonitor, monitorPod *podE
 		return err
 	}
 	// Check if the EngineMonitorPod already exists, else create
-	err = engineMonitorPod(monitorPod)
-	if err != nil {
+	if err = engineMonitorPod(monitorPod); err != nil {
 		return err
 	}
 	return nil
@@ -303,18 +302,9 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 // getChaosMonitorENV return the env required for chaos-Monitor
 func getChaosMonitorENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) []corev1.EnvVar {
 	return []corev1.EnvVar{
-		{
-			Name:  "CHAOSENGINE",
-			Value: cr.Name,
-		},
-		{
-			Name:  "APP_UUID",
-			Value: string(aUUID),
-		},
-		{
-			Name:  "APP_NAMESPACE",
-			Value: cr.Spec.Appinfo.Appns,
-		},
+		{ Name:  "CHAOSENGINE", Value: cr.Name },
+		{ Name:  "APP_UUID", Value: string(aUUID) },
+		{ Name:  "APP_NAMESPACE", Value: cr.Spec.Appinfo.Appns },
 	}
 }
 
@@ -323,34 +313,23 @@ func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.ChaosType == "app" {
 		return nil, errors.New("application experiment list or UUID is empty")
 	}
-	var podObj *corev1.Pod
-	var err error
 	//Initiate the Engine Info, with the type of executor to be used
-	//Switch the PodObj , if the type of Executor is specified for GO
 	if ce.Instance.Spec.Components.Runner.Type == "go" {
-		podObj, err = newGoRunnerPodForCR(ce)
-	} else {
-		podObj, err = newAnsibleRunnerPodForCR(ce)
+		return newGoRunnerPodForCR(ce)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return podObj, nil
+	return newAnsibleRunnerPodForCR(ce)
 }
 
 func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
-	labels := map[string]string{
-		"app": ce.Instance.Name,
-	}
 	return pod.NewBuilder().
 		WithName(ce.Instance.Name + "-runner").
 		WithNamespace(ce.Instance.Namespace).
-		WithLabels(labels).
+		WithLabels(map[string]string{"app": ce.Instance.Name}).
 		WithServiceAccountName(ce.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
-				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments,  analytics.ClientUUID)).
+				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)).
 				WithName("chaos-runner").
 				WithImage(ce.Instance.Spec.Components.Runner.Image).
 				WithImagePullPolicy(corev1.PullIfNotPresent),
@@ -360,10 +339,10 @@ func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 func newAnsibleRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	return pod.NewBuilder().
 		WithName(ce.Instance.Name + "-runner").
-		WithNamespace(ce.Instance.Namespace).
 		WithLabels(map[string]string{"app": ce.Instance.Name}).
-		WithServiceAccountName(ce.Instance.Spec.ChaosServiceAccount).
+		WithNamespace(ce.Instance.Namespace).
 		WithRestartPolicy("OnFailure").
+		WithServiceAccountName(ce.Instance.Spec.ChaosServiceAccount).
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
@@ -412,7 +391,7 @@ func newMonitorServiceForCR(engine chaosTypes.EngineInfo) (*corev1.Service, erro
 		WithName(engine.Instance.Name + "-monitor").
 		WithNamespace(engine.Instance.Namespace).
 		WithLabels(map[string]string{"app": "chaos-exporter"}).
-		WithPorts([]corev1.ServicePort{{ Name: "metrics", Port: 8080 }}).
+		WithPorts([]corev1.ServicePort{{Name: "metrics", Port: 8080}}).
 		WithSelectorsNew(map[string]string{"monitorFor": engine.Instance.Name}).Build()
 	if err != nil {
 		return nil, err
@@ -480,8 +459,7 @@ func engineMonitorPod(monitorPod *podEngineMonitor) error {
 	err := monitorPod.r.client.Get(context.TODO(), types.NamespacedName{Name: monitorPod.engineMonitor.Name, Namespace: monitorPod.engineMonitor.Namespace}, coreV1Pod)
 	if err != nil && k8serrors.IsNotFound(err) {
 		monitorPod.reqLogger.Info("Creating a new engineMonitor Pod", "Pod.Namespace", monitorPod.engineMonitor.Namespace, "Pod.Name", monitorPod.engineMonitor.Name)
-		err = monitorPod.r.client.Create(context.TODO(), monitorPod.engineMonitor)
-		if err != nil {
+		if err = monitorPod.r.client.Create(context.TODO(), monitorPod.engineMonitor); err != nil {
 			return err
 		}
 
@@ -547,8 +525,7 @@ func (r *ReconcileChaosEngine) checkEngineRunnerPod(reqLogger logr.Logger, engin
 		reconcileEngine: engineReconcile,
 	}
 
-	err := engineRunnerPod(runnerPod)
-	if err != nil {
+	if err := engineRunnerPod(runnerPod); err != nil {
 		return engineReconcile, err
 	}
 	return engineReconcile, nil
