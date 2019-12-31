@@ -33,4 +33,4 @@ func UUIDGenerator() string {
 }
 
 // ClientUUID contains the UUID generated for the Google-Analytics
-var ClientUUID string = UUIDGenerator()
+var ClientUUID = UUIDGenerator()
