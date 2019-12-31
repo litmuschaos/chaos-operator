@@ -386,7 +386,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
 	for name, mock := range tests {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
-			actualResult := getChaosRunnerENV(mock.instance, mock.aExList)
+			actualResult := getChaosRunnerENV(mock.instance, mock.aExList, fakeClientUUID)
 			println(actualResult)
 			if len(actualResult) != 7 {
 				t.Fatalf("Test %q failed: expected array length to be 7", name)
