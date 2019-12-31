@@ -1,0 +1,72 @@
+---
+stages:
+  - setup
+  - build
+  - test
+  - push
+  - cleanup
+
+ClusterSetup:
+
+  stage: setup
+  tags:
+    - setup
+  script: 
+    - chmod 755 ./build/gitlab/stages/1-cluster-setup/gcp
+    - ./build/gitlab/stages/1-cluster-setup/gcp
+
+  artifacts:
+    when: always
+    paths:
+      - .kube/
+
+Build:
+
+  stage: build
+  tags:
+    - build
+  script:
+    - export COMMIT=${CI_COMMIT_SHORT_SHA}
+    - export GOPATH=$HOME/go
+    - export GOROOT=/usr/local/go
+    - export PATH=$HOME/go/bin:$PATH
+    - mkdir -p $HOME/go/src/github.com/${REPONAME}/${IMAGENAME}
+    - rsync -az --delete ${CI_PROJECT_DIR}/ ${GOPATH}/src/github.com/${REPONAME}/${IMAGENAME}/ #CI_PROJECT_DIR is full path where project is cloned
+    - go env
+    - cd ${GOPATH}/src/github.com/${REPONAME}/${IMAGENAME}
+    - make deps
+    - make gotasks
+    - sudo docker build . -f build/Dockerfile -t ${REPONAME}/${IMAGENAME}:${IMAGETAG}
+    
+Test: 
+
+  stage: test
+  tags:
+    - test
+  script:
+    - cd ${HOME}/go/src/github.com/${REPONAME}/${IMAGENAME}
+    - make test
+
+Push:
+
+  stage: push
+  tags: 
+    - push
+  script:
+    - cd ${HOME}/go/src/github.com/${REPONAME}/${IMAGENAME}
+    - sudo make dockerpush
+
+ClusterCleanup:
+
+  when: always
+  stage: cleanup
+  tags:
+    - cleanup
+  script: 
+    - chmod 755 ./build/gitlab/stages/2-cluster-cleanup/cluster-cleanup
+    - ./build/gitlab/stages/2-cluster-cleanup/cluster-cleanup
+
+  artifacts:
+    when: always
+    paths:
+      - .kube/
