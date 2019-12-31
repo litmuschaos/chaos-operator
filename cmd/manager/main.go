@@ -82,7 +82,6 @@ func registerComponents(cfg *rest.Config, namespace string) (manager.Manager, er
 
 func main() {
 
-	log.Info("-----------NEW RUN--------")
 	// Add the zap logger flag set to the CLI. The flag set must
 	// be added before calling pflag.Parse().
 	pflag.CommandLine.AddFlagSet(zap.FlagSet())
@@ -151,9 +150,9 @@ func main() {
 		log.Info("Could not create metrics Service", "error", err.Error())
 	}
 
-	log.Info("Starting the Cmd.")
+	log.Info("Starting the Chaos-Operator...")
 
-	// Start the Cmd
+	// Start the Chaos-Operator
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)

@@ -235,7 +235,7 @@ func createMonitoringResources(engine chaosTypes.EngineInfo, recEngine *reconcil
 		return reconcile.Result{}, err
 	}
 	//Define an engine-monitor pod which is secondary-resource #2
-	engineMonitor, err := newMonitorPodForCR(engine)
+	engineMonitorPod, err := newMonitorPodForCR(engine)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -250,19 +250,17 @@ func createMonitoringResources(engine chaosTypes.EngineInfo, recEngine *reconcil
 	// Creates an object of monitorPod
 	monitorPod := &podEngineMonitor{
 		pod:             &corev1.Pod{},
-		engineMonitor:   engineMonitor,
+		engineMonitor:   engineMonitorPod,
 		reconcileEngine: recEngine,
 		monitoring:      engine.Instance.Spec.Monitoring,
 	}
 	// Set ChaosEngine instance as the owner and controller of engine-Monitor pod
-	err = setControllerReference(recEngine, engineMonitor, engineMonitorSvc)
-	if err != nil {
+	if err = setControllerReference(recEngine, engineMonitorPod, engineMonitorSvc); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Check if the engineMonitorService already exists, else create
-	err = MonitorServiceAndPod(monitorService, monitorPod)
-	if err != nil {
+	if err = MonitorServiceAndPod(monitorService, monitorPod); err != nil {
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
@@ -316,16 +314,6 @@ func getChaosMonitorENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) []
 		{
 			Name:  "APP_NAMESPACE",
 			Value: cr.Spec.Appinfo.Appns,
-		},
-	}
-}
-
-// getMonitoring return env required for metrics
-func getMonitoringENV() []corev1.ServicePort {
-	return []corev1.ServicePort{
-		{
-			Name: "metrics",
-			Port: 8080,
 		},
 	}
 }
@@ -421,9 +409,7 @@ func newMonitorPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 				WithImage(engine.Instance.Spec.Components.Monitor.Image).
 				WithPortsNew([]corev1.ContainerPort{{ContainerPort: 8080, Protocol: "TCP", Name: "metrics"}}).
 				WithEnvsNew(getChaosMonitorENV(engine.Instance, engine.AppUUID)),
-		).
-		Build()
-
+		).Build()
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +425,7 @@ func newMonitorServiceForCR(engine chaosTypes.EngineInfo) (*corev1.Service, erro
 		WithName(engine.Instance.Name + "-monitor").
 		WithNamespace(engine.Instance.Namespace).
 		WithLabels(map[string]string{"app": "chaos-exporter"}).
-		WithPorts(getMonitoringENV()).
+		WithPorts([]corev1.ServicePort{{ Name: "metrics", Port: 8080 }}).
 		WithSelectorsNew(map[string]string{"monitorFor": engine.Instance.Name}).Build()
 	if err != nil {
 		return nil, err
