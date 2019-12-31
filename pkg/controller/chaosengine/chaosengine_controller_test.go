@@ -328,6 +328,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
 	fakeAppLabel := "Fake Label"
 	fakeAExList := []string{"fake string"}
 	fakeAuxilaryAppInfo := "ns1:name=percona,ns2:run=nginx"
+	fakeClientUUID := "12345678-9012-3456-7890-123456789012"
 
 	tests := map[string]struct {
 		instance       *litmuschaosv1alpha1.ChaosEngine
@@ -375,15 +376,20 @@ func TestGetChaosRunnerENV(t *testing.T) {
 					Name:  "AUXILIARY_APPINFO",
 					Value: fakeAuxilaryAppInfo,
 				},
+				{
+					Name:  "CLIENT_UUID",
+					Value: fakeClientUUID,
+				},
 			},
 		},
 	}
 	for name, mock := range tests {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
-			actualResult := getChaosRunnerENV(mock.instance, mock.aExList)
-			if len(actualResult) != 6 {
-				t.Fatalf("Test %q failed: expected array length to be 6", name)
+			actualResult := getChaosRunnerENV(mock.instance, mock.aExList, fakeClientUUID)
+			println(actualResult)
+			if len(actualResult) != 7 {
+				t.Fatalf("Test %q failed: expected array length to be 7", name)
 			}
 			for index, result := range actualResult {
 				if result.Value != mock.expectedResult[index].Value {

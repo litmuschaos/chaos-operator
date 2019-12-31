@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	"github.com/litmuschaos/chaos-operator/pkg/apis"
 	"github.com/litmuschaos/chaos-operator/pkg/controller"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -125,13 +127,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	isAnalytics := strings.ToUpper(os.Getenv("ANALYTICS"))
+	// Check if the TrackingStatus env has been negated or not
+	if isAnalytics != "FALSE" {
+		err := analytics.TriggerAnalytics()
+		if err != nil {
+			log.Error(err, "")
+		}
+	}
+
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := registerComponents(cfg, namespace)
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
-
 	// Create Service object to expose the metrics port(s).
 	servicePorts := []v1.ServicePort{
 		{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},

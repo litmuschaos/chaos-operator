@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
@@ -196,7 +197,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcileResult, err
 	}
-
 	return reconcile.Result{}, nil
 }
 
@@ -269,7 +269,7 @@ func createMonitoringResources(engine chaosTypes.EngineInfo, recEngine *reconcil
 }
 
 // getChaosRunnerENV return the env required for chaos-runner
-func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []corev1.EnvVar {
+func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, ClientUUID string) []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{
 			Name:  "CHAOSENGINE",
@@ -294,6 +294,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string) []
 		{
 			Name:  "AUXILIARY_APPINFO",
 			Value: cr.Spec.AuxiliaryAppInfo,
+		},
+		{
+			Name:  "CLIENT_UUID",
+			Value: ClientUUID,
 		},
 	}
 }
@@ -361,7 +365,7 @@ func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 				WithName("chaos-runner").
 				WithImage(ce.Instance.Spec.Components.Runner.Image).
 				WithImagePullPolicy(corev1.PullIfNotPresent).
-				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments)),
+				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)),
 		).
 		Build()
 	if err != nil {
@@ -387,7 +391,7 @@ func newAnsibleRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
-				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments)),
+				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)),
 		).
 		Build()
 	if err != nil {
