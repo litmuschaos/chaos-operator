@@ -36,7 +36,6 @@ Build:
     - cd ${GOPATH}/src/github.com/${REPONAME}/${IMAGENAME}
     - make deps
     - make gotasks
-    - sudo docker build . -f build/Dockerfile -t ${REPONAME}/${IMAGENAME}:${IMAGETAG}
     
 Test: 
 
@@ -54,7 +53,7 @@ Push:
     - push
   script:
     - cd ${HOME}/go/src/github.com/${REPONAME}/${IMAGENAME}
-    - sudo make dockerpush
+    - sudo make dockerops
 
 ClusterCleanup:
 
