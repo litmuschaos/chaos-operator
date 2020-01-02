@@ -171,7 +171,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine)
 		if err != nil {
-			chaosTypes.Log.Info("Annotation check failed with error: ", err)
+			chaosTypes.Log.Info("Annotation check failed with", "error:", err)
 			return reconcile.Result{}, nil
 		}
 	}
@@ -302,9 +302,9 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 // getChaosMonitorENV return the env required for chaos-Monitor
 func getChaosMonitorENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) []corev1.EnvVar {
 	return []corev1.EnvVar{
-		{ Name:  "CHAOSENGINE", Value: cr.Name },
-		{ Name:  "APP_UUID", Value: string(aUUID) },
-		{ Name:  "APP_NAMESPACE", Value: cr.Spec.Appinfo.Appns },
+		{Name: "CHAOSENGINE", Value: cr.Name},
+		{Name: "APP_UUID", Value: string(aUUID)},
+		{Name: "APP_NAMESPACE", Value: cr.Spec.Appinfo.Appns},
 	}
 }
 
@@ -332,8 +332,7 @@ func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)).
 				WithName("chaos-runner").
 				WithImage(ce.Instance.Spec.Components.Runner.Image).
-				WithImagePullPolicy(corev1.PullIfNotPresent),
-		).Build()
+				WithImagePullPolicy(corev1.PullIfNotPresent)).Build()
 }
 
 func newAnsibleRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
@@ -350,8 +349,7 @@ func newAnsibleRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
-				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)),
-		).Build()
+				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID))).Build()
 }
 
 // newMonitorPodForCR defines secondary resource #2 in same namespace as CR */
@@ -374,8 +372,7 @@ func newMonitorPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 				WithName("chaos-monitor").
 				WithImage(engine.Instance.Spec.Components.Monitor.Image).
 				WithPortsNew([]corev1.ContainerPort{{ContainerPort: 8080, Protocol: "TCP", Name: "metrics"}}).
-				WithEnvsNew(getChaosMonitorENV(engine.Instance, engine.AppUUID)),
-		).Build()
+				WithEnvsNew(getChaosMonitorENV(engine.Instance, engine.AppUUID))).Build()
 	if err != nil {
 		return nil, err
 	}
