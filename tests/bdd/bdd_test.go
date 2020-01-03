@@ -232,6 +232,12 @@ var _ = Describe("BDD on chaos-operator", func() {
 						AppKind:  "deployment",
 					},
 					ChaosServiceAccount: "litmus",
+				        Components: v1alpha1.ComponentParams{
+						Runner: v1alpha1.RunnerInfo{
+							Image:	  "litmuschaos/chaos-executor:ci",
+							Type:     "go",
+						},
+					},
 					Monitoring:          true,
 					Experiments: []v1alpha1.ExperimentList{
 						{
