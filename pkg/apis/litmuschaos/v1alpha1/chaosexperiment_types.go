@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	rbacV1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -57,6 +58,8 @@ type ExperimentDef struct {
 	Labels map[string]string `json:"labels"`
 	// Image of the chaos executor
 	Image string `json:"image"`
+	// List of Permission needed for a service account to execute experiment
+	Permissions []rbacV1.PolicyRule `json:"permissions"`
 	// List of ENV vars passed to executor pod
 	ENVList []ENVPair `json:"env"`
 	// Defines command to invoke experiment

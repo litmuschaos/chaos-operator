@@ -58,20 +58,35 @@ spec:
                     name: 
                       type: string
                 permissions: 
-                  type: object
-                  properties: 
-                    apiGroups: 
-                      type: array
-                      items: 
-                        type: string
-                    resources: 
-                      type: array
-                      items: 
-                        type: string
-                    verbs: 
-                      type: array
-                      items: 
-                        type: string
+                  type: array
+                  items:
+                    type: object
+                    minProperties: 3
+                    required:
+                    - apiGroups
+                    - resources
+                    - verbs
+                    properties:
+                      apiGroups:
+                        type: array
+                        items:
+                          type: string
+                      resources:
+                        type: array
+                        items:
+                          type: string
+                      verbs:
+                        type: array
+                        items:
+                          type: string
+                      resourceNames:
+                        type: array
+                        items:
+                          type: string
+                      nonResourceURLs:
+                        type: array
+                        items:
+                          type: string
                 configmaps: 
                   type: array
                   items: 
