@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
@@ -46,7 +46,7 @@ func CheckDeploymentAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.E
 
 // getDeploymentLists will list the deployments which having the chaos label
 func getDeploymentLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*v1.DeploymentList, error) {
-	targetAppList, err := clientSet.AppsV1().Deployments(ce.AppInfo.Namespace).List(metav1.ListOptions{
+	targetAppList, err := clientSet.AppsV1().Deployments(ce.AppInfo.Namespace).List(metaV1.ListOptions{
 		LabelSelector: ce.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {

@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	appsV1 "k8s.io/api/apps/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 )
@@ -45,8 +45,8 @@ func CheckStatefulSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.
 }
 
 // getStatefulSetLists will list the statefulset which having the chaos label
-func getStatefulSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*v1.StatefulSetList, error) {
-	targetAppList, err := clientSet.AppsV1().StatefulSets(ce.AppInfo.Namespace).List(metav1.ListOptions{
+func getStatefulSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*appsV1.StatefulSetList, error) {
+	targetAppList, err := clientSet.AppsV1().StatefulSets(ce.AppInfo.Namespace).List(metaV1.ListOptions{
 		LabelSelector: ce.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {
@@ -59,7 +59,7 @@ func getStatefulSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineI
 }
 
 // This will check and count the total chaos enabled application
-func checkForChaosEnabledStatefulSet(targetAppList *v1.StatefulSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+func checkForChaosEnabledStatefulSet(targetAppList *appsV1.StatefulSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledStatefulSet := 0
 	for _, statefulSet := range targetAppList.Items {
 		ce.AppName = statefulSet.ObjectMeta.Name
