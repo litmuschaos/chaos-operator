@@ -61,6 +61,11 @@ spec:
                   type: array
                   items:
                     type: object
+                    minProperties: 3
+                    required:
+                    - apiGroups
+                    - resources
+                    - verbs
                     properties:
                       apiGroups:
                         type: array
