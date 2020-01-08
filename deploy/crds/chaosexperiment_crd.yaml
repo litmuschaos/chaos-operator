@@ -57,6 +57,9 @@ spec:
                   properties: 
                     name: 
                       type: string
+                scope: 
+                  type: string
+                  pattern: ^(Namespaced|Cluster)$
                 permissions: 
                   type: array
                   items:
