@@ -38,6 +38,9 @@ spec:
               #oneOf:
               #  - pattern: '^delete$'
               #  - pattern: '^retain$'
+            chaosType: 
+              type: string
+              pattern: ^(app|infra)$
             appinfo:
               type: object
               properties:
@@ -48,6 +51,8 @@ spec:
                   type: string
                 appns: 
                   type: string
+            auxiliaryAppInfo: 
+              type: string
             chaosServiceAccount:
               type: string
             components:
