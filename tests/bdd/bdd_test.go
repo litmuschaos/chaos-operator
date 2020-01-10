@@ -28,6 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	rbacV1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	scheme "k8s.io/client-go/kubernetes/scheme"
@@ -181,6 +182,8 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 				Spec: v1alpha1.ChaosExperimentSpec{
 					Definition: v1alpha1.ExperimentDef{
+
+						Permissions:    []rbacV1.PolicyRule{},
 
 						Args:    []string{"-c", "ansible-playbook ./experiments/chaos/pod_delete/test.yml -i /etc/ansible/hosts -vv; exit 0"},
 						Command: []string{"/bin/bash"},
