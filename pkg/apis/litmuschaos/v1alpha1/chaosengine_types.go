@@ -41,6 +41,8 @@ type ChaosEngineSpec struct {
 	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
 	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
+	//Debug verbosity level for executor debug logs
+	Debug Debug `json:"debug,omitempty"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
@@ -49,6 +51,11 @@ type ChaosEngineSpec struct {
 type ChaosEngineStatus struct {
 	//Detailed status of individual experiments
 	Experiments []ExperimentStatuses `json:"experiments"`
+}
+
+// Debug defines logging level of the runner
+type Debug struct {
+	Verbosity string `json:"verbosity"`
 }
 
 // ApplicationParams defines information about Application-Under-Test (AUT) on the cluster

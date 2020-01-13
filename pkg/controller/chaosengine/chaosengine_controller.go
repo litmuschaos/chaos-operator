@@ -321,6 +321,7 @@ func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 }
 
 func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
+	verbose := "-v=" + ce.Instance.Spec.Debug.Verbosity
 	return pod.NewBuilder().
 		WithName(ce.Instance.Name + "-runner").
 		WithNamespace(ce.Instance.Namespace).
@@ -329,6 +330,7 @@ func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
+				WithArgumentsNew([]string{verbose}).
 				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)).
 				WithName("chaos-runner").
 				WithImage(ce.Instance.Spec.Components.Runner.Image).
