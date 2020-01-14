@@ -82,18 +82,40 @@ spec:
                     type: object
                     properties:
                       components: 
-                        type: array
-                        items:
-                          type: object
-                          properties:  
-                            name: 
-                              type: string
-                            value: 
-                              type: string 
+                        type: object
+                        properties:
+                          env:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                          configMaps:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                mountPath:
+                                  type: string
+                          secrets:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name: 
+                                  type: string
+                                mountPath:
+                                  type: string
         status:
           type: object
   version: v1alpha1
   versions:
   - name: v1alpha1
     served: true
-    storage: true
+    storage: true	
+    
