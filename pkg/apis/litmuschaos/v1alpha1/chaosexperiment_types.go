@@ -58,7 +58,7 @@ type ExperimentDef struct {
 	Labels map[string]string `json:"labels"`
 	// Image of the chaos executor
 	Image string `json:"image"`
-	//Scope specifies the service account scope (& thereby blast radius) of the experiment 
+	//Scope specifies the service account scope (& thereby blast radius) of the experiment
 	Scope string `json:"scope"`
 	// List of Permission needed for a service account to execute experiment
 	Permissions []rbacV1.PolicyRule `json:"permissions"`
