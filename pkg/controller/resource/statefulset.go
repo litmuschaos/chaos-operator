@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
-	"k8s.io/client-go/kubernetes"
 	appsV1 "k8s.io/api/apps/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 )

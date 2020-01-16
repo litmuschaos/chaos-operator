@@ -18,11 +18,10 @@ package bdd
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"testing"
 	"time"
-	"os"
-	
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -35,15 +34,16 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
 
-	restclient "k8s.io/client-go/rest"
 	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
+	restclient "k8s.io/client-go/rest"
 )
+
 var (
 	kubeconfig string
-	config *restclient.Config
-	client *kubernetes.Clientset
-	clientSet *chaosClient.LitmuschaosV1alpha1Client
+	config     *restclient.Config
+	client     *kubernetes.Clientset
+	clientSet  *chaosClient.LitmuschaosV1alpha1Client
 )
 
 func TestChaos(t *testing.T) {
@@ -59,26 +59,26 @@ var _ = BeforeSuite(func() {
 	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 
 	if err != nil {
-		Expect(err).To(BeNil(),"failed to get config")
+		Expect(err).To(BeNil(), "failed to get config")
 	}
 
 	client, err = kubernetes.NewForConfig(config)
 
 	if err != nil {
-		Expect(err).To(BeNil(),"failed to get client")
+		Expect(err).To(BeNil(), "failed to get client")
 	}
 
 	clientSet, err = chaosClient.NewForConfig(config)
 
 	if err != nil {
-		Expect(err).To(BeNil(),"failed to get clientSet")
+		Expect(err).To(BeNil(), "failed to get clientSet")
 	}
 
 	err = v1alpha1.AddToScheme(scheme.Scheme)
 	if err != nil {
 		fmt.Println(err)
 	}
-	
+
 	//Creating crds
 	By("creating chaosengine crd")
 	err = exec.Command("kubectl", "create", "-f", "../../deploy/chaos_crds.yaml").Run()
@@ -183,7 +183,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Spec: v1alpha1.ChaosExperimentSpec{
 					Definition: v1alpha1.ExperimentDef{
 
-						Permissions:    []rbacV1.PolicyRule{},
+						Permissions: []rbacV1.PolicyRule{},
 
 						Args:    []string{"-c", "ansible-playbook ./experiments/chaos/pod_delete/test.yml -i /etc/ansible/hosts -vv; exit 0"},
 						Command: []string{"/bin/bash"},
@@ -235,13 +235,13 @@ var _ = Describe("BDD on chaos-operator", func() {
 						AppKind:  "deployment",
 					},
 					ChaosServiceAccount: "litmus",
-				        Components: v1alpha1.ComponentParams{
+					Components: v1alpha1.ComponentParams{
 						Runner: v1alpha1.RunnerInfo{
-							Image:	  "litmuschaos/chaos-executor:ci",
-							Type:     "go",
+							Image: "litmuschaos/chaos-executor:ci",
+							Type:  "go",
 						},
 					},
-					Monitoring:          true,
+					Monitoring: true,
 					Experiments: []v1alpha1.ExperimentList{
 						{
 							Name: "pod-delete",
