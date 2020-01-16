@@ -103,27 +103,15 @@ type ExperimentAttributes struct {
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
 type ExperimentComponents struct {
-	ENV        []ExperimentENV        `json:"env,omitempty"`
-	ConfigMaps []ExperimentConfigMaps `json:"configMaps,omitempty"`
-	Secrets    []ExperimentSecrets    `json:"secrets,omitempty"`
+	ENV        []ExperimentENV `json:"env,omitempty"`
+	ConfigMaps []ConfigMap     `json:"configMaps,omitempty"`
+	Secrets    []Secret        `json:"secrets,omitempty"`
 }
 
 // ExperimentENV varibles to override the default values in chaosexperiment
 type ExperimentENV struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
-}
-
-// ExperimentConfigMaps contains the name and mountPath of the configmaps
-type ExperimentConfigMaps struct {
-	Name      string `json:"name"`
-	MountPath string `json:"mountPath"`
-}
-
-// ExperimentSecrets contains the name and mountPath of the secrets
-type ExperimentSecrets struct {
-	Name      string `json:"name"`
-	MountPath string `json:"mountPath"`
 }
 
 // ExperimentStatuses defines information about status of individual experiments
