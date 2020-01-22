@@ -1,6 +1,6 @@
 # Litmus chaos-operator for injecting chaos experiments on Kubernetes
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/5d3a1caf80454c55bfa4fa4f6b1b9a9f)](https://www.codacy.com/app/chandan.kumar/chaos-operator?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=litmuschaos/chaos-operator&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/2597079b1b5240d3866a6deb4112a2f2)](https://www.codacy.com/manual/litmuschaos/chaos-operator?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=litmuschaos/chaos-operator&amp;utm_campaign=Badge_Grade)
 [![Go Report Card](https://goreportcard.com/badge/github.com/litmuschaos/chaos-operator)](https://goreportcard.com/report/github.com/litmuschaos/chaos-operator)
 [![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-operator?branch=master)](https://bettercodehub.com/)
   
