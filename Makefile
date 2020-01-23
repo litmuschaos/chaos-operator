@@ -11,6 +11,9 @@ DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-operator
 DOCKER_TAG ?= latest
 
+.PHONY: all
+all: deps format lint build test dockerops
+
 .PHONY: help
 help:
 	@echo ""
@@ -29,7 +32,6 @@ godeps:
 	@echo "INFO:\tverifying dependencies for chaos exporter build ..."
 	@go get -u -v golang.org/x/lint/golint
 	@go get -u -v golang.org/x/tools/cmd/goimports
-	@go get -u -v github.com/golang/dep/cmd/dep
 
 .PHONY: _build_check_docker
 _build_check_docker:
