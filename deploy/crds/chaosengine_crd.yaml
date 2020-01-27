@@ -38,9 +38,9 @@ spec:
               #oneOf:
               #  - pattern: '^delete$'
               #  - pattern: '^retain$'
-            chaosType: 
+            annotationCheck: 
               type: string
-              pattern: ^(app|infra)$
+              pattern: ^(true|false)$
             appinfo:
               type: object
               properties:
