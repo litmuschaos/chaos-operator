@@ -154,7 +154,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Get the image for runner and monitor pod from chaosengine spec,operator env or default values.
 	setChaosResourceImage()
 
-	//getAnnotationCheck fetch the annotation check from engine spec
+	//getAnnotationCheck fetch the annotationCheck from engine spec
 	err = getAnnotationCheck()
 	if err != nil {
 		return reconcile.Result{}, err
@@ -504,7 +504,7 @@ func getApplicationDetail(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 	chaosTypes.Log.Info("Monitoring Status derived from chaosengine is", "monitoringStatus", ce.Instance.Spec.Monitoring)
 	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", ce.Instance.Spec.Components.Runner.Image)
 	chaosTypes.Log.Info("exporter image derived from chaosengine is", "exporterImage", ce.Instance.Spec.Components.Monitor.Image)
-	chaosTypes.Log.Info("Annotation check is ", "annotation check", ce.Instance.Spec.AnnotationCheck)
+	chaosTypes.Log.Info("Annotation check is ", "annotationCheck", ce.Instance.Spec.AnnotationCheck)
 	return ce, nil
 }
 
@@ -568,7 +568,7 @@ func getAnnotationCheck() error {
 
 	}
 	if engine.Instance.Spec.AnnotationCheck != "true" && engine.Instance.Spec.AnnotationCheck != "false" {
-		return fmt.Errorf("annotation check '%s', is not supported it should be true or false", engine.Instance.Spec.AnnotationCheck)
+		return fmt.Errorf("annotationCheck '%s', is not supported it should be true or false", engine.Instance.Spec.AnnotationCheck)
 	}
 	return nil
 }

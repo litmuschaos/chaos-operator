@@ -42,7 +42,7 @@ var (
 	// AppLabelKey contains the application label key
 	AppLabelKey string
 
-	// DefaultAnnotationCheck contains the annotation check of chaos - true/false
+	// DefaultAnnotationCheck contains the default value (true) of the annotationCheck
 	DefaultAnnotationCheck = "true"
 
 	// AppLabelValue contains the application label value

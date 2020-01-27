@@ -27,7 +27,7 @@ import (
 type ChaosEngineSpec struct {
 	//Appinfo contains deployment details of AUT
 	Appinfo ApplicationParams `json:"appinfo"`
-	//AnnotationCheck define wheather annotation is true or false
+	//AnnotationCheck defines whether annotation check is allowed or not. It can be true or false
 	AnnotationCheck string `json:"annotationCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
