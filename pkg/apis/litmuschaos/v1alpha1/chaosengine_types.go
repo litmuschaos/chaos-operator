@@ -27,8 +27,8 @@ import (
 type ChaosEngineSpec struct {
 	//Appinfo contains deployment details of AUT
 	Appinfo ApplicationParams `json:"appinfo"`
-	//ChaosType define wheather it is an infra chaos or app chaos
-	ChaosType string `json:"chaosType,omitempty"`
+	//AnnotationCheck define wheather annotation is true or false
+	AnnotationCheck string `json:"annotationCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Components contains the image of runnner and monitor pod

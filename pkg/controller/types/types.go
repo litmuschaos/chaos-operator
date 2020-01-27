@@ -42,8 +42,8 @@ var (
 	// AppLabelKey contains the application label key
 	AppLabelKey string
 
-	// DefaultChaosType contains the type of chaos - infra/app
-	DefaultChaosType = "app"
+	// DefaultAnnotationCheck contains the annotation check of chaos - true/false
+	DefaultAnnotationCheck = "true"
 
 	// AppLabelValue contains the application label value
 	AppLabelValue string
