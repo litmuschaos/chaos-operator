@@ -154,8 +154,8 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	// Get the image for runner and monitor pod from chaosengine spec,operator env or default values.
 	setChaosResourceImage()
 
-	//getChaosType fetch the chaosType from engine spec
-	err = getChaosType()
+	//getAnnotationCheck fetch the annotationCheck from engine spec
+	err = getAnnotationCheck()
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -167,7 +167,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	if engine.Instance.Spec.ChaosType == "app" {
+	if engine.Instance.Spec.AnnotationCheck == "true" {
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine)
 		if err != nil {
@@ -310,7 +310,7 @@ func getChaosMonitorENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) []
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR
 func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
-	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.ChaosType == "app" {
+	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.AnnotationCheck == "true" {
 		return nil, errors.New("application experiment list or UUID is empty")
 	}
 	//Initiate the Engine Info, with the type of executor to be used
@@ -504,7 +504,7 @@ func getApplicationDetail(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 	chaosTypes.Log.Info("Monitoring Status derived from chaosengine is", "monitoringStatus", ce.Instance.Spec.Monitoring)
 	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", ce.Instance.Spec.Components.Runner.Image)
 	chaosTypes.Log.Info("exporter image derived from chaosengine is", "exporterImage", ce.Instance.Spec.Components.Monitor.Image)
-	chaosTypes.Log.Info("chaos type is ", "chaostype", ce.Instance.Spec.ChaosType)
+	chaosTypes.Log.Info("Annotation check is ", "annotationCheck", ce.Instance.Spec.AnnotationCheck)
 	return ce, nil
 }
 
@@ -561,14 +561,14 @@ func setChaosResourceImage() {
 	}
 }
 
-func getChaosType() error {
+func getAnnotationCheck() error {
 
-	if engine.Instance.Spec.ChaosType == "" {
-		engine.Instance.Spec.ChaosType = chaosTypes.DefaultChaosType
+	if engine.Instance.Spec.AnnotationCheck == "" {
+		engine.Instance.Spec.AnnotationCheck = chaosTypes.DefaultAnnotationCheck
 
 	}
-	if engine.Instance.Spec.ChaosType != "app" && engine.Instance.Spec.ChaosType != "infra" {
-		return fmt.Errorf("chaos type '%s', is not supported it should be app or infra", engine.Instance.Spec.ChaosType)
+	if engine.Instance.Spec.AnnotationCheck != "true" && engine.Instance.Spec.AnnotationCheck != "false" {
+		return fmt.Errorf("annotationCheck '%s', is not supported it should be true or false", engine.Instance.Spec.AnnotationCheck)
 	}
 	return nil
 }
