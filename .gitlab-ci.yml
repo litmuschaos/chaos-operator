@@ -4,7 +4,6 @@ stages:
   - build
   - test
   - push
-  - baseline
   - cleanup
 
 ClusterSetup:
