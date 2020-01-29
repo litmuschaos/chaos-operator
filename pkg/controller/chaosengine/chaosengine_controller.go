@@ -296,6 +296,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 			Name:  "CLIENT_UUID",
 			Value: ClientUUID,
 		},
+		{
+			Name:  "ENGINE_UID",
+			Value: string(cr.UID),
+		},
 	}
 }
 
@@ -505,6 +509,7 @@ func getApplicationDetail(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, er
 	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", ce.Instance.Spec.Components.Runner.Image)
 	chaosTypes.Log.Info("exporter image derived from chaosengine is", "exporterImage", ce.Instance.Spec.Components.Monitor.Image)
 	chaosTypes.Log.Info("Annotation check is ", "annotationCheck", ce.Instance.Spec.AnnotationCheck)
+	chaosTypes.Log.Info("Engine UID is ", "UID: ", ce.Instance.UID)
 	return ce, nil
 }
 
