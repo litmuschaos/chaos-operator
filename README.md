@@ -9,13 +9,12 @@ and Kubernetes infrastructure in a managed fashion. Its objective is to make the
 hardening of application workloads on Kubernetes easy by automating the execution of chaos experiments. A sample chaos 
 injection workflow could be as simple as:
 
-- Install the Litmus infrastructure components (RBAC, CRDs), the Operator & Experiment custom resource bundles via helm charts
+- Install the Litmus infrastructure components (RBAC, CRDs), the Operator & Experiment custom resource bundles via the operator manifest
 - Annotate the application under test (AUT), enabling it for chaos
-- Create a ChaosEngine custom resource tied to the AUT, which describes the experiment list to be executed 
+- Create a ChaosEngine custom resource tied to the AUT, which describes the experiment to be executed 
 
 Benefits provided by the Chaos Operator include: 
 
-- Scheduled batch Run of Chaos
 - Standardised chaos experiment spec 
 - Categorized chaos bundles for stateless/stateful/vendor-specific
 - Test-Run resiliency 
@@ -39,33 +38,49 @@ runner pod and engine monitor service), which are created & managed by it in ord
 
 The ChaosEngine is the core schema that defines the chaos workflow for a given application. Currently, it defines the following:
 
-- Application Data (namespace, labels, kind)
-- List of Chaos Experiments to be executed
-- Attributes of the experiments, such as, rank/priority 
-- Execution Schedule for the batch run of the experiments
+- Application info (namespace, labels, kind) of primary (AUT) and auxiliary (dependent) applications 
+- ServiceAccount used for execution of the experiment
+- Flag to turn on/off chaos annotation checks on applications
+- Chaos Experiment to be executed on the application
+- Attributes of the experiments (overrides defaults specified in the experiment CRs)
+- Flag to retain/cleanup chaos resources after experiment execution
 
 The ChaosEngine is the referenced as the owner of the secondary (reconcile) resource with Kubernetes deletePropagation 
 ensuring these also are removed upon deletion of the ChaosEngine CR.
 
 Here is a sample ChaosEngineSpec for reference: 
 
-  ```yaml
-  apiVersion: litmuschaos.io/v1alpha1
-  kind: ChaosEngine
-  metadata:
-    name: engine-nginx
-  spec:
-    appinfo: 
-      appns: default
-      applabel: "app=nginx"
-    experiments:
-      - name: pod-delete 
-        spec:
-          rank: 
-      - name: container-kill
-        spec:
-          rank:  
-  ```
+```yaml
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: nginx-chaos
+  namespace: default
+spec:
+  appinfo:
+    appns: default
+    applabel: 'app=nginx'
+    appkind: deployment
+  chaosType: 'app'   
+  auxiliaryAppInfo: ""
+  chaosServiceAccount: nginx-sa
+  monitoring: false
+  components:
+    runner:
+      image: "litmuschaos/chaos-executor:1.0.0"
+      type: "go"
+  jobCleanUpPolicy: delete  
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          - name: TOTAL_CHAOS_DURATION
+            value: '30'
+          - name: CHAOS_INTERVAL
+            value: '10'
+          - name: FORCE
+            value: "false"
+```
 
 ## What is a litmus chaos chart and how can I use it?
 
@@ -74,7 +89,8 @@ of the experiments (general Kubernetes chaos, vendor/provider specific chaos - s
 application-specific chaos, say NuoDB). They consist of custom resources that hold low-level chaos(test) 
 parameters which are queried by the operator in order to execute the experiments. The spec.definition._fields_
 and their corresponding _values_ are used to construct the eventual execution artifact that runs the chaos 
-experiment (typically, the litmusbook, which is a K8s job resource). 
+experiment (typically, the litmusbook, which is a K8s job resource). It also defines the permissions necessary 
+to execute the experiment.  
 
 Here is a sample ChaosEngineSpec for reference:
 
@@ -85,92 +101,72 @@ description:
     Deletes a pod belonging to a deployment/statefulset/daemonset
 kind: ChaosExperiment
 metadata:
-  labels:
-    helm.sh/chart: k8sChaos-0.1.0
-    litmuschaos.io/instance: dealing-butterfly
-    litmuschaos.io/name: k8sChaos
   name: pod-delete
+  version: 0.1.9
 spec:
   definition:
-    image: openebs/ansible-runner:ci
-    litmusbook: /experiments/chaos/kubernetes/pod_delete/run_litmus_test.yml
-    labels:
-      name: pod-delete
+    scope: Namespaced
+    permissions:
+      - apiGroups:
+          - ""
+          - "apps"
+          - "batch"
+          - "litmuschaos.io"
+        resources:
+          - "deployments"
+          - "jobs"
+          - "pods"
+          - "configmaps"
+          - "chaosengines"
+          - "chaosexperiments"
+          - "chaosresults"
+        verbs:
+          - "create"
+          - "list"
+          - "get"
+          - "patch"
+          - "update"
+          - "delete"
+      - apiGroups:
+          - ""
+        resources: 
+          - "nodes"
+        verbs :
+          - "get"
+          - "list"
+    image: "litmuschaos/ansible-runner:latest"
     args:
     - -c
-    - ansible-playbook ./experiments/chaos/kubernetes/pod_delete/test.yml -i /etc/ansible/hosts
-      -vv; exit 0
+    - ansible-playbook ./experiments/generic/pod_delete/pod_delete_ansible_logic.yml -i /etc/ansible/hosts -vv; exit 0
     command:
     - /bin/bash
     env:
+
     - name: ANSIBLE_STDOUT_CALLBACK
-      value: null
+      value: 'default'
+
     - name: TOTAL_CHAOS_DURATION
-      value: 15
+      value: '15'
+
+    # Period to wait before injection of chaos in sec
+    - name: RAMP_TIME
+      value: ''
+
+    - name: FORCE
+      value: 'true'
+
     - name: CHAOS_INTERVAL
-      value: 5
+      value: '5'
+
     - name: LIB
-      value: ""
+      value: ''    
+    labels:
+      name: pod-delete
 ```
 
-## What are the steps to get started?
+## How to get started?
 
-- Install Litmus infrastructure (RBAC, CRD, Operator) components 
-
-  ```
-  helm repo add litmuschaos https://litmuschaos.github.io/chaos-charts
-  helm repo update
-  helm install litmuschaos/litmus --namespace=litmus
-  ```
-
-- Download the desired Chaos Experiment bundles, say, general Kubernetes chaos
-
-  ```
-  helm install litmuschaos/k8sChaos
-  ```
-
-- Annotate your application to enable chaos. For ex:
-
-  ```
-  kubectl annotate deploy/nginx-deployment litmuschaos.io/chaos="true"
-  ```
-
-- Create a ChaosEngine CR with application information & chaos experiment list with their respective attributes
-
-  ```
-  # engine-nginx.yaml is a chaosengine manifest file
-  kubectl apply -f engine-nginx.yaml
-  ``` 
-- Refer the ChaosEngine Status (or alternately, the corresponding ChaosResult resource) to know the status 
-  of each experiment. The `spec.verdict` is set to _Running_ when the experiment is in progress, eventually
-  changing to _pass_ or _fail_.
-
-  ```
-  kubectl describe chaosresult engine-nginx-pod-delete
-
-  Name:         engine-nginx-pod-delete
-  Namespace:    default
-  Labels:       <none>
-  Annotations:  kubectl.kubernetes.io/last-applied-configuration:
-                {"apiVersion":"litmuschaos.io/v1alpha1","kind":"ChaosResult","metadata":{"annotations":{},"name":"engine-nginx-pod-delete","namespace":"de...
-  API Version:  litmuschaos.io/v1alpha1
-  Kind:         ChaosResult
-  Metadata:
-    Creation Timestamp:  2019-05-22T12:10:19Z
-    Generation:          9
-    Resource Version:    8898730
-    Self Link:           /apis/litmuschaos.io/v1alpha1/namespaces/default/chaosresults/engine-nginx-pod-delete
-    UID:                 911ada69-7c8a-11e9-b37f-42010a80019f
-  Spec:
-    Experimentstatus:
-      Phase:    <nil>
-      Verdict:  pass
-  Events:       <none>
-  ```
-
-## Where are the docs?
-
-They are available at [litmus docs](https://docs.litmuschaos.io)
+Refer the LitmusChaos documentation [litmus docs](https://docs.litmuschaos.io)
 
 ## How do I contribute?
 
