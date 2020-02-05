@@ -18,20 +18,20 @@ package chaosengine
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	"github.com/litmuschaos/kube-helper/kubernetes/container"
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -40,9 +40,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/chaos-operator/pkg/controller/resource"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
+	"github.com/litmuschaos/chaos-operator/pkg/controller/utils"
+	"github.com/litmuschaos/chaos-operator/pkg/controller/watcher"
 )
 
 var _ reconcile.Reconciler = &ReconcileChaosEngine{}
@@ -53,6 +56,9 @@ type ReconcileChaosEngine struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
+	// recorder is an event recorder for recording Event resources to the
+	// Kubernetes API.
+	recorder record.EventRecorder
 }
 
 // reconcileEngine contains details of reconcileEngine
@@ -89,7 +95,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileChaosEngine{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileChaosEngine{client: mgr.GetClient(), scheme: mgr.GetScheme(), recorder: mgr.GetEventRecorderFor("chaos-operator")}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -98,11 +104,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-	handlerForOwner := handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &litmuschaosv1alpha1.ChaosEngine{},
-	}
-	err = watchChaosResources(handlerForOwner, c)
+	err = watchChaosResources(mgr.GetClient(), c)
 	if err != nil {
 		return err
 	}
@@ -112,19 +114,23 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 var engine *chaosTypes.EngineInfo
 
 // watchSecondaryResources watch's for changes in chaos resources
-func watchChaosResources(handlerForOwner handler.EnqueueRequestForOwner, c controller.Controller) error {
-	// Watch for Primary Resource
+func watchChaosResources(clientSet client.Client, c controller.Controller) error {
+	// Watch for Primary Chaos Resource
 	err := c.Watch(&source.Kind{Type: &litmuschaosv1alpha1.ChaosEngine{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	// Watch for Secondary Resources
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handlerForOwner)
+	//Watch for Secondary Chaos Resources
+	err = watcher.WatchForRunnerPod(clientSet, c)
 	if err != nil {
 		return err
 	}
-	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handlerForOwner)
+	err = watcher.WatchForMonitorPod(clientSet, c)
+	if err != nil {
+		return err
+	}
+	err = watcher.WatchForMonitorService(clientSet, c)
 	if err != nil {
 		return err
 	}
@@ -139,7 +145,6 @@ func watchChaosResources(handlerForOwner handler.EnqueueRequestForOwner, c contr
 func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := chaosTypes.Log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling ChaosEngine")
-	// Fetch the ChaosEngine instance
 	err := r.getChaosEngineInstance(request)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -151,6 +156,22 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
+	if checkEngineStatusForStop(engine) {
+		reconcileResult, err := r.reconcileForDelete(request)
+		return reconcileResult, err
+
+	} else if engine.Instance.Spec.EngineStatus == "start" {
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Will create all Chaos resources for engineUID: %v", string(engine.Instance.UID))
+		err := r.addFinalzerToEngine(engine, "chaosengine.litmuschaos.io/finalizer")
+		if err != nil {
+			reqLogger.Error(err, "Unable to add Finalizers in ChaosEngine Resource, due to error: %v", err)
+		}
+		// Patch Status to initialized
+		err = r.updateStatus(engine, "initialized")
+		if err != nil {
+			reqLogger.Error(err, "Unable to Update Status in ChaosEngine Resource, due to error: %v", err)
+		}
+	}
 	// Get the image for runner and monitor pod from chaosengine spec,operator env or default values.
 	setChaosResourceImage()
 
@@ -180,10 +201,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	// Set ChaosEngine instance as the owner and controller of engine-runner pod
-	if err := controllerutil.SetControllerReference(engine.Instance, engineRunner, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
+
 	//Check if the engineRunner pod already exists, else create
 	engineReconcile, err := r.checkEngineRunnerPod(reqLogger, engineRunner)
 	if err != nil {
@@ -213,12 +231,12 @@ func setControllerReference(recEngine *reconcileEngine, engineMonitor *corev1.Po
 
 //MonitorServiceAndPod checks if the EngineMonitorPod And EngineMonitorService already exist or not
 func MonitorServiceAndPod(monitorService *serviceEngineMonitor, monitorPod *podEngineMonitor) error {
-	err := engineMonitorService(monitorService)
-	if err != nil {
+	// Check if the EngineMonitorService already exists, else create
+	if err := engineMonitorService(monitorService); err != nil {
 		return err
 	}
 	// Check if the EngineMonitorPod already exists, else create
-	if err = engineMonitorPod(monitorPod); err != nil {
+	if err := engineMonitorPod(monitorPod); err != nil {
 		return err
 	}
 	return nil
@@ -252,10 +270,6 @@ func createMonitoringResources(engine chaosTypes.EngineInfo, recEngine *reconcil
 		engineMonitor:   engineMonitorPod,
 		reconcileEngine: recEngine,
 		monitoring:      engine.Instance.Spec.Monitoring,
-	}
-	// Set ChaosEngine instance as the owner and controller of engine-Monitor pod
-	if err = setControllerReference(recEngine, engineMonitorPod, engineMonitorSvc); err != nil {
-		return reconcile.Result{}, err
 	}
 
 	// Check if the engineMonitorService already exists, else create
@@ -320,36 +334,36 @@ func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	return newAnsibleRunnerPodForCR(ce)
 }
 
-func newGoRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
+func newGoRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	return pod.NewBuilder().
-		WithName(ce.Instance.Name + "-runner").
-		WithNamespace(ce.Instance.Namespace).
-		WithLabels(map[string]string{"app": ce.Instance.Name}).
-		WithServiceAccountName(ce.Instance.Spec.ChaosServiceAccount).
+		WithName(engine.Instance.Name + "-runner").
+		WithNamespace(engine.Instance.Namespace).
+		WithLabels(map[string]string{"app": engine.Instance.Name, "engineUID": string(engine.Instance.UID)}).
+		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
 			container.NewBuilder().
-				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID)).
+				WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID)).
 				WithName("chaos-runner").
-				WithImage(ce.Instance.Spec.Components.Runner.Image).
+				WithImage(engine.Instance.Spec.Components.Runner.Image).
 				WithImagePullPolicy(corev1.PullIfNotPresent)).Build()
 }
 
-func newAnsibleRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
+func newAnsibleRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	return pod.NewBuilder().
-		WithName(ce.Instance.Name + "-runner").
-		WithLabels(map[string]string{"app": ce.Instance.Name}).
-		WithNamespace(ce.Instance.Namespace).
+		WithName(engine.Instance.Name + "-runner").
+		WithLabels(map[string]string{"app": engine.Instance.Name, "engineUID": string(engine.Instance.UID)}).
+		WithNamespace(engine.Instance.Namespace).
 		WithRestartPolicy("OnFailure").
-		WithServiceAccountName(ce.Instance.Spec.ChaosServiceAccount).
+		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithContainerBuilder(
 			container.NewBuilder().
 				WithName("chaos-runner").
-				WithImage(ce.Instance.Spec.Components.Runner.Image).
+				WithImage(engine.Instance.Spec.Components.Runner.Image).
 				WithImagePullPolicy(corev1.PullIfNotPresent).
 				WithCommandNew([]string{"/bin/bash"}).
 				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
-				WithEnvsNew(getChaosRunnerENV(ce.Instance, ce.AppExperiments, analytics.ClientUUID))).Build()
+				WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID))).Build()
 }
 
 // newMonitorPodForCR defines secondary resource #2 in same namespace as CR */
@@ -358,8 +372,8 @@ func newMonitorPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		return nil, errors.New("chaosengine got nil")
 	}
 	labels := map[string]string{
-		"app":        "chaos-exporter",
-		"monitorFor": engine.Instance.Name,
+		"app":       engine.Instance.Name,
+		"engineUID": string(engine.Instance.UID),
 	}
 	monitorPod, err := pod.NewBuilder().
 		WithName(engine.Instance.Name + "-monitor").
@@ -387,7 +401,7 @@ func newMonitorServiceForCR(engine chaosTypes.EngineInfo) (*corev1.Service, erro
 	serviceObj, err := service.NewBuilder().
 		WithName(engine.Instance.Name + "-monitor").
 		WithNamespace(engine.Instance.Namespace).
-		WithLabels(map[string]string{"app": "chaos-exporter"}).
+		WithLabels(map[string]string{"app": "chaos-exporter", "engineUID": string(engine.Instance.UID)}).
 		WithPorts([]corev1.ServicePort{{Name: "metrics", Port: 8080}}).
 		WithSelectorsNew(map[string]string{"monitorFor": engine.Instance.Name}).Build()
 	if err != nil {
@@ -571,4 +585,59 @@ func getAnnotationCheck() error {
 		return fmt.Errorf("annotationCheck '%s', is not supported it should be true or false", engine.Instance.Spec.AnnotationCheck)
 	}
 	return nil
+}
+
+// reconcileForDelete
+func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (reconcile.Result, error) {
+
+	r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stopping reconcile for chaosEngine", "Will remove all Chaos resources for engineUID: %v", string(engine.Instance.UID))
+	optsDelete := []client.DeleteAllOfOption{
+		client.InNamespace(request.NamespacedName.Namespace),
+		client.MatchingLabels{"engineUID": string(engine.Instance.UID)},
+	}
+	err := r.client.DeleteAllOf(context.TODO(), &corev1.Pod{}, optsDelete...)
+	if err != nil {
+		err := fmt.Errorf("Unable to delete chaosEngine allocated Chaos Resources, due to error: %v", err)
+		return reconcile.Result{}, err
+	}
+	opts := client.UpdateOptions{}
+	engine.Instance.Spec.EngineStatus = "stopped"
+	engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
+	err = r.client.Update(context.TODO(), engine.Instance, &opts)
+	if err != nil {
+		err := fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, nil
+
+	// TODO: write function to remove all the chaos resources
+	// For now, it just removes Pods, especially runner and monitor
+	// With the passing of engineUID in litmus, everything can be removed from here.
+
+}
+
+func (r *ReconcileChaosEngine) addFinalzerToEngine(engine *chaosTypes.EngineInfo, finalizer string) error {
+	optsUpdate := client.UpdateOptions{}
+	engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
+	err := r.client.Update(context.TODO(), engine.Instance, &optsUpdate)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *ReconcileChaosEngine) updateStatus(engine *chaosTypes.EngineInfo, status string) error {
+	opts := client.UpdateOptions{}
+	engine.Instance.Spec.EngineStatus = status
+	return r.client.Update(context.TODO(), engine.Instance, &opts)
+}
+
+func checkEngineStatusForStop(engine *chaosTypes.EngineInfo) bool {
+	deletetimeStamp := engine.Instance.ObjectMeta.GetDeletionTimestamp()
+	if engine.Instance.Spec.EngineStatus == "stop" ||
+		engine.Instance.Spec.EngineStatus == "stopped" ||
+		deletetimeStamp != nil {
+		return true
+	}
+	return false
 }

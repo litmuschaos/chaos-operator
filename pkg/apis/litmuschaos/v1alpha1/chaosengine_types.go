@@ -41,6 +41,8 @@ type ChaosEngineSpec struct {
 	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
 	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
+	//EngineStatus is a requirement for validation
+	EngineStatus string `json:"engineStatus"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
