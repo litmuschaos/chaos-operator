@@ -328,10 +328,10 @@ func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		return nil, errors.New("application experiment list or UUID is empty")
 	}
 	//Initiate the Engine Info, with the type of executor to be used
-	if ce.Instance.Spec.Components.Runner.Type == "go" {
-		return newGoRunnerPodForCR(ce)
+	if ce.Instance.Spec.Components.Runner.Type == "ansible" {
+		return newAnsibleRunnerPodForCR(ce)
 	}
-	return newAnsibleRunnerPodForCR(ce)
+	return newGoRunnerPodForCR(ce)
 }
 
 func newGoRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
