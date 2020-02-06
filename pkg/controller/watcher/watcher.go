@@ -18,17 +18,19 @@ package watcher
 
 import (
 	"context"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
-	corev1 "k8s.io/api/core/v1"
+	"fmt"
+	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"strings"
+
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 )
 
 // WatchForMonitorService creates a watcher for Chaos MonitorService
@@ -59,20 +61,17 @@ func WatchForMonitorPod(client client.Client, c controller.Controller) error {
 func handlerForMonitorService(clientSet client.Client) handler.EnqueueRequestsFromMapFunc {
 	reqLogger := chaosTypes.Log.WithName("Chaos Resources Watch")
 	var monitorServiceRequest []reconcile.Request
+	var err error
 
 	handlerForMonitorService := handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			monitorServiceCheck := strings.HasSuffix(a.Meta.GetName(), "-monitor")
 			if monitorServiceCheck {
-				svcLabels := a.Meta.GetLabels()
-				engineUID := getPodEngineUIDLabel(svcLabels)
-				listOptions := createListOptionsInNamespace(a.Meta.GetNamespace())
-				listChaosEngine, err := getChaosEngineList(listOptions, clientSet)
+				monitorServiceRequest, err = createHandlerRequestForEngine(a, clientSet)
 				if err != nil {
 					reqLogger.Error(err, "Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
 					return nil
 				}
-				monitorServiceRequest = handlerRequestFromEngineList(listChaosEngine, engineUID)
 			}
 			return monitorServiceRequest
 
@@ -86,22 +85,17 @@ func handlerForMonitorService(clientSet client.Client) handler.EnqueueRequestsFr
 func handlerForMonitorPod(clientSet client.Client) handler.EnqueueRequestsFromMapFunc {
 	reqLogger := chaosTypes.Log.WithName("Chaos Resources Watch")
 	var monitorPodRequest []reconcile.Request
+	var err error
 
 	handlerForMonitorPod := handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			monitorNameCheck := strings.HasSuffix(a.Meta.GetName(), "-monitor")
 			if monitorNameCheck {
-				podLabels := a.Meta.GetLabels()
-
-				engineUID := getPodEngineUIDLabel(podLabels)
-				listOptions := createListOptionsInNamespace(a.Meta.GetNamespace())
-				listChaosEngine, err := getChaosEngineList(listOptions, clientSet)
+				monitorPodRequest, err = createHandlerRequestForEngine(a, clientSet)
 				if err != nil {
 					reqLogger.Error(err, "Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
 					return nil
 				}
-
-				monitorPodRequest = handlerRequestFromEngineList(listChaosEngine, engineUID)
 
 			}
 			return monitorPodRequest
@@ -114,20 +108,17 @@ func handlerForMonitorPod(clientSet client.Client) handler.EnqueueRequestsFromMa
 func handlerForRunnerPod(clientSet client.Client) handler.EnqueueRequestsFromMapFunc {
 	reqLogger := chaosTypes.Log.WithName("Chaos Resources Watch")
 	var runnerPodRequest []reconcile.Request
+	var err error
 
 	handlerForRunner := handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			runnerNameCheck := strings.HasSuffix(a.Meta.GetName(), "-runner")
 			if runnerNameCheck {
-				podLabels := a.Meta.GetLabels()
-				engineUID := getPodEngineUIDLabel(podLabels)
-				listOptions := createListOptionsInNamespace(a.Meta.GetNamespace())
-				listChaosEngine, err := getChaosEngineList(listOptions, clientSet)
+				runnerPodRequest, err = createHandlerRequestForEngine(a, clientSet)
 				if err != nil {
 					reqLogger.Error(err, "Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
 					return nil
 				}
-				runnerPodRequest = handlerRequestFromEngineList(listChaosEngine, engineUID)
 			}
 			return runnerPodRequest
 		}),
@@ -180,4 +171,14 @@ func getChaosEngineList(listOptions []client.ListOption, clientSet client.Client
 		return litmuschaosv1alpha1.ChaosEngineList{}, err
 	}
 	return listChaosEngine, nil
+}
+
+func createHandlerRequestForEngine(a handler.MapObject, clientSet client.Client) ([]reconcile.Request, error) {
+	engineUID := getPodEngineUIDLabel(a.Meta.GetLabels())
+	listChaosEngine, err := getChaosEngineList(createListOptionsInNamespace(a.Meta.GetNamespace()), clientSet)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
+	}
+	monitorServiceRequest := handlerRequestFromEngineList(listChaosEngine, engineUID)
+	return monitorServiceRequest, nil
 }
