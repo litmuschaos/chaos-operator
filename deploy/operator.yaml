@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             #- name: CHAOS_RUNNER_IMAGE
-            #  value: "litmuschaos/ansible-runner:ci"
+            #  value: "litmuschaos/chaos-executor:ci"
             #- name: CHAOS_MONITOR_IMAGE
             #  value: "litmuschaos/chaos-exporter:ci"
             - name: WATCH_NAMESPACE
