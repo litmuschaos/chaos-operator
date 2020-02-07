@@ -30,6 +30,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -595,6 +596,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 	optsDelete := []client.DeleteAllOfOption{
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"engineUID": string(engine.Instance.UID)},
+		client.PropagationPolicy(metav1.DeletePropagationForeground),
 	}
 	if err := r.client.DeleteAllOf(context.TODO(), &batchv1.Job{}, optsDelete...); err != nil {
 		return reconcile.Result{}, fmt.Errorf("Unable to delete chaosEngine allocated Chaos Resources, due to error: %v", err)
