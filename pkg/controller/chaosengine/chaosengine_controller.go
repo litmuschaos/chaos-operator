@@ -27,6 +27,7 @@ import (
 	"github.com/litmuschaos/kube-helper/kubernetes/pod"
 	"github.com/litmuschaos/kube-helper/kubernetes/service"
 	"github.com/pkg/errors"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -595,18 +596,18 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"engineUID": string(engine.Instance.UID)},
 	}
-	err := r.client.DeleteAllOf(context.TODO(), &corev1.Pod{}, optsDelete...)
-	if err != nil {
-		err := fmt.Errorf("Unable to delete chaosEngine allocated Chaos Resources, due to error: %v", err)
-		return reconcile.Result{}, err
+	if err := r.client.DeleteAllOf(context.TODO(), &batchv1.Job{}, optsDelete...); err != nil {
+		return reconcile.Result{}, fmt.Errorf("Unable to delete chaosEngine allocated Chaos Resources, due to error: %v", err)
+	}
+
+	if err := r.client.DeleteAllOf(context.TODO(), &corev1.Pod{}, optsDelete...); err != nil {
+		return reconcile.Result{}, fmt.Errorf("Unable to delete chaosEngine allocated Chaos Resources, due to error: %v", err)
 	}
 	opts := client.UpdateOptions{}
 	engine.Instance.Spec.EngineStatus = "stopped"
 	engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
-	err = r.client.Update(context.TODO(), engine.Instance, &opts)
-	if err != nil {
-		err := fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
-		return reconcile.Result{}, err
+	if err := r.client.Update(context.TODO(), engine.Instance, &opts); err != nil {
+		return reconcile.Result{}, fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
 	}
 	return reconcile.Result{}, nil
 
