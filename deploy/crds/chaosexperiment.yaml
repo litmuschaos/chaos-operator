@@ -1,7 +1,7 @@
 ---
 ## An experiment is the definition of a chaos test and is listed as an item 
 ## in the chaos engine to be run against a given app. Consists of reference
-## to chaosGraph (which has chaos param details and executor spec) and also
+## to chaosGraph (which has chaos param details and runner spec) and also
 ## component information for the Object-Under-Test. The results upon running
 ## this experiment is relayed back to the chaos engine which invoked it.
 

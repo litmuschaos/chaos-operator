@@ -67,7 +67,7 @@ spec:
   monitoring: false
   components:
     runner:
-      image: "litmuschaos/chaos-executor:1.0.0"
+      image: "litmuschaos/chaos-runner:1.0.0"
       type: "go"
   jobCleanUpPolicy: delete  
   experiments:
