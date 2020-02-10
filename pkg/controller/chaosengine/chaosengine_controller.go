@@ -163,7 +163,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcileResult, err
 
 	} else if engine.Instance.Spec.EngineStatus == "start" {
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Will create all Chaos resources for engineUID: %v", string(engine.Instance.UID))
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Will create all Chaos resources for chaosUID: %v", string(engine.Instance.UID))
 		err := r.addFinalzerToEngine(engine, "chaosengine.litmuschaos.io/finalizer")
 		if err != nil {
 			reqLogger.Error(err, "Unable to add Finalizers in ChaosEngine Resource, due to error: %v", err)
@@ -340,7 +340,7 @@ func newGoRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	return pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithNamespace(engine.Instance.Namespace).
-		WithLabels(map[string]string{"app": engine.Instance.Name, "engineUID": string(engine.Instance.UID)}).
+		WithLabels(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(
@@ -354,7 +354,7 @@ func newGoRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 func newAnsibleRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	return pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
-		WithLabels(map[string]string{"app": engine.Instance.Name, "engineUID": string(engine.Instance.UID)}).
+		WithLabels(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).
 		WithNamespace(engine.Instance.Namespace).
 		WithRestartPolicy("OnFailure").
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
@@ -374,8 +374,8 @@ func newMonitorPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		return nil, errors.New("chaosengine got nil")
 	}
 	labels := map[string]string{
-		"app":       engine.Instance.Name,
-		"engineUID": string(engine.Instance.UID),
+		"app":      engine.Instance.Name,
+		"chaosUID": string(engine.Instance.UID),
 	}
 	monitorPod, err := pod.NewBuilder().
 		WithName(engine.Instance.Name + "-monitor").
@@ -403,7 +403,7 @@ func newMonitorServiceForCR(engine chaosTypes.EngineInfo) (*corev1.Service, erro
 	serviceObj, err := service.NewBuilder().
 		WithName(engine.Instance.Name + "-monitor").
 		WithNamespace(engine.Instance.Namespace).
-		WithLabels(map[string]string{"app": "chaos-exporter", "engineUID": string(engine.Instance.UID)}).
+		WithLabels(map[string]string{"app": "chaos-exporter", "chaosUID": string(engine.Instance.UID)}).
 		WithPorts([]corev1.ServicePort{{Name: "metrics", Port: 8080}}).
 		WithSelectorsNew(map[string]string{"monitorFor": engine.Instance.Name}).Build()
 	if err != nil {
@@ -592,10 +592,10 @@ func getAnnotationCheck() error {
 // reconcileForDelete
 func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (reconcile.Result, error) {
 
-	r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stopping reconcile for chaosEngine", "Will remove all Chaos resources for engineUID: %v", string(engine.Instance.UID))
+	r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stopping reconcile for chaosEngine", "Will remove all Chaos resources for chaosUID: %v", string(engine.Instance.UID))
 	optsDelete := []client.DeleteAllOfOption{
 		client.InNamespace(request.NamespacedName.Namespace),
-		client.MatchingLabels{"engineUID": string(engine.Instance.UID)},
+		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
 		client.PropagationPolicy(metav1.DeletePropagationForeground),
 	}
 	if err := r.client.DeleteAllOf(context.TODO(), &batchv1.Job{}, optsDelete...); err != nil {
@@ -615,7 +615,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 
 	// TODO: write function to remove all the chaos resources
 	// For now, it just removes Pods, especially runner and monitor
-	// With the passing of engineUID in litmus, everything can be removed from here.
+	// With the passing of chaosUID in litmus, everything can be removed from here.
 
 }
 
