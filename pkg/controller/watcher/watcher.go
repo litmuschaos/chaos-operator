@@ -127,10 +127,10 @@ func handlerForRunnerPod(clientSet client.Client) handler.EnqueueRequestsFromMap
 }
 
 // handlerRequestFromEngineList initilize a event Watcher filtering the chaosEngine from the list.
-func handlerRequestFromEngineList(listChaosEngine litmuschaosv1alpha1.ChaosEngineList, engineUID string) []reconcile.Request {
+func handlerRequestFromEngineList(listChaosEngine litmuschaosv1alpha1.ChaosEngineList, chaosUID string) []reconcile.Request {
 	for i := range listChaosEngine.Items {
 		uuid := string(listChaosEngine.Items[i].GetUID())
-		if engineUID == uuid {
+		if chaosUID == uuid {
 			return []reconcile.Request{
 				{NamespacedName: types.NamespacedName{
 					Name:      listChaosEngine.Items[i].GetName(),
@@ -148,12 +148,12 @@ func handlerRequestFromEngineList(listChaosEngine litmuschaosv1alpha1.ChaosEngin
 
 }
 
-func getPodEngineUIDLabel(podLabels map[string]string) string {
-	var engineUID string
-	if _, ok := podLabels["engineUID"]; ok {
-		engineUID = podLabels["engineUID"]
+func getPodchaosUIDLabel(podLabels map[string]string) string {
+	var chaosUID string
+	if _, ok := podLabels["chaosUID"]; ok {
+		chaosUID = podLabels["chaosUID"]
 	}
-	return engineUID
+	return chaosUID
 }
 
 func createListOptionsInNamespace(namespace string) []client.ListOption {
@@ -174,11 +174,11 @@ func getChaosEngineList(listOptions []client.ListOption, clientSet client.Client
 }
 
 func createHandlerRequestForEngine(a handler.MapObject, clientSet client.Client) ([]reconcile.Request, error) {
-	engineUID := getPodEngineUIDLabel(a.Meta.GetLabels())
+	chaosUID := getPodchaosUIDLabel(a.Meta.GetLabels())
 	listChaosEngine, err := getChaosEngineList(createListOptionsInNamespace(a.Meta.GetNamespace()), clientSet)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
 	}
-	monitorServiceRequest := handlerRequestFromEngineList(listChaosEngine, engineUID)
+	monitorServiceRequest := handlerRequestFromEngineList(listChaosEngine, chaosUID)
 	return monitorServiceRequest, nil
 }

@@ -48,39 +48,7 @@ The ChaosEngine is the core schema that defines the chaos workflow for a given a
 The ChaosEngine is the referenced as the owner of the secondary (reconcile) resource with Kubernetes deletePropagation 
 ensuring these also are removed upon deletion of the ChaosEngine CR.
 
-Here is a sample ChaosEngineSpec for reference: 
-
-```yaml
-apiVersion: litmuschaos.io/v1alpha1
-kind: ChaosEngine
-metadata:
-  name: nginx-chaos
-  namespace: default
-spec:
-  appinfo:
-    appns: default
-    applabel: 'app=nginx'
-    appkind: deployment
-  chaosType: 'app'   
-  auxiliaryAppInfo: ""
-  chaosServiceAccount: nginx-sa
-  monitoring: false
-  components:
-    runner:
-      image: "litmuschaos/chaos-runner:1.0.0"
-      type: "go"
-  jobCleanUpPolicy: delete  
-  experiments:
-    - name: pod-delete
-      spec:
-        components:
-          - name: TOTAL_CHAOS_DURATION
-            value: '30'
-          - name: CHAOS_INTERVAL
-            value: '10'
-          - name: FORCE
-            value: "false"
-```
+Here is a sample ChaosEngineSpec for reference: https://docs.litmuschaos.io/docs/getstarted/#prepare-chaosengine
 
 ## What is a litmus chaos chart and how can I use it?
 
