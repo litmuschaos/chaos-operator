@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/litmuschaos/kube-helper/kubernetes/container"
+	"github.com/litmuschaos/elves/kubernetes/container"
 
 	corev1 "k8s.io/api/core/v1"
 )

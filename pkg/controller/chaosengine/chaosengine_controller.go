@@ -23,9 +23,9 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/litmuschaos/kube-helper/kubernetes/container"
-	"github.com/litmuschaos/kube-helper/kubernetes/pod"
-	"github.com/litmuschaos/kube-helper/kubernetes/service"
+	"github.com/litmuschaos/elves/kubernetes/container"
+	"github.com/litmuschaos/elves/kubernetes/pod"
+	"github.com/litmuschaos/elves/kubernetes/service"
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
