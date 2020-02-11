@@ -18,6 +18,7 @@ package container
 
 import (
 	"errors"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -41,7 +42,7 @@ func (b *Builder) validate() error {
 	if len(b.errors) == 0 {
 		return nil
 	}
-	return errors.New("failed")
+	return fmt.Errorf("Error while Validating Container Spec: %v", b.errors)
 }
 
 // Build returns the final kubernetes container
