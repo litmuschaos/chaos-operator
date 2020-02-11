@@ -613,6 +613,7 @@ func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInf
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
 		client.PropagationPolicy(metav1.DeletePropagationForeground),
+		client.GracePeriodSeconds(0),
 	}
 	var deleteEvent []string
 	var err []error
