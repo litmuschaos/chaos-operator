@@ -55,7 +55,7 @@ var (
 	DefaultChaosMonitorImage = "litmuschaos/chaos-exporter:latest"
 
 	// DefaultChaosRunnerImage contains the default value of runner resource
-	DefaultChaosRunnerImage = "litmuschaos/chaos-executor:latest"
+	DefaultChaosRunnerImage = "litmuschaos/chaos-runner:latest"
 )
 
 // ApplicationInfo contains the chaos details for target application

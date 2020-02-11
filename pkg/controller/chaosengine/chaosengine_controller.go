@@ -330,7 +330,7 @@ func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.AnnotationCheck == "true" {
 		return nil, errors.New("application experiment list or UUID is empty")
 	}
-	//Initiate the Engine Info, with the type of executor to be used
+	//Initiate the Engine Info, with the type of runner to be used
 	if ce.Instance.Spec.Components.Runner.Type == "ansible" {
 		return newAnsibleRunnerPodForCR(ce)
 	}
