@@ -66,6 +66,7 @@ spec:
                       type: string
                 runner:
                   type: object
+                  minProperties: 2
                   properties:
                     image:
                       type: string
