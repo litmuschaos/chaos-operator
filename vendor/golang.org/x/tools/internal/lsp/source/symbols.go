@@ -14,28 +14,15 @@ import (
 	"golang.org/x/tools/internal/telemetry/trace"
 )
 
-func DocumentSymbols(ctx context.Context, snapshot Snapshot, f File) ([]protocol.DocumentSymbol, error) {
+func DocumentSymbols(ctx context.Context, snapshot Snapshot, fh FileHandle) ([]protocol.DocumentSymbol, error) {
 	ctx, done := trace.StartSpan(ctx, "source.DocumentSymbols")
 	defer done()
 
-	fh := snapshot.Handle(ctx, f)
-	cphs, err := snapshot.PackageHandles(ctx, fh)
+	pkg, pgh, err := getParsedFile(ctx, snapshot, fh, NarrowestPackageHandle)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting file for DocumentSymbols: %v", err)
 	}
-	cph, err := NarrowestCheckPackageHandle(cphs)
-	if err != nil {
-		return nil, err
-	}
-	pkg, err := cph.Check(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ph, err := pkg.File(f.URI())
-	if err != nil {
-		return nil, err
-	}
-	file, m, _, err := ph.Cached()
+	file, _, _, err := pgh.Cached()
 	if err != nil {
 		return nil, err
 	}
@@ -50,9 +37,13 @@ func DocumentSymbols(ctx context.Context, snapshot Snapshot, f File) ([]protocol
 		switch decl := decl.(type) {
 		case *ast.FuncDecl:
 			if obj := info.ObjectOf(decl.Name); obj != nil {
-				if fs := funcSymbol(ctx, snapshot.View(), m, decl, obj, q); fs.Kind == protocol.Method {
-					// Store methods separately, as we want them to appear as children
-					// of the corresponding type (which we may not have seen yet).
+				fs, err := funcSymbol(ctx, snapshot.View(), pkg, decl, obj, q)
+				if err != nil {
+					return nil, err
+				}
+				// Store methods separately, as we want them to appear as children
+				// of the corresponding type (which we may not have seen yet).
+				if fs.Kind == protocol.Method {
 					rtype := obj.Type().(*types.Signature).Recv().Type()
 					methodsToReceiver[rtype] = append(methodsToReceiver[rtype], fs)
 				} else {
@@ -64,14 +55,21 @@ func DocumentSymbols(ctx context.Context, snapshot Snapshot, f File) ([]protocol
 				switch spec := spec.(type) {
 				case *ast.TypeSpec:
 					if obj := info.ObjectOf(spec.Name); obj != nil {
-						ts := typeSymbol(ctx, snapshot.View(), m, info, spec, obj, q)
+						ts, err := typeSymbol(ctx, snapshot.View(), pkg, info, spec, obj, q)
+						if err != nil {
+							return nil, err
+						}
 						symbols = append(symbols, ts)
 						symbolsToReceiver[obj.Type()] = len(symbols) - 1
 					}
 				case *ast.ValueSpec:
 					for _, name := range spec.Names {
 						if obj := info.ObjectOf(name); obj != nil {
-							symbols = append(symbols, varSymbol(ctx, snapshot.View(), m, decl, name, obj, q))
+							vs, err := varSymbol(ctx, snapshot.View(), pkg, decl, name, obj, q)
+							if err != nil {
+								return nil, err
+							}
+							symbols = append(symbols, vs)
 						}
 					}
 				}
@@ -95,16 +93,19 @@ func DocumentSymbols(ctx context.Context, snapshot Snapshot, f File) ([]protocol
 	return symbols, nil
 }
 
-func funcSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, decl *ast.FuncDecl, obj types.Object, q types.Qualifier) protocol.DocumentSymbol {
+func funcSymbol(ctx context.Context, view View, pkg Package, decl *ast.FuncDecl, obj types.Object, q types.Qualifier) (protocol.DocumentSymbol, error) {
 	s := protocol.DocumentSymbol{
 		Name: obj.Name(),
 		Kind: protocol.Function,
 	}
-	if span, err := nodeToProtocolRange(ctx, view, m, decl); err == nil {
-		s.Range = span
+	var err error
+	s.Range, err = nodeToProtocolRange(view, pkg, decl)
+	if err != nil {
+		return protocol.DocumentSymbol{}, err
 	}
-	if span, err := nodeToProtocolRange(ctx, view, m, decl.Name); err == nil {
-		s.SelectionRange = span
+	s.SelectionRange, err = nodeToProtocolRange(view, pkg, decl.Name)
+	if err != nil {
+		return protocol.DocumentSymbol{}, err
 	}
 	sig, _ := obj.Type().(*types.Signature)
 	if sig != nil {
@@ -125,49 +126,24 @@ func funcSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, decl *
 		}
 		s.Detail += ")"
 	}
-	return s
+	return s, nil
 }
 
-func setKind(s *protocol.DocumentSymbol, typ types.Type, q types.Qualifier) {
-	switch typ := typ.Underlying().(type) {
-	case *types.Interface:
-		s.Kind = protocol.Interface
-	case *types.Struct:
-		s.Kind = protocol.Struct
-	case *types.Signature:
-		s.Kind = protocol.Function
-		if typ.Recv() != nil {
-			s.Kind = protocol.Method
-		}
-	case *types.Named:
-		setKind(s, typ.Underlying(), q)
-	case *types.Basic:
-		i := typ.Info()
-		switch {
-		case i&types.IsNumeric != 0:
-			s.Kind = protocol.Number
-		case i&types.IsBoolean != 0:
-			s.Kind = protocol.Boolean
-		case i&types.IsString != 0:
-			s.Kind = protocol.String
-		}
-	default:
-		s.Kind = protocol.Variable
-	}
-}
-
-func typeSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, info *types.Info, spec *ast.TypeSpec, obj types.Object, q types.Qualifier) protocol.DocumentSymbol {
+func typeSymbol(ctx context.Context, view View, pkg Package, info *types.Info, spec *ast.TypeSpec, obj types.Object, q types.Qualifier) (protocol.DocumentSymbol, error) {
 	s := protocol.DocumentSymbol{
 		Name: obj.Name(),
 	}
 	s.Detail, _ = formatType(obj.Type(), q)
-	setKind(&s, obj.Type(), q)
+	s.Kind = typeToKind(obj.Type())
 
-	if span, err := nodeToProtocolRange(ctx, view, m, spec); err == nil {
-		s.Range = span
+	var err error
+	s.Range, err = nodeToProtocolRange(view, pkg, spec)
+	if err != nil {
+		return protocol.DocumentSymbol{}, err
 	}
-	if span, err := nodeToProtocolRange(ctx, view, m, spec.Name); err == nil {
-		s.SelectionRange = span
+	s.SelectionRange, err = nodeToProtocolRange(view, pkg, spec.Name)
+	if err != nil {
+		return protocol.DocumentSymbol{}, err
 	}
 	t, objIsStruct := obj.Type().Underlying().(*types.Struct)
 	st, specIsStruct := spec.Type.(*ast.StructType)
@@ -181,10 +157,10 @@ func typeSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, info *
 			child.Detail, _ = formatType(f.Type(), q)
 
 			spanNode, selectionNode := nodesForStructField(i, st)
-			if span, err := nodeToProtocolRange(ctx, view, m, spanNode); err == nil {
+			if span, err := nodeToProtocolRange(view, pkg, spanNode); err == nil {
 				child.Range = span
 			}
-			if span, err := nodeToProtocolRange(ctx, view, m, selectionNode); err == nil {
+			if span, err := nodeToProtocolRange(view, pkg, selectionNode); err == nil {
 				child.SelectionRange = span
 			}
 			s.Children = append(s.Children, child)
@@ -211,11 +187,13 @@ func typeSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, info *
 					}
 				}
 			}
-			if span, err := nodeToProtocolRange(ctx, view, m, spanNode); err == nil {
-				child.Range = span
+			child.Range, err = nodeToProtocolRange(view, pkg, spanNode)
+			if err != nil {
+				return protocol.DocumentSymbol{}, err
 			}
-			if span, err := nodeToProtocolRange(ctx, view, m, selectionNode); err == nil {
-				child.SelectionRange = span
+			child.SelectionRange, err = nodeToProtocolRange(view, pkg, selectionNode)
+			if err != nil {
+				return protocol.DocumentSymbol{}, err
 			}
 			s.Children = append(s.Children, child)
 		}
@@ -230,7 +208,7 @@ func typeSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, info *
 			child := protocol.DocumentSymbol{
 				Name: types.TypeString(embedded, q),
 			}
-			setKind(&child, embedded, q)
+			child.Kind = typeToKind(embedded)
 			var spanNode, selectionNode ast.Node
 		Embeddeds:
 			for _, f := range ai.Methods.List {
@@ -243,16 +221,18 @@ func typeSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, info *
 					break Embeddeds
 				}
 			}
-			if rng, err := nodeToProtocolRange(ctx, view, m, spanNode); err == nil {
-				child.Range = rng
+			child.Range, err = nodeToProtocolRange(view, pkg, spanNode)
+			if err != nil {
+				return protocol.DocumentSymbol{}, err
 			}
-			if span, err := nodeToProtocolRange(ctx, view, m, selectionNode); err == nil {
-				child.SelectionRange = span
+			child.SelectionRange, err = nodeToProtocolRange(view, pkg, selectionNode)
+			if err != nil {
+				return protocol.DocumentSymbol{}, err
 			}
 			s.Children = append(s.Children, child)
 		}
 	}
-	return s
+	return s, nil
 }
 
 func nodesForStructField(i int, st *ast.StructType) (span, selection ast.Node) {
@@ -275,7 +255,7 @@ func nodesForStructField(i int, st *ast.StructType) (span, selection ast.Node) {
 	return nil, nil
 }
 
-func varSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, decl ast.Node, name *ast.Ident, obj types.Object, q types.Qualifier) protocol.DocumentSymbol {
+func varSymbol(ctx context.Context, view View, pkg Package, decl ast.Node, name *ast.Ident, obj types.Object, q types.Qualifier) (protocol.DocumentSymbol, error) {
 	s := protocol.DocumentSymbol{
 		Name: obj.Name(),
 		Kind: protocol.Variable,
@@ -283,12 +263,15 @@ func varSymbol(ctx context.Context, view View, m *protocol.ColumnMapper, decl as
 	if _, ok := obj.(*types.Const); ok {
 		s.Kind = protocol.Constant
 	}
-	if rng, err := nodeToProtocolRange(ctx, view, m, decl); err == nil {
-		s.Range = rng
+	var err error
+	s.Range, err = nodeToProtocolRange(view, pkg, decl)
+	if err != nil {
+		return protocol.DocumentSymbol{}, err
 	}
-	if span, err := nodeToProtocolRange(ctx, view, m, name); err == nil {
-		s.SelectionRange = span
+	s.SelectionRange, err = nodeToProtocolRange(view, pkg, name)
+	if err != nil {
+		return protocol.DocumentSymbol{}, err
 	}
 	s.Detail = types.TypeString(obj.Type(), q)
-	return s
+	return s, nil
 }

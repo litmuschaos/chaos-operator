@@ -24,6 +24,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -44,19 +45,39 @@ type sessionHandle struct {
 	// session is a pointer to a session object. Transactions never need to
 	// access it directly.
 	session *session
+	// checkoutTime is the time the session was checked out of the pool.
+	checkoutTime time.Time
+	// trackedSessionHandle is the linked list node which links the session to
+	// the list of tracked session handles. trackedSessionHandle is only set if
+	// TrackSessionHandles has been enabled in the session pool configuration.
+	trackedSessionHandle *list.Element
+	// stack is the call stack of the goroutine that checked out the session
+	// from the pool. This can be used to track down session leak problems.
+	stack []byte
 }
 
 // recycle gives the inner session object back to its home session pool. It is
 // safe to call recycle multiple times but only the first one would take effect.
 func (sh *sessionHandle) recycle() {
 	sh.mu.Lock()
-	defer sh.mu.Unlock()
 	if sh.session == nil {
 		// sessionHandle has already been recycled.
+		sh.mu.Unlock()
 		return
 	}
+	p := sh.session.pool
+	tracked := sh.trackedSessionHandle
 	sh.session.recycle()
 	sh.session = nil
+	sh.trackedSessionHandle = nil
+	sh.checkoutTime = time.Time{}
+	sh.stack = nil
+	sh.mu.Unlock()
+	if tracked != nil {
+		p.mu.Lock()
+		p.trackedSessionHandles.Remove(tracked)
+		p.mu.Unlock()
+	}
 }
 
 // getID gets the Cloud Spanner session ID from the internal session object.
@@ -109,11 +130,22 @@ func (sh *sessionHandle) getTransactionID() transactionID {
 func (sh *sessionHandle) destroy() {
 	sh.mu.Lock()
 	s := sh.session
+	tracked := sh.trackedSessionHandle
 	sh.session = nil
+	sh.trackedSessionHandle = nil
+	sh.checkoutTime = time.Time{}
+	sh.stack = nil
 	sh.mu.Unlock()
+
 	if s == nil {
 		// sessionHandle has already been destroyed..
 		return
+	}
+	if tracked != nil {
+		p := s.pool
+		p.mu.Lock()
+		p.trackedSessionHandles.Remove(tracked)
+		p.mu.Unlock()
 	}
 	s.destroy(false)
 }
@@ -133,6 +165,9 @@ type session struct {
 	// createTime is the timestamp of the session's creation. It is set only
 	// once during session's creation.
 	createTime time.Time
+	// logger is the logger configured for the Spanner client that created the
+	// session. If nil, logging will be directed to the standard logger.
+	logger *log.Logger
 
 	// mu protects the following fields from concurrent access: both
 	// healthcheck workers and transactions can modify them.
@@ -294,7 +329,7 @@ func (s *session) delete(ctx context.Context) {
 	// session, it will be eventually garbage collected by Cloud Spanner.
 	err := s.client.DeleteSession(ctx, &sppb.DeleteSessionRequest{Name: s.getID()})
 	if err != nil {
-		log.Printf("Failed to delete session %v. Error: %v", s.getID(), err)
+		logf(s.logger, "Failed to delete session %v. Error: %v", s.getID(), err)
 	}
 }
 
@@ -305,8 +340,19 @@ func (s *session) prepareForWrite(ctx context.Context) error {
 		return nil
 	}
 	tx, err := beginTransaction(contextWithOutgoingMetadata(ctx, s.md), s.getID(), s.client)
+	// Session not found should cause the session to be removed from the pool.
+	if isSessionNotFoundError(err) {
+		s.pool.remove(s, false)
+		s.pool.hc.unregister(s)
+		return err
+	}
+	// Enable/disable background preparing of write sessions depending on
+	// whether the BeginTransaction call succeeded. This will prevent the
+	// session pool workers from going into an infinite loop of trying to
+	// prepare sessions. Any subsequent successful BeginTransaction call from
+	// for example takeWriteSession will re-enable the background process.
 	s.pool.mu.Lock()
-	s.pool.disableBackgroundPrepareSessions = isPermissionDeniedError(err) || isDatabaseNotFoundError(err)
+	s.pool.disableBackgroundPrepareSessions = err != nil
 	s.pool.mu.Unlock()
 	if err != nil {
 		return err
@@ -361,6 +407,13 @@ type SessionPoolConfig struct {
 	//
 	// Defaults to 5m.
 	HealthCheckInterval time.Duration
+
+	// TrackSessionHandles determines whether the session pool will keep track
+	// of the stacktrace of the goroutines that take sessions from the pool.
+	// This setting can be used to track down session leak problems.
+	//
+	// Defaults to false.
+	TrackSessionHandles bool
 
 	// healthCheckSampleInterval is how often the health checker samples live
 	// session (for use in maintaining session pool size).
@@ -436,6 +489,10 @@ type sessionPool struct {
 	valid bool
 	// sc is used to create the sessions for the pool.
 	sc *sessionClient
+	// trackedSessionHandles contains all sessions handles that have been
+	// checked out of the pool. The list is only filled if TrackSessionHandles
+	// has been enabled.
+	trackedSessionHandles list.List
 	// idleList caches idle session IDs. Session IDs in this list can be
 	// allocated for use.
 	idleList list.List
@@ -600,15 +657,73 @@ func (p *sessionPool) close() {
 	}
 }
 
-// errInvalidSessionPool returns error for using an invalid session pool.
-func errInvalidSessionPool() error {
-	return spannerErrorf(codes.InvalidArgument, "invalid session pool")
+// errInvalidSessionPool is the error for using an invalid session pool.
+var errInvalidSessionPool = spannerErrorf(codes.InvalidArgument, "invalid session pool")
+
+// errGetSessionTimeout returns error for context timeout during
+// sessionPool.take().
+var errGetSessionTimeout = spannerErrorf(codes.Canceled, "timeout / context canceled during getting session")
+
+// newSessionHandle creates a new session handle for the given session for this
+// session pool. The session handle will also hold a copy of the current call
+// stack if the session pool has been configured to track the call stacks of
+// sessions being checked out of the pool.
+func (p *sessionPool) newSessionHandle(s *session) (sh *sessionHandle) {
+	sh = &sessionHandle{session: s, checkoutTime: time.Now()}
+	if p.TrackSessionHandles {
+		p.mu.Lock()
+		sh.trackedSessionHandle = p.trackedSessionHandles.PushBack(sh)
+		p.mu.Unlock()
+		sh.stack = debug.Stack()
+	}
+	return sh
 }
 
 // errGetSessionTimeout returns error for context timeout during
 // sessionPool.take().
-func errGetSessionTimeout() error {
-	return spannerErrorf(codes.Canceled, "timeout / context canceled during getting session")
+func (p *sessionPool) errGetSessionTimeout() error {
+	if p.TrackSessionHandles {
+		return p.errGetSessionTimeoutWithTrackedSessionHandles()
+	}
+	return p.errGetBasicSessionTimeout()
+}
+
+// errGetBasicSessionTimeout returns error for context timout during
+// sessionPool.take() without any tracked sessionHandles.
+func (p *sessionPool) errGetBasicSessionTimeout() error {
+	return spannerErrorf(codes.Canceled, "timeout / context canceled during getting session.\n"+
+		"Enable SessionPoolConfig.TrackSessionHandles if you suspect a session leak to get more information about the checked out sessions.")
+}
+
+// errGetSessionTimeoutWithTrackedSessionHandles returns error for context
+// timout during sessionPool.take() including a stacktrace of each checked out
+// session handle.
+func (p *sessionPool) errGetSessionTimeoutWithTrackedSessionHandles() error {
+	err := spannerErrorf(codes.Canceled, "timeout / context canceled during getting session.")
+	err.(*Error).additionalInformation = p.getTrackedSessionHandleStacksLocked()
+	return err
+}
+
+// getTrackedSessionHandleStacksLocked returns a string containing the
+// stacktrace of all currently checked out sessions of the pool. This method
+// requires the caller to have locked p.mu.
+func (p *sessionPool) getTrackedSessionHandleStacksLocked() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	stackTraces := ""
+	i := 1
+	element := p.trackedSessionHandles.Front()
+	for element != nil {
+		sh := element.Value.(*sessionHandle)
+		sh.mu.Lock()
+		if sh.stack != nil {
+			stackTraces = fmt.Sprintf("%s\n\nSession %d checked out of pool at %s by goroutine:\n%s", stackTraces, i, sh.checkoutTime.Format(time.RFC3339), sh.stack)
+		}
+		sh.mu.Unlock()
+		element = element.Next()
+		i++
+	}
+	return stackTraces
 }
 
 // shouldPrepareWriteLocked returns true if we should prepare more sessions for write.
@@ -650,7 +765,7 @@ func (p *sessionPool) createSession(ctx context.Context) (*session, error) {
 func (p *sessionPool) isHealthy(s *session) bool {
 	if s.getNextCheck().Add(2 * p.hc.getInterval()).Before(time.Now()) {
 		// TODO: figure out if we need to schedule a new healthcheck worker here.
-		if err := s.ping(); shouldDropSession(err) {
+		if err := s.ping(); isSessionNotFoundError(err) {
 			// The session is already bad, continue to fetch/create a new one.
 			s.destroy(false)
 			return false
@@ -674,7 +789,7 @@ func (p *sessionPool) take(ctx context.Context) (*sessionHandle, error) {
 		p.mu.Lock()
 		if !p.valid {
 			p.mu.Unlock()
-			return nil, errInvalidSessionPool()
+			return nil, errInvalidSessionPool
 		}
 		if p.idleList.Len() > 0 {
 			// Idle sessions are available, get one from the top of the idle
@@ -700,7 +815,7 @@ func (p *sessionPool) take(ctx context.Context) (*sessionHandle, error) {
 			if !p.isHealthy(s) {
 				continue
 			}
-			return &sessionHandle{session: s}, nil
+			return p.newSessionHandle(s), nil
 		}
 
 		// Idle list is empty, block if session pool has reached max session
@@ -712,7 +827,7 @@ func (p *sessionPool) take(ctx context.Context) (*sessionHandle, error) {
 			select {
 			case <-ctx.Done():
 				trace.TracePrintf(ctx, nil, "Context done waiting for session")
-				return nil, errGetSessionTimeout()
+				return nil, p.errGetSessionTimeout()
 			case <-mayGetSession:
 			}
 			continue
@@ -733,7 +848,7 @@ func (p *sessionPool) take(ctx context.Context) (*sessionHandle, error) {
 		}
 		trace.TracePrintf(ctx, map[string]interface{}{"sessionID": s.getID()},
 			"Created session")
-		return &sessionHandle{session: s}, nil
+		return p.newSessionHandle(s), nil
 	}
 }
 
@@ -751,7 +866,7 @@ func (p *sessionPool) takeWriteSession(ctx context.Context) (*sessionHandle, err
 		p.mu.Lock()
 		if !p.valid {
 			p.mu.Unlock()
-			return nil, errInvalidSessionPool()
+			return nil, errInvalidSessionPool
 		}
 		if p.idleWriteList.Len() > 0 {
 			// Idle sessions are available, get one from the top of the idle
@@ -785,7 +900,7 @@ func (p *sessionPool) takeWriteSession(ctx context.Context) (*sessionHandle, err
 				select {
 				case <-ctx.Done():
 					trace.TracePrintf(ctx, nil, "Context done waiting for session")
-					return nil, errGetSessionTimeout()
+					return nil, p.errGetSessionTimeout()
 				case <-mayGetSession:
 				}
 				continue
@@ -809,13 +924,20 @@ func (p *sessionPool) takeWriteSession(ctx context.Context) (*sessionHandle, err
 		}
 		if !s.isWritePrepared() {
 			if err = s.prepareForWrite(ctx); err != nil {
+				if isSessionNotFoundError(err) {
+					s.destroy(false)
+					trace.TracePrintf(ctx, map[string]interface{}{"sessionID": s.getID()},
+						"Session not found for write")
+					return nil, toSpannerError(err)
+				}
+
 				s.recycle()
 				trace.TracePrintf(ctx, map[string]interface{}{"sessionID": s.getID()},
 					"Error preparing session for write")
 				return nil, toSpannerError(err)
 			}
 		}
-		return &sessionHandle{session: s}, nil
+		return p.newSessionHandle(s), nil
 	}
 }
 
@@ -828,12 +950,12 @@ func (p *sessionPool) recycle(s *session) bool {
 		// Reject the session if session is invalid or pool itself is invalid.
 		return false
 	}
-	// Put session at the back of the list to round robin for load balancing
+	// Put session at the top of the list to be handed out in LIFO order for load balancing
 	// across channels.
 	if s.isWritePrepared() {
-		s.setIdleList(p.idleWriteList.PushBack(s))
+		s.setIdleList(p.idleWriteList.PushFront(s))
 	} else {
-		s.setIdleList(p.idleList.PushBack(s))
+		s.setIdleList(p.idleList.PushFront(s))
 	}
 	// Broadcast that a session has been returned to idle list.
 	close(p.mayGetSession)
@@ -1116,7 +1238,7 @@ func (hc *healthChecker) healthCheck(s *session) {
 		s.destroy(false)
 		return
 	}
-	if err := s.ping(); shouldDropSession(err) {
+	if err := s.ping(); isSessionNotFoundError(err) {
 		// Ping failed, destroy the session.
 		s.destroy(false)
 	}
@@ -1177,13 +1299,18 @@ func (hc *healthChecker) worker(i int) {
 		}
 		ws := getNextForTx()
 		if ws != nil {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			err := ws.prepareForWrite(ctx)
 			cancel()
 			if err != nil {
 				// Skip handling prepare error, session can be prepared in next
 				// cycle.
-				log.Printf("Failed to prepare session, error: %v", toSpannerError(err))
+				// Don't log about permission errors, which may be expected
+				// (e.g. using read-only auth).
+				serr := toSpannerError(err).(*Error)
+				if serr.Code != codes.PermissionDenied {
+					logf(hc.pool.sc.logger, "Failed to prepare session, error: %v", serr)
+				}
 			}
 			hc.pool.recycle(ws)
 			hc.pool.mu.Lock()
@@ -1301,7 +1428,7 @@ func (hc *healthChecker) growPool(ctx context.Context, growToNumSessions uint64)
 		createContext, cancel := context.WithTimeout(context.Background(), time.Minute)
 		if s, err = p.createSession(createContext); err != nil {
 			cancel()
-			log.Printf("Failed to create session, error: %v", toSpannerError(err))
+			logf(p.sc.logger, "Failed to create session, error: %v", toSpannerError(err))
 			continue
 		}
 		cancel()
@@ -1311,7 +1438,12 @@ func (hc *healthChecker) growPool(ctx context.Context, growToNumSessions uint64)
 			if err = s.prepareForWrite(prepareContext); err != nil {
 				cancel()
 				p.recycle(s)
-				log.Printf("Failed to prepare session, error: %v", toSpannerError(err))
+				// Don't log about permission errors, which may be expected
+				// (e.g. using read-only auth).
+				serr := toSpannerError(err).(*Error)
+				if serr.Code != codes.PermissionDenied {
+					logf(p.sc.logger, "Failed to prepare session, error: %v", serr)
+				}
 				continue
 			}
 			cancel()
@@ -1373,23 +1505,6 @@ func (hc *healthChecker) shrinkPool(ctx context.Context, shrinkToNumSessions uin
 	}
 }
 
-// shouldDropSession returns true if a particular error leads to the removal of
-// a session
-func shouldDropSession(err error) bool {
-	if err == nil {
-		return false
-	}
-	// If a Cloud Spanner can no longer locate the session (for example, if
-	// session is garbage collected), then caller should not try to return the
-	// session back into the session pool.
-	//
-	// TODO: once gRPC can return auxiliary error information, stop parsing the error message.
-	if ErrCode(err) == codes.NotFound && strings.Contains(ErrDesc(err), "Session not found") {
-		return true
-	}
-	return false
-}
-
 // maxUint64 returns the maximum of two uint64.
 func maxUint64(a, b uint64) uint64 {
 	if a > b {
@@ -1406,18 +1521,16 @@ func minUint64(a, b uint64) uint64 {
 	return a
 }
 
-// isPermissionDeniedError returns true if the given error has code
-// PermissionDenied.
-func isPermissionDeniedError(err error) bool {
-	return ErrCode(err) == codes.PermissionDenied
-}
-
-// isDatabaseNotFoundError returns true if the given error is a
-// `Database not found` error.
-func isDatabaseNotFoundError(err error) bool {
-	// We are checking specifically for the error message `Database not found`,
-	// as the error could also be a `Session not found`. The former should
+// isSessionNotFoundError returns true if the given error is a
+// `Session not found` error.
+func isSessionNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// We are checking specifically for the error message `Session not found`,
+	// as the error could also be a `Database not found`. The latter should
 	// cause the session pool to stop preparing sessions for read/write
-	// transactions, while the latter should not.
-	return ErrCode(err) == codes.NotFound && strings.Contains(err.Error(), "Database not found")
+	// transactions, while the former should not.
+	// TODO: once gRPC can return auxiliary error information, stop parsing the error message.
+	return ErrCode(err) == codes.NotFound && strings.Contains(err.Error(), "Session not found")
 }

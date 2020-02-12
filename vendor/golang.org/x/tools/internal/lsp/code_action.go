@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"golang.org/x/tools/internal/imports"
+	"golang.org/x/tools/internal/lsp/mod"
 	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
 	"golang.org/x/tools/internal/lsp/telemetry"
@@ -25,12 +26,11 @@ func (s *Server) codeAction(ctx context.Context, params *protocol.CodeActionPara
 	if err != nil {
 		return nil, err
 	}
-	f, err := view.GetFile(ctx, uri)
+	snapshot := view.Snapshot()
+	fh, err := snapshot.GetFile(uri)
 	if err != nil {
 		return nil, err
 	}
-	snapshot := view.Snapshot()
-	fh := snapshot.Handle(ctx, f)
 
 	// Determine the supported actions for this file kind.
 	supportedCodeActions, ok := view.Options().SupportedCodeActions[fh.Identity().Kind]
@@ -56,28 +56,28 @@ func (s *Server) codeAction(ctx context.Context, params *protocol.CodeActionPara
 	var codeActions []protocol.CodeAction
 	switch fh.Identity().Kind {
 	case source.Mod:
-		if !wanted[protocol.SourceOrganizeImports] {
-			return nil, nil
+		if diagnostics := params.Context.Diagnostics; len(diagnostics) > 0 {
+			codeActions = append(codeActions, mod.SuggestedFixes(ctx, snapshot, fh, diagnostics)...)
 		}
-		codeActions = append(codeActions, protocol.CodeAction{
-			Title: "Tidy",
-			Kind:  protocol.SourceOrganizeImports,
-			Command: protocol.Command{
-				Title:   "Tidy",
-				Command: "tidy",
-				Arguments: []interface{}{
-					f.URI(),
+		if !wanted[protocol.SourceOrganizeImports] {
+			codeActions = append(codeActions, protocol.CodeAction{
+				Title: "Tidy",
+				Kind:  protocol.SourceOrganizeImports,
+				Command: &protocol.Command{
+					Title:     "Tidy",
+					Command:   "tidy",
+					Arguments: []interface{}{fh.Identity().URI},
 				},
-			},
-		})
+			})
+		}
 	case source.Go:
-		edits, editsPerFix, err := source.AllImportsFixes(ctx, snapshot, f)
+		edits, editsPerFix, err := source.AllImportsFixes(ctx, snapshot, fh)
 		if err != nil {
 			return nil, err
 		}
 		if diagnostics := params.Context.Diagnostics; wanted[protocol.QuickFix] && len(diagnostics) > 0 {
 			// First, add the quick fixes reported by go/analysis.
-			qf, err := quickFixes(ctx, snapshot, f, diagnostics)
+			qf, err := quickFixes(ctx, snapshot, fh, diagnostics)
 			if err != nil {
 				log.Error(ctx, "quick fixes failed", err, telemetry.File.Of(uri))
 			}
@@ -100,6 +100,13 @@ func (s *Server) codeAction(ctx context.Context, params *protocol.CodeActionPara
 						})
 					}
 				}
+			}
+			actions, err := mod.SuggestedGoFixes(ctx, snapshot, fh, diagnostics)
+			if err != nil {
+				log.Error(ctx, "quick fixes failed", err, telemetry.File.Of(uri))
+			}
+			if len(actions) > 0 {
+				codeActions = append(codeActions, actions...)
 			}
 		}
 		if wanted[protocol.SourceOrganizeImports] && len(edits) > 0 {
@@ -203,24 +210,23 @@ func importDiagnostics(fix *imports.ImportFix, diagnostics []protocol.Diagnostic
 	return results
 }
 
-func quickFixes(ctx context.Context, snapshot source.Snapshot, f source.File, diagnostics []protocol.Diagnostic) ([]protocol.CodeAction, error) {
+func quickFixes(ctx context.Context, snapshot source.Snapshot, fh source.FileHandle, diagnostics []protocol.Diagnostic) ([]protocol.CodeAction, error) {
 	var codeActions []protocol.CodeAction
 
-	fh := snapshot.Handle(ctx, f)
-	cphs, err := snapshot.PackageHandles(ctx, fh)
+	phs, err := snapshot.PackageHandles(ctx, fh)
 	if err != nil {
 		return nil, err
 	}
 	// We get the package that source.Diagnostics would've used. This is hack.
 	// TODO(golang/go#32443): The correct solution will be to cache diagnostics per-file per-snapshot.
-	cph, err := source.WidestCheckPackageHandle(cphs)
+	ph, err := source.WidestPackageHandle(phs)
 	if err != nil {
 		return nil, err
 	}
 	for _, diag := range diagnostics {
 		// This code assumes that the analyzer name is the Source of the diagnostic.
 		// If this ever changes, this will need to be addressed.
-		srcErr, err := snapshot.FindAnalysisError(ctx, cph.ID(), diag.Source, diag.Message, diag.Range)
+		srcErr, err := snapshot.FindAnalysisError(ctx, ph.ID(), diag.Source, diag.Message, diag.Range)
 		if err != nil {
 			continue
 		}
@@ -232,12 +238,11 @@ func quickFixes(ctx context.Context, snapshot source.Snapshot, f source.File, di
 				Edit:        protocol.WorkspaceEdit{},
 			}
 			for uri, edits := range fix.Edits {
-				f, err := snapshot.View().GetFile(ctx, uri)
+				fh, err := snapshot.GetFile(uri)
 				if err != nil {
 					log.Error(ctx, "no file", err, telemetry.URI.Of(uri))
 					continue
 				}
-				fh := snapshot.Handle(ctx, f)
 				action.Edit.DocumentChanges = append(action.Edit.DocumentChanges, documentChanges(fh, edits)...)
 			}
 			codeActions = append(codeActions, action)
