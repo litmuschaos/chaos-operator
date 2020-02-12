@@ -19,9 +19,9 @@ metadata:
   labels:
     name: litmus
 rules:
-- apiGroups: ["*"]
-  resources: ["*"]
-  verbs: ["*"]
+- apiGroups: ["","apps","batch","litmuschaos.io"]
+  resources: ["pods","jobs","deployments","daemonsets","statefulsets","events","configmaps","services","chaosengines","chaosexperiments","chaosresults"]
+  verbs: ["get","create","update","patch","delete","list","watch","deletecollection"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
