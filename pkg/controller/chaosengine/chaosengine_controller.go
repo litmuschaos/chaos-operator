@@ -163,7 +163,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		reconcileResult, err := r.reconcileForDelete(request)
 		return reconcileResult, err
 
-	} else if engine.Instance.Spec.EngineStatus == "start" {
+	} else if engine.Instance.Spec.EngineStatus == "start" || engine.Instance.Spec.EngineStatus == "" {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Will create all Chaos resources for chaosUID: %v", string(engine.Instance.UID))
 		err := r.addFinalzerToEngine(engine, "chaosengine.litmuschaos.io/finalizer")
 		if err != nil {
