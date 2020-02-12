@@ -9,13 +9,12 @@ import (
 	"sort"
 	"testing"
 
-	"golang.org/x/tools/internal/lsp/tests"
 	"golang.org/x/tools/internal/span"
 )
 
-func (r *runner) Implementation(t *testing.T, spn span.Span, imp tests.Implementations) {
+func (r *runner) Implementation(t *testing.T, spn span.Span, imps []span.Span) {
 	var itemStrings []string
-	for _, i := range imp.Implementations {
+	for _, i := range imps {
 		itemStrings = append(itemStrings, fmt.Sprint(i))
 	}
 	sort.Strings(itemStrings)
@@ -29,8 +28,10 @@ func (r *runner) Implementation(t *testing.T, spn span.Span, imp tests.Implement
 	filename := uri.Filename()
 	target := filename + fmt.Sprintf(":%v:%v", spn.Start().Line(), spn.Start().Column())
 
-	got, _ := r.NormalizeGoplsCmd(t, "implementation", target)
-	if expect != got {
+	got, stderr := r.NormalizeGoplsCmd(t, "implementation", target)
+	if stderr != "" {
+		t.Errorf("implementation failed for %s: %s", target, stderr)
+	} else if expect != got {
 		t.Errorf("implementation failed for %s expected:\n%s\ngot:\n%s", target, expect, got)
 	}
 }

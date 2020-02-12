@@ -54,12 +54,10 @@ func (r *references) Run(ctx context.Context, args ...string) error {
 	if file.err != nil {
 		return file.err
 	}
-
 	loc, err := file.mapper.Location(from)
 	if err != nil {
 		return err
 	}
-
 	p := protocol.ReferenceParams{
 		Context: protocol.ReferenceContext{
 			IncludeDeclaration: r.IncludeDeclaration,
@@ -73,11 +71,6 @@ func (r *references) Run(ctx context.Context, args ...string) error {
 	if err != nil {
 		return err
 	}
-
-	if len(locations) == 0 {
-		return tool.CommandLineErrorf("%v: not an identifier", from)
-	}
-
 	var spans []string
 	for _, l := range locations {
 		f := conn.AddFile(ctx, span.NewURI(l.URI))
@@ -94,6 +87,5 @@ func (r *references) Run(ctx context.Context, args ...string) error {
 	for _, s := range spans {
 		fmt.Println(s)
 	}
-
 	return nil
 }

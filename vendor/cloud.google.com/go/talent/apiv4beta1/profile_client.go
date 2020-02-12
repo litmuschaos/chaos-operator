@@ -1,4 +1,4 @@
-// Copyright 2019 Google LLC
+// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -244,9 +244,7 @@ func (c *ProfileClient) DeleteProfile(ctx context.Context, req *talentpb.DeleteP
 // For example, search by raw queries "software engineer in Mountain View" or
 // search by structured filters (location filter, education filter, etc.).
 //
-// See
-// [SearchProfilesRequest][google.cloud.talent.v4beta1.SearchProfilesRequest]
-// for more information.
+// See [SearchProfilesRequest][google.cloud.talent.v4beta1.SearchProfilesRequest] for more information.
 func (c *ProfileClient) SearchProfiles(ctx context.Context, req *talentpb.SearchProfilesRequest, opts ...gax.CallOption) *SummarizedProfileIterator {
 	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", url.QueryEscape(req.GetParent())))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)

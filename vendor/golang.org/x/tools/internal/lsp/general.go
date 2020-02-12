@@ -52,7 +52,7 @@ func (s *Server) initialize(ctx context.Context, params *protocol.ParamInitializ
 		}
 	}
 
-	var codeActionProvider interface{}
+	var codeActionProvider interface{} = true
 	if ca := params.Capabilities.TextDocument.CodeAction; len(ca.CodeActionLiteralSupport.CodeActionKind.ValueSet) > 0 {
 		// If the client has specified CodeActionLiteralSupport,
 		// send the code actions we support.
@@ -61,14 +61,12 @@ func (s *Server) initialize(ctx context.Context, params *protocol.ParamInitializ
 		codeActionProvider = &protocol.CodeActionOptions{
 			CodeActionKinds: s.getSupportedCodeActions(),
 		}
-	} else {
-		codeActionProvider = true
 	}
-	// This used to be interface{}, when r could be nil
-	var renameOpts protocol.RenameOptions
-	r := params.Capabilities.TextDocument.Rename
-	renameOpts = protocol.RenameOptions{
-		PrepareProvider: r.PrepareSupport,
+	var renameOpts interface{} = true
+	if r := params.Capabilities.TextDocument.Rename; r.PrepareSupport {
+		renameOpts = protocol.RenameOptions{
+			PrepareProvider: r.PrepareSupport,
+		}
 	}
 	return &protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
@@ -81,6 +79,7 @@ func (s *Server) initialize(ctx context.Context, params *protocol.ParamInitializ
 			ImplementationProvider:     true,
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
+			WorkspaceSymbolProvider:    true,
 			ExecuteCommandProvider: protocol.ExecuteCommandOptions{
 				Commands: options.SupportedCommands,
 			},
@@ -94,7 +93,7 @@ func (s *Server) initialize(ctx context.Context, params *protocol.ParamInitializ
 				TriggerCharacters: []string{"(", ","},
 			},
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
-				Change:    options.TextDocumentSyncKind,
+				Change:    protocol.Incremental,
 				OpenClose: true,
 				Save: protocol.SaveOptions{
 					IncludeText: false,
@@ -132,7 +131,7 @@ func (s *Server) initialized(ctx context.Context, params *protocol.InitializedPa
 		)
 	}
 
-	if options.WatchFileChanges && options.DynamicWatchedFilesSupported {
+	if options.DynamicWatchedFilesSupported {
 		registrations = append(registrations, protocol.Registration{
 			ID:     "workspace/didChangeWatchedFiles",
 			Method: "workspace/didChangeWatchedFiles",
@@ -167,12 +166,12 @@ func (s *Server) addFolders(ctx context.Context, folders []protocol.WorkspaceFol
 
 	for _, folder := range folders {
 		uri := span.NewURI(folder.URI)
-		view, workspacePackages, err := s.addView(ctx, folder.Name, span.NewURI(folder.URI))
+		_, snapshot, err := s.addView(ctx, folder.Name, span.NewURI(folder.URI))
 		if err != nil {
 			viewErrors[uri] = err
 			continue
 		}
-		go s.diagnoseSnapshot(view.Snapshot(), workspacePackages)
+		go s.diagnoseDetached(snapshot)
 	}
 	if len(viewErrors) > 0 {
 		errMsg := fmt.Sprintf("Error loading workspace folders (expected %v, got %v)\n", len(folders), len(s.session.Views())-originalViews)

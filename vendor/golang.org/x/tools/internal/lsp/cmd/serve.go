@@ -6,25 +6,17 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
-	"path/filepath"
-	"time"
 
 	"golang.org/x/tools/internal/jsonrpc2"
-	"golang.org/x/tools/internal/lsp"
 	"golang.org/x/tools/internal/lsp/cache"
-	"golang.org/x/tools/internal/lsp/debug"
+	"golang.org/x/tools/internal/lsp/lsprpc"
 	"golang.org/x/tools/internal/lsp/protocol"
-	"golang.org/x/tools/internal/lsp/telemetry"
-	"golang.org/x/tools/internal/telemetry/trace"
 	"golang.org/x/tools/internal/tool"
-	errors "golang.org/x/xerrors"
 )
 
 // Serve is a struct that exposes the configurable parts of the LSP server as
@@ -34,8 +26,8 @@ type Serve struct {
 	Mode    string `flag:"mode" help:"no effect"`
 	Port    int    `flag:"port" help:"port on which to run gopls for debugging purposes"`
 	Address string `flag:"listen" help:"address on which to listen for remote connections"`
-	Trace   bool   `flag:"rpc.trace" help:"Print the full rpc trace in lsp inspector format"`
-	Debug   string `flag:"debug" help:"Serve debug information on the supplied address"`
+	Trace   bool   `flag:"rpc.trace" help:"print the full rpc trace in lsp inspector format"`
+	Debug   string `flag:"debug" help:"serve debug information on the supplied address"`
 
 	app *Application
 }
@@ -61,44 +53,34 @@ func (s *Serve) Run(ctx context.Context, args ...string) error {
 	if len(args) > 0 {
 		return tool.CommandLineErrorf("server does not take arguments, got %v", args)
 	}
-	out := os.Stderr
-	if s.Logfile != "" {
-		filename := s.Logfile
-		if filename == "auto" {
-			filename = filepath.Join(os.TempDir(), fmt.Sprintf("gopls-%d.log", os.Getpid()))
-		}
-		f, err := os.Create(filename)
-		if err != nil {
-			return errors.Errorf("Unable to create log file: %v", err)
-		}
-		defer f.Close()
-		log.SetOutput(io.MultiWriter(os.Stderr, f))
-		out = f
-	}
 
-	debug.Serve(ctx, s.Debug)
+	err, closeLog := s.app.debug.SetLogFile(s.Logfile)
+	if err != nil {
+		return err
+	}
+	defer closeLog()
+	s.app.debug.ServerAddress = s.Address
+	s.app.debug.DebugAddress = s.Debug
+	s.app.debug.Serve(ctx)
+	s.app.debug.MonitorMemory(ctx)
 
 	if s.app.Remote != "" {
 		return s.forward()
 	}
 
-	prepare := func(ctx context.Context, srv *lsp.Server) *lsp.Server {
-		srv.Conn.AddHandler(&handler{})
-		return srv
-	}
-	run := func(ctx context.Context, srv *lsp.Server) { go prepare(ctx, srv).Run(ctx) }
+	ss := lsprpc.NewStreamServer(cache.New(s.app.options), true)
 	if s.Address != "" {
-		return lsp.RunServerOnAddress(ctx, cache.New(s.app.options), s.Address, run)
+		return jsonrpc2.ListenAndServe(ctx, s.Address, ss)
 	}
 	if s.Port != 0 {
-		return lsp.RunServerOnPort(ctx, cache.New(s.app.options), s.Port, run)
+		addr := fmt.Sprintf(":%v", s.Port)
+		return jsonrpc2.ListenAndServe(ctx, addr, ss)
 	}
 	stream := jsonrpc2.NewHeaderStream(os.Stdin, os.Stdout)
 	if s.Trace {
-		stream = protocol.LoggingStream(stream, out)
+		stream = protocol.LoggingStream(stream, s.app.debug.LogWriter)
 	}
-	ctx, srv := lsp.NewServer(ctx, cache.New(s.app.options), stream)
-	return prepare(ctx, srv).Run(ctx)
+	return ss.ServeStream(ctx, stream)
 }
 
 func (s *Serve) forward() error {
@@ -119,104 +101,4 @@ func (s *Serve) forward() error {
 	}(conn)
 
 	return <-errc
-}
-
-type handler struct{}
-
-type rpcStats struct {
-	method     string
-	direction  jsonrpc2.Direction
-	id         *jsonrpc2.ID
-	payload    *json.RawMessage
-	start      time.Time
-	delivering func()
-	close      func()
-}
-
-type statsKeyType int
-
-const statsKey = statsKeyType(0)
-
-func (h *handler) Deliver(ctx context.Context, r *jsonrpc2.Request, delivered bool) bool {
-	stats := h.getStats(ctx)
-	if stats != nil {
-		stats.delivering()
-	}
-	return false
-}
-
-func (h *handler) Cancel(ctx context.Context, conn *jsonrpc2.Conn, id jsonrpc2.ID, cancelled bool) bool {
-	return false
-}
-
-func (h *handler) Request(ctx context.Context, conn *jsonrpc2.Conn, direction jsonrpc2.Direction, r *jsonrpc2.WireRequest) context.Context {
-	if r.Method == "" {
-		panic("no method in rpc stats")
-	}
-	stats := &rpcStats{
-		method:    r.Method,
-		start:     time.Now(),
-		direction: direction,
-		payload:   r.Params,
-	}
-	ctx = context.WithValue(ctx, statsKey, stats)
-	mode := telemetry.Outbound
-	if direction == jsonrpc2.Receive {
-		mode = telemetry.Inbound
-	}
-	ctx, stats.close = trace.StartSpan(ctx, r.Method,
-		telemetry.Method.Of(r.Method),
-		telemetry.RPCDirection.Of(mode),
-		telemetry.RPCID.Of(r.ID),
-	)
-	telemetry.Started.Record(ctx, 1)
-	_, stats.delivering = trace.StartSpan(ctx, "queued")
-	return ctx
-}
-
-func (h *handler) Response(ctx context.Context, conn *jsonrpc2.Conn, direction jsonrpc2.Direction, r *jsonrpc2.WireResponse) context.Context {
-	return ctx
-}
-
-func (h *handler) Done(ctx context.Context, err error) {
-	stats := h.getStats(ctx)
-	if err != nil {
-		ctx = telemetry.StatusCode.With(ctx, "ERROR")
-	} else {
-		ctx = telemetry.StatusCode.With(ctx, "OK")
-	}
-	elapsedTime := time.Since(stats.start)
-	latencyMillis := float64(elapsedTime) / float64(time.Millisecond)
-	telemetry.Latency.Record(ctx, latencyMillis)
-	stats.close()
-}
-
-func (h *handler) Read(ctx context.Context, bytes int64) context.Context {
-	telemetry.SentBytes.Record(ctx, bytes)
-	return ctx
-}
-
-func (h *handler) Wrote(ctx context.Context, bytes int64) context.Context {
-	telemetry.ReceivedBytes.Record(ctx, bytes)
-	return ctx
-}
-
-const eol = "\r\n\r\n\r\n"
-
-func (h *handler) Error(ctx context.Context, err error) {
-}
-
-func (h *handler) getStats(ctx context.Context) *rpcStats {
-	stats, ok := ctx.Value(statsKey).(*rpcStats)
-	if !ok || stats == nil {
-		method, ok := ctx.Value(telemetry.Method).(string)
-		if !ok {
-			method = "???"
-		}
-		stats = &rpcStats{
-			method: method,
-			close:  func() {},
-		}
-	}
-	return stats
 }

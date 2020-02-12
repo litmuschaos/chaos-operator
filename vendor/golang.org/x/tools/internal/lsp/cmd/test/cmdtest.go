@@ -18,6 +18,7 @@ import (
 
 	"golang.org/x/tools/go/packages/packagestest"
 	"golang.org/x/tools/internal/lsp/cmd"
+	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
 	"golang.org/x/tools/internal/lsp/tests"
 	"golang.org/x/tools/internal/span"
@@ -30,6 +31,7 @@ type runner struct {
 	ctx         context.Context
 	options     func(*source.Options)
 	normalizers []normalizer
+	remote      string
 }
 
 type normalizer struct {
@@ -39,13 +41,14 @@ type normalizer struct {
 	fragment string
 }
 
-func NewRunner(exporter packagestest.Exporter, data *tests.Data, ctx context.Context, options func(*source.Options)) *runner {
+func NewRunner(exporter packagestest.Exporter, data *tests.Data, ctx context.Context, remote string, options func(*source.Options)) *runner {
 	r := &runner{
 		exporter:    exporter,
 		data:        data,
 		ctx:         ctx,
 		options:     options,
 		normalizers: make([]normalizer, 0, len(data.Exported.Modules)),
+		remote:      remote,
 	}
 	// build the path normalizing patterns
 	for _, m := range data.Exported.Modules {
@@ -95,15 +98,11 @@ func (r *runner) RankCompletion(t *testing.T, src span.Span, test tests.Completi
 	//TODO: add command line completions tests when it works
 }
 
-func (r *runner) Highlight(t *testing.T, src span.Span, locations []span.Span) {
-	//TODO: add command line highlight tests when it works
+func (r *runner) WorkspaceSymbols(*testing.T, string, []protocol.SymbolInformation, map[string]struct{}) {
+	//TODO: add command line workspace symbol tests when it works
 }
 
-func (r *runner) PrepareRename(t *testing.T, src span.Span, want *source.PrepareItem) {
-	//TODO: add command line prepare rename tests when it works
-}
-
-func (r *runner) RunGoplsCmd(t testing.TB, args ...string) (string, string) {
+func (r *runner) runGoplsCmd(t testing.TB, args ...string) (string, string) {
 	rStdout, wStdout, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
@@ -125,9 +124,10 @@ func (r *runner) RunGoplsCmd(t testing.TB, args ...string) (string, string) {
 	os.Stdout = wStdout
 	os.Stderr = wStderr
 	app := cmd.New("gopls-test", r.data.Config.Dir, r.data.Exported.Config.Env, r.options)
+	remote := r.remote
 	err = tool.Run(tests.Context(t),
 		app,
-		append([]string{"-remote=internal"}, args...))
+		append([]string{fmt.Sprintf("-remote=internal@%s", remote)}, args...))
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
 	}
@@ -144,8 +144,9 @@ func (r *runner) RunGoplsCmd(t testing.TB, args ...string) (string, string) {
 	return string(stdout), string(stderr)
 }
 
+// NormalizeGoplsCmd runs the gopls command and normalizes its output.
 func (r *runner) NormalizeGoplsCmd(t testing.TB, args ...string) (string, string) {
-	stdout, stderr := r.RunGoplsCmd(t, args...)
+	stdout, stderr := r.runGoplsCmd(t, args...)
 	return r.Normalize(stdout), r.Normalize(stderr)
 }
 

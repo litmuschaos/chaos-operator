@@ -27,6 +27,7 @@ import (
 	edpb "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -68,11 +69,13 @@ func (r *spannerRetryer) Retry(err error) (time.Duration, bool) {
 	return delay, true
 }
 
-// runWithRetryOnAborted executes the given function and retries it if it
-// returns an Aborted error. The delay between retries is the delay returned
-// by Cloud Spanner, and if none is returned, the calculated delay with a
-// minimum of 10ms and maximum of 32s.
-func runWithRetryOnAborted(ctx context.Context, f func(context.Context) error) error {
+// runWithRetryOnAbortedOrSessionNotFound executes the given function and
+// retries it if it returns an Aborted or Session not found error. The retry
+// is delayed if the error was Aborted. The delay between retries is the delay
+// returned by Cloud Spanner, or if none is returned, the calculated delay with
+// a minimum of 10ms and maximum of 32s. There is no delay before the retry if
+// the error was Session not found.
+func runWithRetryOnAbortedOrSessionNotFound(ctx context.Context, f func(context.Context) error) error {
 	retryer := onCodes(DefaultRetryBackoff, codes.Aborted)
 	funcWithRetry := func(ctx context.Context) error {
 		for {
@@ -80,7 +83,29 @@ func runWithRetryOnAborted(ctx context.Context, f func(context.Context) error) e
 			if err == nil {
 				return nil
 			}
-			delay, shouldRetry := retryer.Retry(err)
+			// Get Spanner or GRPC status error.
+			// TODO(loite): Refactor to unwrap Status error instead of Spanner
+			// error when statusError implements the (errors|xerrors).Wrapper
+			// interface.
+			var retryErr error
+			var se *Error
+			if errorAs(err, &se) {
+				// It is a (wrapped) Spanner error. Use that to check whether
+				// we should retry.
+				retryErr = se
+			} else {
+				// It's not a Spanner error, check if it is a status error.
+				_, ok := status.FromError(err)
+				if !ok {
+					return err
+				}
+				retryErr = err
+			}
+			if isSessionNotFoundError(retryErr) {
+				trace.TracePrintf(ctx, nil, "Retrying after Session not found")
+				continue
+			}
+			delay, shouldRetry := retryer.Retry(retryErr)
 			if !shouldRetry {
 				return err
 			}

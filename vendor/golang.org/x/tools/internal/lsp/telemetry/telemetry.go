@@ -24,6 +24,8 @@ const (
 	URI           = tag.Key("URI")
 	Package       = tag.Key("package")
 	PackagePath   = tag.Key("package_path")
+	Query         = tag.Key("query")
+	Snapshot      = tag.Key("snapshot")
 )
 
 var (
