@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	templatespec "github.com/litmuschaos/kube-helper/kubernetes/podtemplatespec"
+	templatespec "github.com/litmuschaos/elves/kubernetes/podtemplatespec"
 	batchv1 "k8s.io/api/batch/v1"
 )
 

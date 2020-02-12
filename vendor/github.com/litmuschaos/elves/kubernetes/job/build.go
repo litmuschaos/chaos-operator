@@ -20,8 +20,10 @@ import (
 	"errors"
 	"fmt"
 
-	jobspec "github.com/litmuschaos/kube-helper/kubernetes/jobspec"
 	batchv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	jobspec "github.com/litmuschaos/elves/kubernetes/jobspec"
 )
 
 // Builder is the builder object for Job
@@ -108,6 +110,21 @@ func (b *Builder) WithJobSpecBuilder(
 		return b
 	}
 	b.job.object.Spec = *jobspecObj.Object
+	return b
+}
+
+// WithOwnerReferenceNew sets ownerreference if any with
+// ones that are provided here
+func (b *Builder) WithOwnerReferenceNew(ownerRefernce []metav1.OwnerReference) *Builder {
+	if len(ownerRefernce) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New("failed to build Job object: no new ownerRefernce"),
+		)
+		return b
+	}
+
+	b.job.object.OwnerReferences = ownerRefernce
 	return b
 }
 

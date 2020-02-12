@@ -53,7 +53,7 @@ type Secret struct {
 
 // ExperimentDef defines information about nature of chaos & components subjected to it
 type ExperimentDef struct {
-	// Default labels of the executor pod
+	// Default labels of the runner pod
 	// +optional
 	Labels map[string]string `json:"labels"`
 	// Image of the chaos executor
@@ -66,7 +66,7 @@ type ExperimentDef struct {
 	ENVList []ENVPair `json:"env"`
 	// Defines command to invoke experiment
 	Command []string `json:"command"`
-	// Defines arguments to executor's entrypoint command
+	// Defines arguments to runner's entrypoint command
 	Args []string `json:"args"`
 	// ConfigMaps contains a list of ConfigMaps
 	ConfigMaps []ConfigMap `json:"configmaps,omitempty"`

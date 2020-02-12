@@ -82,7 +82,7 @@ type MonitorInfo struct {
 type RunnerInfo struct {
 	//Image of the runner pod
 	Image string `json:"image,omitempty"`
-	//Type of Executor
+	//Type of runner
 	Type string `json:"type,omitempty"`
 }
 

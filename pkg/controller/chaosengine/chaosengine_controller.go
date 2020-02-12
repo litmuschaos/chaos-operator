@@ -23,10 +23,11 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/litmuschaos/kube-helper/kubernetes/container"
-	"github.com/litmuschaos/kube-helper/kubernetes/pod"
-	"github.com/litmuschaos/kube-helper/kubernetes/service"
+	"github.com/litmuschaos/elves/kubernetes/container"
+	"github.com/litmuschaos/elves/kubernetes/pod"
+	"github.com/litmuschaos/elves/kubernetes/service"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -329,7 +330,7 @@ func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.AnnotationCheck == "true" {
 		return nil, errors.New("application experiment list or UUID is empty")
 	}
-	//Initiate the Engine Info, with the type of executor to be used
+	//Initiate the Engine Info, with the type of runner to be used
 	if ce.Instance.Spec.Components.Runner.Type == "ansible" {
 		return newAnsibleRunnerPodForCR(ce)
 	}
@@ -593,17 +594,9 @@ func getAnnotationCheck() error {
 func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (reconcile.Result, error) {
 
 	r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stopping reconcile for chaosEngine", "Will remove all Chaos resources for chaosUID: %v", string(engine.Instance.UID))
-	optsDelete := []client.DeleteAllOfOption{
-		client.InNamespace(request.NamespacedName.Namespace),
-		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
-		client.PropagationPolicy(metav1.DeletePropagationForeground),
-	}
-	if err := r.client.DeleteAllOf(context.TODO(), &batchv1.Job{}, optsDelete...); err != nil {
-		return reconcile.Result{}, fmt.Errorf("Unable to delete chaosEngine allocated Chaos Resources, due to error: %v", err)
-	}
-
-	if err := r.client.DeleteAllOf(context.TODO(), &corev1.Pod{}, optsDelete...); err != nil {
-		return reconcile.Result{}, fmt.Errorf("Unable to delete chaosEngine allocated Chaos Resources, due to error: %v", err)
+	reconcileResult, err := r.removeChaosResources(engine, request)
+	if err != nil {
+		return reconcileResult, err
 	}
 	opts := client.UpdateOptions{}
 	engine.Instance.Spec.EngineStatus = "stopped"
@@ -613,12 +606,44 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 	}
 	return reconcile.Result{}, nil
 
-	// TODO: write function to remove all the chaos resources
-	// For now, it just removes Pods, especially runner and monitor
-	// With the passing of chaosUID in litmus, everything can be removed from here.
-
 }
 
+func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
+	optsDelete := []client.DeleteAllOfOption{
+		client.InNamespace(request.NamespacedName.Namespace),
+		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
+		client.PropagationPolicy(metav1.DeletePropagationForeground),
+		client.GracePeriodSeconds(0),
+	}
+	var deleteEvent []string
+	var err []error
+
+	if errDeployment := r.client.DeleteAllOf(context.TODO(), &appsv1.Deployment{}, optsDelete...); errDeployment != nil {
+		err = append(err, errDeployment)
+		deleteEvent = append(deleteEvent, "Deployments, ")
+	}
+
+	if errDaemonSet := r.client.DeleteAllOf(context.TODO(), &appsv1.DaemonSet{}, optsDelete...); errDaemonSet != nil {
+		err = append(err, errDaemonSet)
+		deleteEvent = append(deleteEvent, "DaemonSets, ")
+	}
+
+	if errJob := r.client.DeleteAllOf(context.TODO(), &batchv1.Job{}, optsDelete...); errJob != nil {
+
+		err = append(err, errJob)
+		deleteEvent = append(deleteEvent, "Jobs, ")
+	}
+
+	if errPod := r.client.DeleteAllOf(context.TODO(), &corev1.Pod{}, optsDelete...); errPod != nil {
+		err = append(err, errPod)
+		deleteEvent = append(deleteEvent, "Pods, ")
+	}
+	if err != nil {
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "Unable to delete ChaosEngine allocated resources", "Unable to delete chaos Resources : %v", strings.Join(deleteEvent, ""))
+		return reconcile.Result{}, fmt.Errorf("Unable to delete ChaosResources due to %v", err)
+	}
+	return reconcile.Result{}, nil
+}
 func (r *ReconcileChaosEngine) addFinalzerToEngine(engine *chaosTypes.EngineInfo, finalizer string) error {
 	optsUpdate := client.UpdateOptions{}
 	engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
