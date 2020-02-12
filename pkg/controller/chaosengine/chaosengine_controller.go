@@ -159,11 +159,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	if checkEngineStatusForStop(engine) {
+	if checkEngineStateForStop(engine) {
 		reconcileResult, err := r.reconcileForDelete(request)
 		return reconcileResult, err
 
-	} else if engine.Instance.Spec.EngineStatus == "start" {
+	} else if engine.Instance.Spec.EngineState == "active" {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Will create all Chaos resources for chaosUID: %v", string(engine.Instance.UID))
 		err := r.addFinalzerToEngine(engine, "chaosengine.litmuschaos.io/finalizer")
 		if err != nil {
@@ -599,7 +599,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 		return reconcileResult, err
 	}
 	opts := client.UpdateOptions{}
-	engine.Instance.Spec.EngineStatus = "stopped"
+	engine.Instance.Spec.EngineState = "stopped"
 	engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
 	if err := r.client.Update(context.TODO(), engine.Instance, &opts); err != nil {
 		return reconcile.Result{}, fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
@@ -656,14 +656,14 @@ func (r *ReconcileChaosEngine) addFinalzerToEngine(engine *chaosTypes.EngineInfo
 
 func (r *ReconcileChaosEngine) updateStatus(engine *chaosTypes.EngineInfo, status string) error {
 	opts := client.UpdateOptions{}
-	engine.Instance.Spec.EngineStatus = status
+	engine.Instance.Spec.EngineState = status
 	return r.client.Update(context.TODO(), engine.Instance, &opts)
 }
 
-func checkEngineStatusForStop(engine *chaosTypes.EngineInfo) bool {
+func checkEngineStateForStop(engine *chaosTypes.EngineInfo) bool {
 	deletetimeStamp := engine.Instance.ObjectMeta.GetDeletionTimestamp()
-	if engine.Instance.Spec.EngineStatus == "stop" ||
-		engine.Instance.Spec.EngineStatus == "stopped" ||
+	if engine.Instance.Spec.EngineState == "stop" ||
+		engine.Instance.Spec.EngineState == "stopped" ||
 		deletetimeStamp != nil {
 		return true
 	}
