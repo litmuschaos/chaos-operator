@@ -604,7 +604,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 	engine.Instance.Spec.EngineState = "stopped"
 	if engine.Instance.ObjectMeta.Finalizers != nil {
 		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stop reconcile for chaosEngine", "Removing all Chaos resources")
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stop ChaosEngine", "Removing all experiment resources")
 	}
 	if err := r.client.Update(context.TODO(), engine.Instance, &opts); err != nil {
 		return reconcile.Result{}, fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
@@ -660,7 +660,7 @@ func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInf
 		deleteEvent = append(deleteEvent, "Pods, ")
 	}
 	if err != nil {
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "Unable to delete ChaosEngine allocated resources", "Unable to delete chaos Resources : %v", strings.Join(deleteEvent, ""))
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "Unable to delete ChaosEngine allocated resources", "Unable to delete chaos Resources: %v", strings.Join(deleteEvent, ""))
 		return reconcile.Result{}, fmt.Errorf("Unable to delete ChaosResources due to %v", err)
 	}
 	return reconcile.Result{}, nil
@@ -670,7 +670,7 @@ func (r *ReconcileChaosEngine) addFinalzerToEngine(engine *chaosTypes.EngineInfo
 	optsUpdate := client.UpdateOptions{}
 	if engine.Instance.ObjectMeta.Finalizers == nil {
 		engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Creating all Chaos resources")
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started ChaosEngine", "Creating the experiment resources")
 
 	}
 	err := r.client.Update(context.TODO(), engine.Instance, &optsUpdate)
