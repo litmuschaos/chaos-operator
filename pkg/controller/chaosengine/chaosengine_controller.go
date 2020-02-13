@@ -37,7 +37,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -50,6 +49,8 @@ import (
 	"github.com/litmuschaos/chaos-operator/pkg/controller/utils"
 	"github.com/litmuschaos/chaos-operator/pkg/controller/watcher"
 )
+
+const finalizer = "chaosengine.litmuschaos.io/finalizer"
 
 var _ reconcile.Reconciler = &ReconcileChaosEngine{}
 
@@ -159,21 +160,31 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
+	if engine.Instance.Spec.EngineState == "" {
+
+		err := r.updateStatus(engine, "active")
+		reqLogger.Error(err, "Unable to Update Status in ChaosEngine Resource, due to error: %v", err)
+
+	}
+
+	if engine.Instance.Spec.EngineState == "active" {
+
+		err := r.updateStatus(engine, "initialized")
+		if err != nil {
+			reqLogger.Error(err, "Unable to Update Status in ChaosEngine Resource, due to error: %v", err)
+		}
+
+		err = r.addFinalzerToEngine(engine, finalizer)
+		if err != nil {
+			reqLogger.Error(err, "Unable to add Finalizers in ChaosEngine Resource, due to error: %v", err)
+		}
+
+	}
+
 	if checkEngineStateForStop(engine) {
 		reconcileResult, err := r.reconcileForDelete(request)
 		return reconcileResult, err
 
-	} else if engine.Instance.Spec.EngineState == "active" {
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Will create all Chaos resources for chaosUID: %v", string(engine.Instance.UID))
-		err := r.addFinalzerToEngine(engine, "chaosengine.litmuschaos.io/finalizer")
-		if err != nil {
-			reqLogger.Error(err, "Unable to add Finalizers in ChaosEngine Resource, due to error: %v", err)
-		}
-		// Patch Status to initialized
-		err = r.updateStatus(engine, "initialized")
-		if err != nil {
-			reqLogger.Error(err, "Unable to Update Status in ChaosEngine Resource, due to error: %v", err)
-		}
 	}
 	// Get the image for runner and monitor pod from chaosengine spec,operator env or default values.
 	setChaosResourceImage()
@@ -219,17 +230,6 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcileResult, err
 	}
 	return reconcile.Result{}, nil
-}
-
-// Set ChaosEngine instance as the owner and controller of engine-Monitor service
-func setControllerReference(recEngine *reconcileEngine, engineMonitor *corev1.Pod, engineMonitorSvc *corev1.Service) error {
-	if err := controllerutil.SetControllerReference(engine.Instance, engineMonitor, recEngine.r.scheme); err != nil {
-		return err
-	}
-	if err := controllerutil.SetControllerReference(engine.Instance, engineMonitorSvc, recEngine.r.scheme); err != nil {
-		return err
-	}
-	return nil
 }
 
 //MonitorServiceAndPod checks if the EngineMonitorPod And EngineMonitorService already exist or not
@@ -592,15 +592,20 @@ func getAnnotationCheck() error {
 
 // reconcileForDelete
 func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (reconcile.Result, error) {
-
-	r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stopping reconcile for chaosEngine", "Will remove all Chaos resources for chaosUID: %v", string(engine.Instance.UID))
 	reconcileResult, err := r.removeChaosResources(engine, request)
+	if err != nil {
+		return reconcileResult, err
+	}
+	reconcileResult, err = r.removeChaosServices(engine, request)
 	if err != nil {
 		return reconcileResult, err
 	}
 	opts := client.UpdateOptions{}
 	engine.Instance.Spec.EngineState = "stopped"
-	engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
+	if engine.Instance.ObjectMeta.Finalizers != nil {
+		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stopped ChaosEngine", "Removing all experiment resources")
+	}
 	if err := r.client.Update(context.TODO(), engine.Instance, &opts); err != nil {
 		return reconcile.Result{}, fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
 	}
@@ -608,12 +613,29 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 
 }
 
+func (r *ReconcileChaosEngine) removeChaosServices(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
+	optsList := []client.ListOption{
+		client.InNamespace(request.NamespacedName.Namespace),
+		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
+	}
+	var serviceList corev1.ServiceList
+	if errList := r.client.List(context.TODO(), &serviceList, optsList...); errList != nil {
+		return reconcile.Result{}, errList
+	}
+	for _, v := range serviceList.Items {
+		if err := r.client.Delete(context.TODO(), &v, []client.DeleteOption{}...); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+	return reconcile.Result{}, nil
+}
+
 func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
 	optsDelete := []client.DeleteAllOfOption{
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
-		client.PropagationPolicy(metav1.DeletePropagationForeground),
-		client.GracePeriodSeconds(0),
+		client.PropagationPolicy(metav1.DeletePropagationBackground),
+		client.GracePeriodSeconds(int64(0)),
 	}
 	var deleteEvent []string
 	var err []error
@@ -629,7 +651,6 @@ func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInf
 	}
 
 	if errJob := r.client.DeleteAllOf(context.TODO(), &batchv1.Job{}, optsDelete...); errJob != nil {
-
 		err = append(err, errJob)
 		deleteEvent = append(deleteEvent, "Jobs, ")
 	}
@@ -639,14 +660,19 @@ func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInf
 		deleteEvent = append(deleteEvent, "Pods, ")
 	}
 	if err != nil {
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "Unable to delete ChaosEngine allocated resources", "Unable to delete chaos Resources : %v", strings.Join(deleteEvent, ""))
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "Deletion Failed", "Unable to Chaos Resources: %v", strings.Join(deleteEvent, ""))
 		return reconcile.Result{}, fmt.Errorf("Unable to delete ChaosResources due to %v", err)
 	}
 	return reconcile.Result{}, nil
 }
+
 func (r *ReconcileChaosEngine) addFinalzerToEngine(engine *chaosTypes.EngineInfo, finalizer string) error {
 	optsUpdate := client.UpdateOptions{}
-	engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
+	if engine.Instance.ObjectMeta.Finalizers == nil {
+		engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started ChaosEngine", "Creating the experiment resources")
+
+	}
 	err := r.client.Update(context.TODO(), engine.Instance, &optsUpdate)
 	if err != nil {
 		return err

@@ -243,7 +243,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 							Type:  "go",
 						},
 					},
-					Monitoring: true,
+					Monitoring:  true,
 					EngineState: "active",
 					Experiments: []v1alpha1.ExperimentList{
 						{
