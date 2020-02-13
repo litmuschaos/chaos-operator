@@ -19,6 +19,7 @@ package spanner
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -61,16 +62,18 @@ type sessionClient struct {
 	sessionLabels map[string]string
 	md            metadata.MD
 	batchTimeout  time.Duration
+	logger        *log.Logger
 }
 
 // newSessionClient creates a session client to use for a database.
-func newSessionClient(gapicClients []*vkit.Client, database string, sessionLabels map[string]string, md metadata.MD) *sessionClient {
+func newSessionClient(gapicClients []*vkit.Client, database string, sessionLabels map[string]string, md metadata.MD, logger *log.Logger) *sessionClient {
 	return &sessionClient{
 		gapicClients:  gapicClients,
 		database:      database,
 		sessionLabels: sessionLabels,
 		md:            md,
 		batchTimeout:  time.Minute,
+		logger:        logger,
 	}
 }
 
@@ -111,7 +114,7 @@ func (sc *sessionClient) createSession(ctx context.Context) (*session, error) {
 	if err != nil {
 		return nil, toSpannerError(err)
 	}
-	return &session{valid: true, client: client, id: sid.Name, createTime: time.Now(), md: sc.md}, nil
+	return &session{valid: true, client: client, id: sid.Name, createTime: time.Now(), md: sc.md, logger: sc.logger}, nil
 }
 
 // batchCreateSessions creates a batch of sessions for the database of the
@@ -188,7 +191,7 @@ func (sc *sessionClient) executeBatchCreateSessions(client *vkit.Client, createC
 		}
 		if ctx.Err() != nil {
 			trace.TracePrintf(ctx, nil, "Context error while creating a batch of %d sessions: %v", createCount, ctx.Err())
-			consumer.sessionCreationFailed(ctx.Err(), remainingCreateCount)
+			consumer.sessionCreationFailed(toSpannerError(ctx.Err()), remainingCreateCount)
 			break
 		}
 		response, err := client.BatchCreateSessions(ctx, &sppb.BatchCreateSessionsRequest{
@@ -198,13 +201,13 @@ func (sc *sessionClient) executeBatchCreateSessions(client *vkit.Client, createC
 		})
 		if err != nil {
 			trace.TracePrintf(ctx, nil, "Error creating a batch of %d sessions: %v", remainingCreateCount, err)
-			consumer.sessionCreationFailed(err, remainingCreateCount)
+			consumer.sessionCreationFailed(toSpannerError(err), remainingCreateCount)
 			break
 		}
 		actuallyCreated := int32(len(response.Session))
 		trace.TracePrintf(ctx, nil, "Received a batch of %d sessions", actuallyCreated)
 		for _, s := range response.Session {
-			consumer.sessionReady(&session{valid: true, client: client, id: s.Name, createTime: time.Now(), md: md})
+			consumer.sessionReady(&session{valid: true, client: client, id: s.Name, createTime: time.Now(), md: md, logger: sc.logger})
 		}
 		if actuallyCreated < remainingCreateCount {
 			// Spanner could return less sessions than requested. In that case, we
@@ -220,7 +223,7 @@ func (sc *sessionClient) executeBatchCreateSessions(client *vkit.Client, createC
 func (sc *sessionClient) sessionWithID(id string) *session {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	return &session{valid: true, client: sc.rrNextGapicClientLocked(), id: id, createTime: time.Now(), md: sc.md}
+	return &session{valid: true, client: sc.rrNextGapicClientLocked(), id: id, createTime: time.Now(), md: sc.md, logger: sc.logger}
 }
 
 // rrNextGapicClientLocked returns the next gRPC client to use for session creation. The

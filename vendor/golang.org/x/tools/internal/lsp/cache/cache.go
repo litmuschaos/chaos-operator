@@ -9,6 +9,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"go/token"
+	"reflect"
 	"strconv"
 	"sync/atomic"
 
@@ -56,8 +57,8 @@ type fileData struct {
 	err   error
 }
 
-func (c *cache) GetFile(uri span.URI, kind source.FileKind) source.FileHandle {
-	underlying := c.fs.GetFile(uri, kind)
+func (c *cache) GetFile(uri span.URI) source.FileHandle {
+	underlying := c.fs.GetFile(uri)
 	key := fileKey{
 		identity: underlying.Identity(),
 	}
@@ -73,14 +74,13 @@ func (c *cache) GetFile(uri span.URI, kind source.FileKind) source.FileHandle {
 	}
 }
 
-func (c *cache) NewSession(ctx context.Context) source.Session {
+func (c *cache) NewSession() source.Session {
 	index := atomic.AddInt64(&sessionIndex, 1)
 	s := &session{
-		cache:         c,
-		id:            strconv.FormatInt(index, 10),
-		options:       source.DefaultOptions,
-		overlays:      make(map[span.URI]*overlay),
-		filesWatchMap: NewWatchMap(),
+		cache:    c,
+		id:       strconv.FormatInt(index, 10),
+		options:  source.DefaultOptions(),
+		overlays: make(map[span.URI]*overlay),
 	}
 	debug.AddSession(debugSession{s})
 	return s
@@ -117,5 +117,6 @@ var cacheIndex, sessionIndex, viewIndex int64
 
 type debugCache struct{ *cache }
 
-func (c *cache) ID() string                  { return c.id }
-func (c debugCache) FileSet() *token.FileSet { return c.fset }
+func (c *cache) ID() string                         { return c.id }
+func (c debugCache) FileSet() *token.FileSet        { return c.fset }
+func (c debugCache) MemStats() map[reflect.Type]int { return c.store.Stats() }

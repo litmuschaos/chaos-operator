@@ -13,7 +13,8 @@ import (
 	errors "golang.org/x/xerrors"
 )
 
-func (s *Server) changeFolders(ctx context.Context, event protocol.WorkspaceFoldersChangeEvent) error {
+func (s *Server) didChangeWorkspaceFolders(ctx context.Context, params *protocol.DidChangeWorkspaceFoldersParams) error {
+	event := params.Event
 	for _, folder := range event.Removed {
 		view := s.session.View(folder.Name)
 		if view != nil {
@@ -26,7 +27,7 @@ func (s *Server) changeFolders(ctx context.Context, event protocol.WorkspaceFold
 	return nil
 }
 
-func (s *Server) addView(ctx context.Context, name string, uri span.URI) (source.View, []source.CheckPackageHandle, error) {
+func (s *Server) addView(ctx context.Context, name string, uri span.URI) (source.View, source.Snapshot, error) {
 	s.stateMu.Lock()
 	state := s.state
 	s.stateMu.Unlock()
@@ -35,17 +36,24 @@ func (s *Server) addView(ctx context.Context, name string, uri span.URI) (source
 	}
 
 	options := s.session.Options()
-	s.fetchConfig(ctx, name, uri, &options)
-
+	if err := s.fetchConfig(ctx, name, uri, &options); err != nil {
+		return nil, nil, err
+	}
 	return s.session.NewView(ctx, name, uri, options)
 }
 
-func (s *Server) updateConfiguration(ctx context.Context, changed interface{}) error {
+func (s *Server) didChangeConfiguration(ctx context.Context, changed interface{}) error {
 	// go through all the views getting the config
 	for _, view := range s.session.Views() {
 		options := s.session.Options()
-		s.fetchConfig(ctx, view.Name(), view.Folder(), &options)
-		view.SetOptions(ctx, options)
+		if err := s.fetchConfig(ctx, view.Name(), view.Folder(), &options); err != nil {
+			return err
+		}
+		view, err := view.SetOptions(ctx, options)
+		if err != nil {
+			return err
+		}
+		go s.diagnoseDetached(view.Snapshot())
 	}
 	return nil
 }

@@ -19,13 +19,12 @@ func (s *Server) implementation(ctx context.Context, params *protocol.Implementa
 		return nil, err
 	}
 	snapshot := view.Snapshot()
-	f, err := view.GetFile(ctx, uri)
+	fh, err := snapshot.GetFile(uri)
 	if err != nil {
 		return nil, err
 	}
-	ident, err := source.Identifier(ctx, snapshot, f, params.Position)
-	if err != nil {
-		return nil, err
+	if fh.Identity().Kind != source.Go {
+		return nil, nil
 	}
-	return ident.Implementation(ctx)
+	return source.Implementation(ctx, snapshot, fh, params.Position)
 }

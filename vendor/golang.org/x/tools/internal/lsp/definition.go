@@ -19,11 +19,14 @@ func (s *Server) definition(ctx context.Context, params *protocol.DefinitionPara
 		return nil, err
 	}
 	snapshot := view.Snapshot()
-	f, err := view.GetFile(ctx, uri)
+	fh, err := snapshot.GetFile(uri)
 	if err != nil {
 		return nil, err
 	}
-	ident, err := source.Identifier(ctx, snapshot, f, params.Position)
+	if fh.Identity().Kind != source.Go {
+		return nil, nil
+	}
+	ident, err := source.Identifier(ctx, snapshot, fh, params.Position)
 	if err != nil {
 		return nil, err
 	}
@@ -46,11 +49,14 @@ func (s *Server) typeDefinition(ctx context.Context, params *protocol.TypeDefini
 		return nil, err
 	}
 	snapshot := view.Snapshot()
-	f, err := view.GetFile(ctx, uri)
+	fh, err := snapshot.GetFile(uri)
 	if err != nil {
 		return nil, err
 	}
-	ident, err := source.Identifier(ctx, snapshot, f, params.Position)
+	if fh.Identity().Kind != source.Go {
+		return nil, nil
+	}
+	ident, err := source.Identifier(ctx, snapshot, fh, params.Position)
 	if err != nil {
 		return nil, err
 	}

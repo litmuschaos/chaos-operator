@@ -1,3 +1,7 @@
+// Copyright 2019 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package cache
 
 import (
@@ -6,6 +10,8 @@ import (
 	"go/scanner"
 	"go/token"
 	"go/types"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -29,14 +35,26 @@ func sourceError(ctx context.Context, fset *token.FileSet, pkg *pkg, e interface
 	)
 	switch e := e.(type) {
 	case packages.Error:
+		kind = toSourceErrorKind(e.Kind)
+		var ok bool
+		if msg, spn, ok = parseGoListImportCycleError(ctx, fset, e, pkg); ok {
+			kind = source.TypeError
+			break
+		}
 		if e.Pos == "" {
 			spn = parseGoListError(e.Msg)
+
+			// We may not have been able to parse a valid span.
+			if _, err := spanToRange(ctx, pkg, spn); err != nil {
+				return &source.Error{
+					URI:     spn.URI(),
+					Message: msg,
+					Kind:    kind,
+				}, nil
+			}
 		} else {
 			spn = span.Parse(e.Pos)
 		}
-		msg = e.Msg
-		kind = toSourceErrorKind(e.Kind)
-
 	case *scanner.Error:
 		msg = e.Msg
 		kind = source.ParseError
@@ -87,12 +105,8 @@ func sourceError(ctx context.Context, fset *token.FileSet, pkg *pkg, e interface
 	if err != nil {
 		return nil, err
 	}
-	ph, err := pkg.File(spn.URI())
-	if err != nil {
-		return nil, err
-	}
 	return &source.Error{
-		File:           ph.File().Identity(),
+		URI:            spn.URI(),
 		Range:          rng,
 		Message:        msg,
 		Kind:           kind,
@@ -162,26 +176,31 @@ func toSourceErrorKind(kind packages.ErrorKind) source.ErrorKind {
 }
 
 func typeErrorRange(ctx context.Context, fset *token.FileSet, pkg *pkg, pos token.Pos) (span.Span, error) {
-	spn, err := span.NewRange(fset, pos, pos).Span()
+	posn := fset.Position(pos)
+	ph, _, err := source.FindFileInPackage(pkg, span.FileURI(posn.Filename))
 	if err != nil {
 		return span.Span{}, err
 	}
-	posn := fset.Position(pos)
-	ph, _, err := findFileInPackage(pkg, span.FileURI(posn.Filename))
-	if err != nil {
-		return spn, nil // ignore errors
-	}
 	_, m, _, err := ph.Cached()
 	if err != nil {
-		return spn, nil
+		return span.Span{}, err
+	}
+	spn, err := span.Range{
+		FileSet:   fset,
+		Start:     pos,
+		End:       pos,
+		Converter: m.Converter,
+	}.Span()
+	if err != nil {
+		return span.Span{}, err
 	}
 	s, err := spn.WithOffset(m.Converter)
 	if err != nil {
-		return spn, nil // ignore errors
+		return span.Span{}, err
 	}
 	data, _, err := ph.File().Read(ctx)
 	if err != nil {
-		return spn, nil // ignore errors
+		return span.Span{}, err
 	}
 	start := s.Start()
 	offset := start.Offset()
@@ -194,7 +213,7 @@ func typeErrorRange(ctx context.Context, fset *token.FileSet, pkg *pkg, pos toke
 }
 
 func scannerErrorRange(ctx context.Context, fset *token.FileSet, pkg *pkg, posn token.Position) (span.Span, error) {
-	ph, _, err := findFileInPackage(pkg, span.FileURI(posn.Filename))
+	ph, _, err := source.FindFileInPackage(pkg, span.FileURI(posn.Filename))
 	if err != nil {
 		return span.Span{}, err
 	}
@@ -213,7 +232,7 @@ func scannerErrorRange(ctx context.Context, fset *token.FileSet, pkg *pkg, posn 
 // spanToRange converts a span.Span to a protocol.Range,
 // assuming that the span belongs to the package whose diagnostics are being computed.
 func spanToRange(ctx context.Context, pkg *pkg, spn span.Span) (protocol.Range, error) {
-	ph, _, err := findFileInPackage(pkg, spn.URI())
+	ph, _, err := source.FindFileInPackage(pkg, spn.URI())
 	if err != nil {
 		return protocol.Range{}, err
 	}
@@ -239,4 +258,38 @@ func parseGoListError(input string) span.Span {
 		return span.Parse(input)
 	}
 	return span.Parse(input[:msgIndex])
+}
+
+func parseGoListImportCycleError(ctx context.Context, fset *token.FileSet, e packages.Error, pkg *pkg) (string, span.Span, bool) {
+	re := regexp.MustCompile(`(.*): import stack: \[(.+)\]`)
+	matches := re.FindStringSubmatch(strings.TrimSpace(e.Msg))
+	if len(matches) < 3 {
+		return e.Msg, span.Span{}, false
+	}
+	msg := matches[1]
+	importList := strings.Split(matches[2], " ")
+	// Since the error is relative to the current package. The import that is causing
+	// the import cycle error is the second one in the list.
+	if len(importList) < 2 {
+		return msg, span.Span{}, false
+	}
+	// Imports have quotation marks around them.
+	circImp := strconv.Quote(importList[1])
+	for _, ph := range pkg.compiledGoFiles {
+		fh, _, _, err := ph.Parse(ctx)
+		if err != nil {
+			continue
+		}
+		// Search file imports for the import that is causing the import cycle.
+		for _, imp := range fh.Imports {
+			if imp.Path.Value == circImp {
+				spn, err := span.NewRange(fset, imp.Pos(), imp.End()).Span()
+				if err != nil {
+					return msg, span.Span{}, false
+				}
+				return msg, spn, true
+			}
+		}
+	}
+	return msg, span.Span{}, false
 }
