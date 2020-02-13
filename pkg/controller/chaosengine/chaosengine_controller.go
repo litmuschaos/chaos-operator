@@ -602,7 +602,10 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 	}
 	opts := client.UpdateOptions{}
 	engine.Instance.Spec.EngineState = "stopped"
-	engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
+	if engine.Instance.ObjectMeta.Finalizers != nil {
+		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Stop reconcile for chaosEngine", "Removing all Chaos resources")
+	}
 	if err := r.client.Update(context.TODO(), engine.Instance, &opts); err != nil {
 		return reconcile.Result{}, fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
 	}
@@ -667,7 +670,7 @@ func (r *ReconcileChaosEngine) addFinalzerToEngine(engine *chaosTypes.EngineInfo
 	optsUpdate := client.UpdateOptions{}
 	if engine.Instance.ObjectMeta.Finalizers == nil {
 		engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Will create all Chaos resources for chaosUID: %v", string(engine.Instance.UID))
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "Started reconcile for chaosEngine", "Creating all Chaos resources")
 
 	}
 	err := r.client.Update(context.TODO(), engine.Instance, &optsUpdate)
