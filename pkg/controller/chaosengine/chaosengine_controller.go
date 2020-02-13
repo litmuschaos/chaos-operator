@@ -660,7 +660,7 @@ func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInf
 		deleteEvent = append(deleteEvent, "Pods, ")
 	}
 	if err != nil {
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "Unable to delete ChaosEngine allocated resources", "Unable to delete chaos Resources: %v", strings.Join(deleteEvent, ""))
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "Deletion Failed", "Unable to Chaos Resources: %v", strings.Join(deleteEvent, ""))
 		return reconcile.Result{}, fmt.Errorf("Unable to delete ChaosResources due to %v", err)
 	}
 	return reconcile.Result{}, nil
