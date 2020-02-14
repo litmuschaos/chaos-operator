@@ -183,6 +183,8 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Spec: v1alpha1.ChaosExperimentSpec{
 					Definition: v1alpha1.ExperimentDef{
 
+						Scope: "Namespaced",
+
 						Permissions: []rbacV1.PolicyRule{},
 
 						Args:    []string{"-c", "ansible-playbook ./experiments/chaos/pod_delete/test.yml -i /etc/ansible/hosts -vv; exit 0"},
@@ -241,7 +243,8 @@ var _ = Describe("BDD on chaos-operator", func() {
 							Type:  "go",
 						},
 					},
-					Monitoring: true,
+					Monitoring:  true,
+					EngineState: "active",
 					Experiments: []v1alpha1.ExperimentList{
 						{
 							Name: "pod-delete",

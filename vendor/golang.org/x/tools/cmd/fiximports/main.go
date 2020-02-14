@@ -126,7 +126,7 @@ func main() {
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
-		fmt.Fprintf(stderr, usage)
+		fmt.Fprint(stderr, usage)
 		os.Exit(1)
 	}
 	if !fiximports(flag.Args()...) {
@@ -205,7 +205,7 @@ func fiximports(packages ...string) bool {
 				strings.Contains(msg, "expects import") {
 				// don't show the very errors we're trying to fix
 			} else {
-				fmt.Fprintln(stderr, msg)
+				fmt.Fprintln(stderr, p.Error)
 			}
 		}
 
@@ -465,6 +465,13 @@ type packageError struct {
 	ImportStack []string // shortest path from package named on command line to this one
 	Pos         string   // position of error
 	Err         string   // the error itself
+}
+
+func (e packageError) Error() string {
+	if e.Pos != "" {
+		return e.Pos + ": " + e.Err
+	}
+	return e.Err
 }
 
 // list runs 'go list' with the specified arguments and returns the

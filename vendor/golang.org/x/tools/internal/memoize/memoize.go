@@ -16,6 +16,7 @@ package memoize
 
 import (
 	"context"
+	"reflect"
 	"runtime"
 	"sync"
 	"unsafe"
@@ -151,6 +152,18 @@ func (s *Store) get(key interface{}) *Handle {
 	return (*Handle)(unsafe.Pointer(e))
 }
 
+// Stats returns the number of each type of value in the store.
+func (s *Store) Stats() map[reflect.Type]int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	result := map[reflect.Type]int{}
+	for k := range s.entries {
+		result[reflect.TypeOf(k)]++
+	}
+	return result
+}
+
 // Cached returns the value associated with a handle.
 //
 // It will never cause the value to be generated.
@@ -193,8 +206,14 @@ func (h *Handle) run(ctx context.Context) interface{} {
 	h.cancel = cancel
 	h.state = stateRunning
 	h.done = make(chan struct{})
+	function := h.function // Read under the lock
 	go func() {
-		v := h.function(childCtx)
+		// Just in case the function does something expensive without checking
+		// the context, double-check we're still alive.
+		if childCtx.Err() != nil {
+			return
+		}
+		v := function(childCtx)
 		if childCtx.Err() != nil {
 			return
 		}

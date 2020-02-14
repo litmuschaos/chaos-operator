@@ -54,6 +54,9 @@ spec:
                   type: string
             auxiliaryAppInfo:
               type: string
+            engineState: 
+              type: string
+              pattern: ^(active|stop)$
             chaosServiceAccount:
               type: string
             components:

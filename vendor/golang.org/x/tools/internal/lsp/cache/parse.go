@@ -65,27 +65,31 @@ func (c *cache) ParseGoHandle(fh source.FileHandle, mode source.ParseMode) sourc
 	}
 }
 
-func (h *parseGoHandle) File() source.FileHandle {
-	return h.file
+func (pgh *parseGoHandle) String() string {
+	return pgh.File().Identity().URI.Filename()
 }
 
-func (h *parseGoHandle) Mode() source.ParseMode {
-	return h.mode
+func (pgh *parseGoHandle) File() source.FileHandle {
+	return pgh.file
 }
 
-func (h *parseGoHandle) Parse(ctx context.Context) (*ast.File, *protocol.ColumnMapper, error, error) {
-	v := h.handle.Get(ctx)
+func (pgh *parseGoHandle) Mode() source.ParseMode {
+	return pgh.mode
+}
+
+func (pgh *parseGoHandle) Parse(ctx context.Context) (*ast.File, *protocol.ColumnMapper, error, error) {
+	v := pgh.handle.Get(ctx)
 	if v == nil {
-		return nil, nil, nil, errors.Errorf("no parsed file for %s", h.File().Identity().URI)
+		return nil, nil, nil, errors.Errorf("no parsed file for %s", pgh.File().Identity().URI)
 	}
 	data := v.(*parseGoData)
 	return data.ast, data.mapper, data.parseError, data.err
 }
 
-func (h *parseGoHandle) Cached() (*ast.File, *protocol.ColumnMapper, error, error) {
-	v := h.handle.Cached()
+func (pgh *parseGoHandle) Cached() (*ast.File, *protocol.ColumnMapper, error, error) {
+	v := pgh.handle.Cached()
 	if v == nil {
-		return nil, nil, nil, errors.Errorf("no cached AST for %s", h.file.Identity().URI)
+		return nil, nil, nil, errors.Errorf("no cached AST for %s", pgh.file.Identity().URI)
 	}
 	data := v.(*parseGoData)
 	return data.ast, data.mapper, data.parseError, data.err
@@ -110,6 +114,9 @@ func parseGo(ctx context.Context, fset *token.FileSet, fh source.FileHandle, mod
 	ctx, done := trace.StartSpan(ctx, "cache.parseGo", telemetry.File.Of(fh.Identity().URI.Filename()))
 	defer done()
 
+	if fh.Identity().Kind != source.Go {
+		return nil, nil, nil, errors.Errorf("cannot parse non-Go file %s", fh.Identity().URI)
+	}
 	buf, _, err := fh.Read(ctx)
 	if err != nil {
 		return nil, nil, nil, err
@@ -131,7 +138,7 @@ func parseGo(ctx context.Context, fset *token.FileSet, fh source.FileHandle, mod
 		if mode == source.ParseExported {
 			trimAST(file)
 		}
-		if err := fix(ctx, file, tok, buf); err != nil {
+		if err := fixAST(ctx, file, tok, buf); err != nil {
 			log.Error(ctx, "failed to fix AST", err)
 		}
 	}
@@ -144,16 +151,12 @@ func parseGo(ctx context.Context, fset *token.FileSet, fh source.FileHandle, mod
 		}
 		return nil, nil, parseError, err
 	}
-	uri := fh.Identity().URI
-	content, _, err := fh.Read(ctx)
-	if err != nil {
-		return nil, nil, parseError, err
-	}
 	m := &protocol.ColumnMapper{
-		URI:       uri,
+		URI:       fh.Identity().URI,
 		Converter: span.NewTokenConverter(fset, tok),
-		Content:   content,
+		Content:   buf,
 	}
+
 	return file, m, parseError, nil
 }
 
@@ -194,31 +197,17 @@ func isEllipsisArray(n ast.Expr) bool {
 	return ok
 }
 
-// fix inspects the AST and potentially modifies any *ast.BadStmts so that it can be
+// fixAST inspects the AST and potentially modifies any *ast.BadStmts so that it can be
 // type-checked more effectively.
-func fix(ctx context.Context, n ast.Node, tok *token.File, src []byte) error {
-	var (
-		ancestors []ast.Node
-		parent    ast.Node
-		err       error
-	)
-	ast.Inspect(n, func(n ast.Node) bool {
-		if n == nil {
-			if len(ancestors) > 0 {
-				ancestors = ancestors[:len(ancestors)-1]
-				if len(ancestors) > 0 {
-					parent = ancestors[len(ancestors)-1]
-				}
-			}
-			return false
-		}
-
+func fixAST(ctx context.Context, n ast.Node, tok *token.File, src []byte) error {
+	var err error
+	walkASTWithParent(n, func(n, parent ast.Node) bool {
 		switch n := n.(type) {
 		case *ast.BadStmt:
 			err = fixDeferOrGoStmt(n, parent, tok, src) // don't shadow err
 			if err == nil {
 				// Recursively fix in our fixed node.
-				err = fix(ctx, parent, tok, src)
+				err = fixAST(ctx, parent, tok, src)
 			} else {
 				err = errors.Errorf("unable to parse defer or go from *ast.BadStmt: %v", err)
 			}
@@ -227,19 +216,110 @@ func fix(ctx context.Context, n ast.Node, tok *token.File, src []byte) error {
 			// Don't propagate this error since *ast.BadExpr is very common
 			// and it is only sometimes due to array types. Errors from here
 			// are expected and not actionable in general.
-			fixArrayErr := fixArrayType(n, parent, tok, src)
-			if fixArrayErr == nil {
+			if fixArrayType(n, parent, tok, src) == nil {
 				// Recursively fix in our fixed node.
-				err = fix(ctx, parent, tok, src)
+				err = fixAST(ctx, parent, tok, src)
+				return false
 			}
 			return false
+		case *ast.SelectorExpr:
+			// Fix cases where a keyword prefix results in a phantom "_" selector, e.g.:
+			//
+			//   foo.var<> // want to complete to "foo.variance"
+			//
+			fixPhantomSelector(n, tok, src)
+			return true
 		default:
-			ancestors = append(ancestors, n)
-			parent = n
 			return true
 		}
 	})
+
 	return err
+}
+
+// walkASTWithParent walks the AST rooted at n. The semantics are
+// similar to ast.Inspect except it does not call f(nil).
+func walkASTWithParent(n ast.Node, f func(n ast.Node, parent ast.Node) bool) {
+	var ancestors []ast.Node
+	ast.Inspect(n, func(n ast.Node) (recurse bool) {
+		defer func() {
+			if recurse {
+				ancestors = append(ancestors, n)
+			}
+		}()
+
+		if n == nil {
+			ancestors = ancestors[:len(ancestors)-1]
+			return false
+		}
+
+		var parent ast.Node
+		if len(ancestors) > 0 {
+			parent = ancestors[len(ancestors)-1]
+		}
+
+		return f(n, parent)
+	})
+}
+
+// fixPhantomSelector tries to fix selector expressions with phantom
+// "_" selectors. In particular, we check if the selector is a
+// keyword, and if so we swap in an *ast.Ident with the keyword text. For example:
+//
+// foo.var
+//
+// yields a "_" selector instead of "var" since "var" is a keyword.
+func fixPhantomSelector(sel *ast.SelectorExpr, tok *token.File, src []byte) {
+	if !isPhantomUnderscore(sel.Sel, tok, src) {
+		return
+	}
+
+	maybeKeyword := readKeyword(sel.Sel.Pos(), tok, src)
+	if maybeKeyword == "" {
+		return
+	}
+
+	replaceNode(sel, sel.Sel, &ast.Ident{
+		Name:    maybeKeyword,
+		NamePos: sel.Sel.Pos(),
+	})
+}
+
+// isPhantomUnderscore reports whether the given ident is a phantom
+// underscore. The parser sometimes inserts phantom underscores when
+// it encounters otherwise unparseable situations.
+func isPhantomUnderscore(id *ast.Ident, tok *token.File, src []byte) bool {
+	if id == nil || id.Name != "_" {
+		return false
+	}
+
+	// Phantom underscore means the underscore is not actually in the
+	// program text.
+	offset := tok.Offset(id.Pos())
+	return len(src) <= offset || src[offset] != '_'
+}
+
+// readKeyword reads the keyword starting at pos, if any.
+func readKeyword(pos token.Pos, tok *token.File, src []byte) string {
+	var kwBytes []byte
+	for i := tok.Offset(pos); i < len(src); i++ {
+		// Use a simplified identifier check since keywords are always lowercase ASCII.
+		if src[i] < 'a' || src[i] > 'z' {
+			break
+		}
+		kwBytes = append(kwBytes, src[i])
+
+		// Stop search at arbitrarily chosen too-long-for-a-keyword length.
+		if len(kwBytes) > 15 {
+			return ""
+		}
+	}
+
+	if kw := string(kwBytes); token.Lookup(kw).IsKeyword() {
+		return kw
+	}
+
+	return ""
 }
 
 // fixArrayType tries to parse an *ast.BadExpr into an *ast.ArrayType.
@@ -447,9 +527,9 @@ FindTo:
 	return nil
 }
 
-// parseExpr parses the expression in src and updates its position to
+// parseStmt parses the statement in src and updates its position to
 // start at pos.
-func parseExpr(pos token.Pos, src []byte) (ast.Expr, error) {
+func parseStmt(pos token.Pos, src []byte) (ast.Stmt, error) {
 	// Wrap our expression to make it a valid Go file we can pass to ParseFile.
 	fileSrc := bytes.Join([][]byte{
 		[]byte("package fake;func _(){"),
@@ -474,25 +554,36 @@ func parseExpr(pos token.Pos, src []byte) (ast.Expr, error) {
 		return nil, errors.Errorf("no statement in %s: %v", src, err)
 	}
 
-	exprStmt, ok := fakeDecl.Body.List[0].(*ast.ExprStmt)
+	stmt := fakeDecl.Body.List[0]
+
+	// parser.ParseFile returns undefined positions.
+	// Adjust them for the current file.
+	offsetPositions(stmt, pos-1-(stmt.Pos()-1))
+
+	return stmt, nil
+}
+
+// parseExpr parses the expression in src and updates its position to
+// start at pos.
+func parseExpr(pos token.Pos, src []byte) (ast.Expr, error) {
+	stmt, err := parseStmt(pos, src)
+	if err != nil {
+		return nil, err
+	}
+
+	exprStmt, ok := stmt.(*ast.ExprStmt)
 	if !ok {
 		return nil, errors.Errorf("no expr in %s: %v", src, err)
 	}
 
-	expr := exprStmt.X
-
-	// parser.ParseExpr returns undefined positions.
-	// Adjust them for the current file.
-	offsetPositions(expr, pos-1-(expr.Pos()-1))
-
-	return expr, nil
+	return exprStmt.X, nil
 }
 
 var tokenPosType = reflect.TypeOf(token.NoPos)
 
 // offsetPositions applies an offset to the positions in an ast.Node.
-func offsetPositions(expr ast.Expr, offset token.Pos) {
-	ast.Inspect(expr, func(n ast.Node) bool {
+func offsetPositions(n ast.Node, offset token.Pos) {
+	ast.Inspect(n, func(n ast.Node) bool {
 		if n == nil {
 			return false
 		}

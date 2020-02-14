@@ -2,8 +2,8 @@ package protocol
 
 // Package protocol contains data types and code for LSP jsonrpcs
 // generated automatically from vscode-languageserver-node
-// commit: 635ab1fe6f8c57ce9402e573d007f24d6d290fd3
-// last fetched Sun Oct 13 2019 10:14:32 GMT-0400 (Eastern Daylight Time)
+// commit: 7b90c29d0cb5cd7b9c41084f6cb3781a955adeba
+// last fetched Thu Jan 23 2020 11:10:31 GMT-0500 (Eastern Standard Time)
 
 // Code generated (see typescript/README.md) DO NOT EDIT.
 
@@ -144,9 +144,9 @@ func (h clientHandler) Deliver(ctx context.Context, r *jsonrpc2.Request, deliver
 			log.Error(ctx, "", err)
 		}
 		return true
-
 	default:
 		return false
+
 	}
 }
 

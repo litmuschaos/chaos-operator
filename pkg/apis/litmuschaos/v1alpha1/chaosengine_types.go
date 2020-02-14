@@ -42,7 +42,7 @@ type ChaosEngineSpec struct {
 	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
 	//EngineStatus is a requirement for validation
-	EngineStatus string `json:"engineStatus"`
+	EngineState string `json:"engineState"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
