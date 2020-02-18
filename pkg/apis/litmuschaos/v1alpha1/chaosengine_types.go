@@ -84,6 +84,10 @@ type RunnerInfo struct {
 	Image string `json:"image,omitempty"`
 	//Type of runner
 	Type string `json:"type,omitempty"`
+	//Args of runner
+	Args []string `json:"args,omitempty"`
+	//Command for runner
+	Command []string `json:"command,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
