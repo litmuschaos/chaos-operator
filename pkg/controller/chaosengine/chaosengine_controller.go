@@ -341,11 +341,10 @@ func newGoRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	containerForRunner := container.NewBuilder().
 		WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID)).
 		WithName("chaos-runner").
-		WithImage(engine.Instance.Spec.Components.Runner.Image)
+		WithImage(engine.Instance.Spec.Components.Runner.Image).
+		WithImagePullPolicy(corev1.PullIfNotPresent)
 
-	if engine.Instance.Spec.Components.Runner.ImagePullPolicy == "" {
-		containerForRunner.WithImagePullPolicy(corev1.PullIfNotPresent)
-	} else {
+	if engine.Instance.Spec.Components.Runner.ImagePullPolicy != "" {
 		containerForRunner.WithImagePullPolicy(engine.Instance.Spec.Components.Runner.ImagePullPolicy)
 	}
 
@@ -375,9 +374,7 @@ func newAnsibleRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error)
 		WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
 		WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID))
 
-	if engine.Instance.Spec.Components.Runner.ImagePullPolicy == "" {
-		containerForRunner.WithImagePullPolicy(corev1.PullIfNotPresent)
-	} else {
+	if engine.Instance.Spec.Components.Runner.ImagePullPolicy != "" {
 		containerForRunner.WithImagePullPolicy(engine.Instance.Spec.Components.Runner.ImagePullPolicy)
 	}
 
