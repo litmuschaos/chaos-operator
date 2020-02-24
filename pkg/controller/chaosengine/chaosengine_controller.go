@@ -670,7 +670,7 @@ func (r *ReconcileChaosEngine) addFinalzerToEngine(engine *chaosTypes.EngineInfo
 	optsUpdate := client.UpdateOptions{}
 	if engine.Instance.ObjectMeta.Finalizers == nil {
 		engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngine Started", "Creating the experiment resources, allocated to ChaosEngine: %v, in Namespace: %v", engine.Instance.Name, engine.Instance.Namespace)
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngine Started", "Creating the experiment resources allocated to ChaosEngine: %v, in Namespace: %v", engine.Instance.Name, engine.Instance.Namespace)
 	}
 	err := r.client.Update(context.TODO(), engine.Instance, &optsUpdate)
 	if err != nil {
