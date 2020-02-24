@@ -49,6 +49,8 @@ type ChaosEngineSpec struct {
 // +k8s:openapi-gen=true
 // ChaosEngineStatus derives information about status of individual experiments
 type ChaosEngineStatus struct {
+	//
+	EngineStatus string `json:"engineStatus"`
 	//Detailed status of individual experiments
 	Experiments []ExperimentStatuses `json:"experiments"`
 }
