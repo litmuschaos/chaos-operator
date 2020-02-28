@@ -338,35 +338,62 @@ func newRunnerPodForCR(ce chaosTypes.EngineInfo) (*corev1.Pod, error) {
 }
 
 func newGoRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
+	containerForRunner := container.NewBuilder().
+		WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID)).
+		WithName("chaos-runner").
+		WithImage(engine.Instance.Spec.Components.Runner.Image).
+		WithImagePullPolicy(corev1.PullIfNotPresent)
+
+	if engine.Instance.Spec.Components.Runner.ImagePullPolicy != "" {
+		containerForRunner.WithImagePullPolicy(engine.Instance.Spec.Components.Runner.ImagePullPolicy)
+	}
+
+	if engine.Instance.Spec.Components.Runner.Args != nil {
+		containerForRunner.WithArgumentsNew(engine.Instance.Spec.Components.Runner.Args)
+	}
+
+	if engine.Instance.Spec.Components.Runner.Command != nil {
+		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
+	}
+
 	return pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithNamespace(engine.Instance.Namespace).
 		WithLabels(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
-		WithContainerBuilder(
-			container.NewBuilder().
-				WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID)).
-				WithName("chaos-runner").
-				WithImage(engine.Instance.Spec.Components.Runner.Image).
-				WithImagePullPolicy(corev1.PullIfNotPresent)).Build()
+		WithContainerBuilder(containerForRunner).Build()
 }
 
 func newAnsibleRunnerPodForCR(engine chaosTypes.EngineInfo) (*corev1.Pod, error) {
+	containerForRunner := container.NewBuilder().
+		WithName("chaos-runner").
+		WithImage(engine.Instance.Spec.Components.Runner.Image).
+		WithImagePullPolicy(corev1.PullIfNotPresent).
+		WithCommandNew([]string{"/bin/bash"}).
+		WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
+		WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID))
+
+	if engine.Instance.Spec.Components.Runner.ImagePullPolicy != "" {
+		containerForRunner.WithImagePullPolicy(engine.Instance.Spec.Components.Runner.ImagePullPolicy)
+	}
+
+	if engine.Instance.Spec.Components.Runner.Args != nil {
+		containerForRunner.WithArgumentsNew(engine.Instance.Spec.Components.Runner.Args)
+	}
+
+	if engine.Instance.Spec.Components.Runner.Command != nil {
+		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
+	}
+
 	return pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithLabels(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).
 		WithNamespace(engine.Instance.Namespace).
 		WithRestartPolicy("OnFailure").
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
-		WithContainerBuilder(
-			container.NewBuilder().
-				WithName("chaos-runner").
-				WithImage(engine.Instance.Spec.Components.Runner.Image).
-				WithImagePullPolicy(corev1.PullIfNotPresent).
-				WithCommandNew([]string{"/bin/bash"}).
-				WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
-				WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID))).Build()
+		WithContainerBuilder(containerForRunner).
+		Build()
 }
 
 // newMonitorPodForCR defines secondary resource #2 in same namespace as CR */

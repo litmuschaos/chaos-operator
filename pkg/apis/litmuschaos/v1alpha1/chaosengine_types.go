@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -86,6 +87,12 @@ type RunnerInfo struct {
 	Image string `json:"image,omitempty"`
 	//Type of runner
 	Type string `json:"type,omitempty"`
+	//Args of runner
+	Args []string `json:"args,omitempty"`
+	//Command for runner
+	Command []string `json:"command,omitempty"`
+	//ImagePullPolicy for runner pod
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
