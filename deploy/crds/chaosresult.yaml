@@ -5,8 +5,10 @@ metadata:
   # name defined as <chaosengine_name>-<chaosexperiment_name>
   name: engine-nginx-pod-failure
 spec:
-  # holds the state of testcase,  manually updated by json merge patch
-  # result is the useful value today, but anticipate phase use in future 
+  engine: engine-nginx
+  experiment: pod-delete
+  instance: 12345
+status:
   experimentstatus: 
     phase: completed
     verdict: pass

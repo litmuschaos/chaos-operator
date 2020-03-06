@@ -263,8 +263,6 @@ spec:
     plural: chaosresults
     singular: chaosresult
   scope: Namespaced
-  subresources:
-    status: {}
   validation:
     openAPIV3Schema:
       properties:
