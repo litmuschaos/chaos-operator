@@ -163,7 +163,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if engine.Instance.Spec.EngineState == "" {
 
 		err := r.updateState(engine, "active")
-		reqLogger.Error(err, "Unable to Update Status in ChaosEngine Resource, due to error: %v", err)
+		reqLogger.Error(err, "Unable to Update Status in ChaosEngine Resource")
 
 	}
 
@@ -171,12 +171,12 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 		err := r.updateStatus(engine, "initialized")
 		if err != nil {
-			reqLogger.Error(err, "Unable to Update Status in ChaosEngine Resource, due to error: %v", err)
+			reqLogger.Error(err, "Unable to Update Status in ChaosEngine Resource")
 		}
 
 		err = r.addFinalzerToEngine(engine, finalizer)
 		if err != nil {
-			reqLogger.Error(err, "Unable to add Finalizers in ChaosEngine Resource, due to error: %v", err)
+			reqLogger.Error(err, "Unable to add Finalizers in ChaosEngine Resource")
 		}
 
 	}

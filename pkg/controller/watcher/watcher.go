@@ -69,7 +69,7 @@ func handlerForMonitorService(clientSet client.Client) handler.EnqueueRequestsFr
 			if monitorServiceCheck {
 				monitorServiceRequest, err = createHandlerRequestForEngine(a, clientSet)
 				if err != nil {
-					reqLogger.Error(err, "Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
+					reqLogger.Error(err, "Unable to get the ChaosEngine Resources", "namespace", a.Meta.GetNamespace())
 					return nil
 				}
 			}
@@ -93,7 +93,7 @@ func handlerForMonitorPod(clientSet client.Client) handler.EnqueueRequestsFromMa
 			if monitorNameCheck {
 				monitorPodRequest, err = createHandlerRequestForEngine(a, clientSet)
 				if err != nil {
-					reqLogger.Error(err, "Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
+					reqLogger.Error(err, "Unable to get the ChaosEngine Resources", "namespace", a.Meta.GetNamespace())
 					return nil
 				}
 
@@ -116,7 +116,7 @@ func handlerForRunnerPod(clientSet client.Client) handler.EnqueueRequestsFromMap
 			if runnerNameCheck {
 				runnerPodRequest, err = createHandlerRequestForEngine(a, clientSet)
 				if err != nil {
-					reqLogger.Error(err, "Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
+					reqLogger.Error(err, "Unable to get the ChaosEngine Resources", "namespace", a.Meta.GetNamespace())
 					return nil
 				}
 			}
