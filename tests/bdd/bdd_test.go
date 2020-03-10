@@ -102,7 +102,7 @@ var _ = BeforeSuite(func() {
 	fmt.Println("chaos-operator created successfully")
 
 	//Wait for the creation of chaos-operator
-	time.Sleep(30 * time.Second)
+	time.Sleep(50 * time.Second)
 
 	//Check for the status of the chaos-operator
 	operator, _ := client.CoreV1().Pods("litmus").List(metav1.ListOptions{LabelSelector: "name=chaos-operator"})
@@ -182,12 +182,13 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 				Spec: v1alpha1.ChaosExperimentSpec{
 					Definition: v1alpha1.ExperimentDef{
+						Image: "litmuschaos/ansible-runner:latest",
 
 						Scope: "Namespaced",
 
 						Permissions: []rbacV1.PolicyRule{},
 
-						Args:    []string{"-c", "ansible-playbook ./experiments/chaos/pod_delete/test.yml -i /etc/ansible/hosts -vv; exit 0"},
+						Args:    []string{"-c", "ansible-playbook ./experiments/generic/pod_delete/pod_delete_ansible_logic.yml -i /etc/ansible/hosts -vv; exit 0"},
 						Command: []string{"/bin/bash"},
 
 						ENVList: []v1alpha1.ENVPair{
@@ -208,7 +209,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 								Value: "",
 							},
 						},
-						Image: "",
+
 						Labels: map[string]string{
 							"name": "pod-delete",
 						},
@@ -243,8 +244,9 @@ var _ = Describe("BDD on chaos-operator", func() {
 							Type:  "go",
 						},
 					},
-					Monitoring:  true,
-					EngineState: "active",
+					JobCleanUpPolicy: "retain",
+					Monitoring:       true,
+					EngineState:      "active",
 					Experiments: []v1alpha1.ExperimentList{
 						{
 							Name: "pod-delete",
@@ -261,7 +263,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			fmt.Println("Chaosengine created successfully...")
 
 			//Wait till the creation of runner pod and monitor svc
-			time.Sleep(100 * time.Second)
+			time.Sleep(50 * time.Second)
 
 			//Fetching engine-nginx-runner pod
 			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
