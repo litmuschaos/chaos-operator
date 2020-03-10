@@ -28,6 +28,7 @@ import (
 	appv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	scheme "k8s.io/client-go/kubernetes/scheme"
@@ -288,6 +289,166 @@ var _ = Describe("BDD on chaos-operator", func() {
 		})
 
 	})
+
+	Context("Setting the EngineState of ChaosEngine as Stop", func() {
+
+		It("Should delete chaos-resources", func() {
+
+			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			// setting the EngineState of chaosEngine to stop
+			engine.Spec.EngineState = v1alpha1.EngineStateStop
+
+			_, err = clientSet.ChaosEngines("litmus").Update(engine)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			fmt.Println("Chaosengine updated successfully...")
+
+			//Wait till the creation of runner pod and monitor svc
+			time.Sleep(50 * time.Second)
+
+		})
+
+	})
+
+	Context("Checking Default ChaosResources", func() {
+
+		It("Should delete chaos-runner pod", func() {
+
+			//Fetching engine-nginx-runner pod
+			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-runner pod deletion verified")
+
+		})
+
+		It("Should delete chaos-monitor pod ", func() {
+
+			//Fetching engine-nginx-exporter pod
+			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-monitor pod deletion verified")
+
+		})
+
+		It("Should delete chaos-monitor service ", func() {
+
+			//Fetching engine-nginx-exporter pod
+			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			fmt.Printf("%v\n", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-monitor service deletion verified")
+
+		})
+
+	})
+
+	Context("Deletion of ChaosEngine", func() {
+
+		It("Should delete chaos engine", func() {
+
+			err := clientSet.ChaosEngines("litmus").Delete("engine-nginx", &metav1.DeleteOptions{})
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+			fmt.Println("chaos engine deleted successfully")
+
+		})
+
+	})
+
+	Context("Creation of ChaosEngine with invalid experiment", func() {
+
+		It("Should create invalid chaos engine", func() {
+
+			//Creating chaosEngine
+			By("Creating ChaosEngine")
+			chaosEngine := &v1alpha1.ChaosEngine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "engine-nginx",
+					Namespace: "litmus",
+				},
+				Spec: v1alpha1.ChaosEngineSpec{
+					Appinfo: v1alpha1.ApplicationParams{
+						Appns:    "litmus",
+						Applabel: "app=nginx",
+						AppKind:  "deployment",
+					},
+					ChaosServiceAccount: "litmus",
+					Components: v1alpha1.ComponentParams{
+						Runner: v1alpha1.RunnerInfo{
+							Image: "litmuschaos/chaos-runner:ci",
+							Type:  "go",
+						},
+					},
+					JobCleanUpPolicy: "retain",
+					Monitoring:       true,
+					EngineState:      "active",
+					Experiments: []v1alpha1.ExperimentList{
+						{
+							Name: "pod-delete-1",
+						},
+					},
+				},
+			}
+
+			_, err := clientSet.ChaosEngines("litmus").Create(chaosEngine)
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+			Expect(err).To(BeNil())
+
+			time.Sleep(50 * time.Second)
+
+		})
+	})
+
+	Context("Check for Chaos Resources for invalid engine", func() {
+
+		It("Should delete chaos-runner pod", func() {
+
+			//Fetching engine-nginx-runner pod
+			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-runner pod deletion verified")
+
+		})
+
+		It("Should delete chaos-monitor pod ", func() {
+
+			//Fetching engine-nginx-exporter pod
+			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-monitor pod deletion verified")
+
+		})
+
+		It("Should delete chaos-monitor service ", func() {
+
+			//Fetching engine-nginx-exporter pod
+			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			fmt.Printf("%v\n", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-monitor service deletion verified")
+
+		})
+	})
+
 })
 
 //Deleting all unused resources
