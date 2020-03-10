@@ -39,19 +39,53 @@ type ChaosEngineSpec struct {
 	//Monitor Enable Status
 	Monitoring bool `json:"monitoring,omitempty"`
 	//JobCleanUpPolicy decides to retain or delete the jobs
-	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
+	JobCleanUpPolicy CleanUpPolicy `json:"jobCleanUpPolicy,omitempty"`
 	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
 	//EngineStatus is a requirement for validation
-	EngineState string `json:"engineState"`
+	EngineState EngineState `json:"engineState"`
 }
+
+// EngineState provides interface for all supported strings in spec.EngineState
+type EngineState string
+
+const (
+	// EngineStateActive starts the reconcile call
+	EngineStateActive EngineState = "active"
+	// EngineStateStop stops the reconcile call
+	EngineStateStop EngineState = "stop"
+)
+
+// EngineStatus provides interface for all supported strings in status.EngineStatus
+type EngineStatus string
+
+const (
+	// EngineStatusInitialized is used for reconcile calls to start reconcile for creation
+	EngineStatusInitialized EngineStatus = "initialized"
+	// EngineStatusCompleted is used for reconcile calls to start reconcile for completion
+	EngineStatusCompleted EngineStatus = "completed"
+	// EngineStatusStopped is used for reconcile calls to start reconcile for delete
+	EngineStatusStopped EngineStatus = "stopped"
+)
+
+// CleanUpPolicy defines the garbage collection method used by chaos-operator
+type CleanUpPolicy string
+
+const (
+	//CleanUpPolicyDelete sets the garbage collection policy of chaos-operator to Delete Chaos Resources
+	CleanUpPolicyDelete CleanUpPolicy = "delete"
+
+	//CleanUpPolicyRetain sets the garbage collection policy of chaos-operator to Retain Chaos Resources
+	CleanUpPolicyRetain CleanUpPolicy = "retain"
+)
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
 // +k8s:openapi-gen=true
+
 // ChaosEngineStatus derives information about status of individual experiments
 type ChaosEngineStatus struct {
 	//
-	EngineStatus string `json:"engineStatus"`
+	EngineStatus EngineStatus `json:"engineStatus"`
 	//Detailed status of individual experiments
 	Experiments []ExperimentStatuses `json:"experiments"`
 }
