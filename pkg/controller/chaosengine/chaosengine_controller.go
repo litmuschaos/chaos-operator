@@ -177,7 +177,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Verify that the engineStatus is set to completed,
-	// if thats the case, then reconcile for completed
+	// if thats the case, then return reconcileForComplete
 	if checkEngineStatusForComplete(engine) {
 		return r.reconcileForComplete(request)
 	}
@@ -191,7 +191,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Verify that the engineStatus is set to stopped,
-	// then reconcile for delete
+	// then return reconcileForDelete
 	if checkEngineStatusForStopped(engine) {
 		return r.reconcileForDelete(request)
 	}
@@ -709,16 +709,20 @@ func (r *ReconcileChaosEngine) checkRunnerPodCompleted(engine *chaosTypes.Engine
 }
 
 func (r *ReconcileChaosEngine) removeDefaultChaosResources(request reconcile.Request) (reconcile.Result, error) {
-	if err := r.removeChaosRunner(engine, request); err != nil {
-		return reconcile.Result{}, err
-	}
-	if err := r.removeChaosServices(engine, request); err != nil {
-		return reconcile.Result{}, err
+
+	if engine.Instance.Spec.JobCleanUpPolicy == litmuschaosv1alpha1.CleanUpPolicyDelete {
+		if err := r.removeChaosRunner(engine, request); err != nil {
+			return reconcile.Result{}, err
+		}
+		if err := r.removeChaosServices(engine, request); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 	return reconcile.Result{}, nil
 }
 
 func (r *ReconcileChaosEngine) removeChaosRunner(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
+
 	optsList := []client.ListOption{
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)},
@@ -750,6 +754,7 @@ func checkEngineStatusForComplete(engine *chaosTypes.EngineInfo) bool {
 	return engine.Instance.Status.EngineStatus == litmuschaosv1alpha1.EngineStatusCompleted
 
 }
+
 func (r *ReconcileChaosEngine) reconcileForComplete(request reconcile.Request) (reconcile.Result, error) {
 	_, err := r.removeDefaultChaosResources(request)
 	if err != nil {
