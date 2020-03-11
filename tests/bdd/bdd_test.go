@@ -58,47 +58,30 @@ var _ = BeforeSuite(func() {
 	var err error
 	kubeconfig = os.Getenv("HOME") + "/.kube/config"
 	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-
-	if err != nil {
-		Expect(err).To(BeNil(), "failed to get config")
-	}
+	Expect(err).To(BeNil(), "failed to get config")
 
 	client, err = kubernetes.NewForConfig(config)
-
-	if err != nil {
-		Expect(err).To(BeNil(), "failed to get client")
-	}
+	Expect(err).To(BeNil(), "failed to get client")
 
 	clientSet, err = chaosClient.NewForConfig(config)
-
-	if err != nil {
-		Expect(err).To(BeNil(), "failed to get clientSet")
-	}
+	Expect(err).To(BeNil(), "failed to get clientSet")
 
 	err = v1alpha1.AddToScheme(scheme.Scheme)
-	if err != nil {
-		fmt.Println(err)
-	}
+	Expect(err).To(BeNil())
 
 	//Creating crds
 	By("creating chaosengine crd")
-	err = exec.Command("kubectl", "create", "-f", "../../deploy/chaos_crds.yaml").Run()
-	if err != nil {
-		fmt.Println(err)
-	}
+	err = exec.Command("kubectl", "apply", "-f", "../../deploy/chaos_crds.yaml").Run()
+	Expect(err).To(BeNil())
 
 	//Creating rbacs
-	err = exec.Command("kubectl", "create", "-f", "../../deploy/rbac.yaml").Run()
-	if err != nil {
-		fmt.Println(err)
-	}
+	err = exec.Command("kubectl", "apply", "-f", "../../deploy/rbac.yaml").Run()
+	Expect(err).To(BeNil())
 
 	//Creating Chaos-Operator
 	By("creating operator")
-	err = exec.Command("kubectl", "create", "-f", "../../deploy/operator.yaml").Run()
-	if err != nil {
-		fmt.Println(err)
-	}
+	err = exec.Command("kubectl", "apply", "-f", "../../deploy/operator.yaml").Run()
+	Expect(err).To(BeNil())
 
 	fmt.Println("chaos-operator created successfully")
 
@@ -219,9 +202,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			}
 
 			_, err = clientSet.ChaosExperiments("litmus").Create(ChaosExperiment)
-			if err != nil {
-				fmt.Println(err)
-			}
+			Expect(err).To(BeNil())
 
 			fmt.Println("ChaosExperiment created successfully...")
 
@@ -257,9 +238,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			}
 
 			_, err = clientSet.ChaosEngines("litmus").Create(chaosEngine)
-			if err != nil {
-				fmt.Println(err)
-			}
+			Expect(err).To(BeNil())
 
 			fmt.Println("Chaosengine created successfully...")
 
@@ -272,9 +251,17 @@ var _ = Describe("BDD on chaos-operator", func() {
 			exporter, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
 			//Check for the Availabilty and status of the runner pod
 			fmt.Println("name : ", runner.Name)
+
 			Expect(err).To(BeNil())
 			Expect(string(runner.Status.Phase)).To(Or(Equal("Running"), Equal("Succeeded")))
 			Expect(string(exporter.Status.Phase)).To(Equal("Running"))
+
+			// Check for EngineStatus
+			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			Expect(err).To(BeNil())
+
+			isInit := engine.Status.EngineStatus == v1alpha1.EngineStatusInitialized
+			Expect(isInit).To(BeTrue())
 		})
 	})
 
@@ -283,7 +270,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 		It("Should check for creation of monitor service", func() {
 			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
-
 			Expect(err).To(BeNil())
 
 		})
@@ -295,17 +281,13 @@ var _ = Describe("BDD on chaos-operator", func() {
 		It("Should delete chaos-resources", func() {
 
 			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
-			if err != nil {
-				fmt.Println(err)
-			}
+			Expect(err).To(BeNil())
 
 			// setting the EngineState of chaosEngine to stop
 			engine.Spec.EngineState = v1alpha1.EngineStateStop
 
 			_, err = clientSet.ChaosEngines("litmus").Update(engine)
-			if err != nil {
-				fmt.Println(err)
-			}
+			Expect(err).To(BeNil())
 
 			fmt.Println("Chaosengine updated successfully...")
 
@@ -344,13 +326,22 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			//Fetching engine-nginx-exporter pod
 			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
-			fmt.Printf("%v\n", err)
+			fmt.Printf("%v", err)
 			isNotFound := errors.IsNotFound(err)
 			Expect(isNotFound).To(BeTrue())
 			fmt.Println("chaos-monitor service deletion verified")
 
 		})
 
+		It("Should change the engineStatus ", func() {
+
+			//Fetching engineStatus
+			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			Expect(err).To(BeNil())
+
+			isStopped := engine.Status.EngineStatus == v1alpha1.EngineStatusStopped
+			Expect(isStopped).To(BeTrue())
+		})
 	})
 
 	Context("Deletion of ChaosEngine", func() {
@@ -358,9 +349,8 @@ var _ = Describe("BDD on chaos-operator", func() {
 		It("Should delete chaos engine", func() {
 
 			err := clientSet.ChaosEngines("litmus").Delete("engine-nginx", &metav1.DeleteOptions{})
-			if err != nil {
-				fmt.Printf("%v", err)
-			}
+			Expect(err).To(BeNil())
+
 			fmt.Println("chaos engine deleted successfully")
 
 		})
@@ -391,7 +381,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 							Type:  "go",
 						},
 					},
-					JobCleanUpPolicy: "retain",
+					JobCleanUpPolicy: "delete",
 					Monitoring:       true,
 					EngineState:      "active",
 					Experiments: []v1alpha1.ExperimentList{
@@ -403,9 +393,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 			}
 
 			_, err := clientSet.ChaosEngines("litmus").Create(chaosEngine)
-			if err != nil {
-				fmt.Printf("%v", err)
-			}
 			Expect(err).To(BeNil())
 
 			time.Sleep(50 * time.Second)
@@ -445,6 +432,17 @@ var _ = Describe("BDD on chaos-operator", func() {
 			isNotFound := errors.IsNotFound(err)
 			Expect(isNotFound).To(BeTrue())
 			fmt.Println("chaos-monitor service deletion verified")
+
+		})
+
+		It("Should change EngineStatus ", func() {
+
+			//Fetching engineStatus
+			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			Expect(err).To(BeNil())
+
+			isComplete := engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted
+			Expect(isComplete).To(BeTrue())
 
 		})
 	})
