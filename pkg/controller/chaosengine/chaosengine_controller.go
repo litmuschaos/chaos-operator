@@ -594,7 +594,7 @@ func getAnnotationCheck() error {
 
 // reconcileForDelete
 func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (reconcile.Result, error) {
-	reconcileResult, err := r.removeChaosResources(engine, request)
+	reconcileResult, err := r.forceRemoveAllChaosResources(engine, request)
 	if err != nil {
 		return reconcileResult, err
 	}
@@ -632,7 +632,7 @@ func (r *ReconcileChaosEngine) removeChaosServices(engine *chaosTypes.EngineInfo
 	return nil
 }
 
-func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileChaosEngine) forceRemoveAllChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
 	optsDelete := []client.DeleteAllOfOption{
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
