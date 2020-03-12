@@ -28,6 +28,7 @@ import (
 	appv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	scheme "k8s.io/client-go/kubernetes/scheme"
@@ -57,47 +58,30 @@ var _ = BeforeSuite(func() {
 	var err error
 	kubeconfig = os.Getenv("HOME") + "/.kube/config"
 	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-
-	if err != nil {
-		Expect(err).To(BeNil(), "failed to get config")
-	}
+	Expect(err).To(BeNil(), "failed to get config")
 
 	client, err = kubernetes.NewForConfig(config)
-
-	if err != nil {
-		Expect(err).To(BeNil(), "failed to get client")
-	}
+	Expect(err).To(BeNil(), "failed to get client")
 
 	clientSet, err = chaosClient.NewForConfig(config)
-
-	if err != nil {
-		Expect(err).To(BeNil(), "failed to get clientSet")
-	}
+	Expect(err).To(BeNil(), "failed to get clientSet")
 
 	err = v1alpha1.AddToScheme(scheme.Scheme)
-	if err != nil {
-		fmt.Println(err)
-	}
+	Expect(err).To(BeNil())
 
 	//Creating crds
 	By("creating chaosengine crd")
-	err = exec.Command("kubectl", "create", "-f", "../../deploy/chaos_crds.yaml").Run()
-	if err != nil {
-		fmt.Println(err)
-	}
+	err = exec.Command("kubectl", "apply", "-f", "../../deploy/chaos_crds.yaml").Run()
+	Expect(err).To(BeNil())
 
 	//Creating rbacs
-	err = exec.Command("kubectl", "create", "-f", "../../deploy/rbac.yaml").Run()
-	if err != nil {
-		fmt.Println(err)
-	}
+	err = exec.Command("kubectl", "apply", "-f", "../../deploy/rbac.yaml").Run()
+	Expect(err).To(BeNil())
 
 	//Creating Chaos-Operator
 	By("creating operator")
-	err = exec.Command("kubectl", "create", "-f", "../../deploy/operator.yaml").Run()
-	if err != nil {
-		fmt.Println(err)
-	}
+	err = exec.Command("kubectl", "apply", "-f", "../../deploy/operator.yaml").Run()
+	Expect(err).To(BeNil())
 
 	fmt.Println("chaos-operator created successfully")
 
@@ -218,9 +202,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			}
 
 			_, err = clientSet.ChaosExperiments("litmus").Create(ChaosExperiment)
-			if err != nil {
-				fmt.Println(err)
-			}
+			Expect(err).To(BeNil())
 
 			fmt.Println("ChaosExperiment created successfully...")
 
@@ -256,9 +238,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			}
 
 			_, err = clientSet.ChaosEngines("litmus").Create(chaosEngine)
-			if err != nil {
-				fmt.Println(err)
-			}
+			Expect(err).To(BeNil())
 
 			fmt.Println("Chaosengine created successfully...")
 
@@ -271,9 +251,17 @@ var _ = Describe("BDD on chaos-operator", func() {
 			exporter, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
 			//Check for the Availabilty and status of the runner pod
 			fmt.Println("name : ", runner.Name)
+
 			Expect(err).To(BeNil())
 			Expect(string(runner.Status.Phase)).To(Or(Equal("Running"), Equal("Succeeded")))
 			Expect(string(exporter.Status.Phase)).To(Equal("Running"))
+
+			// Check for EngineStatus
+			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			Expect(err).To(BeNil())
+
+			isInit := engine.Status.EngineStatus == v1alpha1.EngineStatusInitialized
+			Expect(isInit).To(BeTrue())
 		})
 	})
 
@@ -282,12 +270,183 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 		It("Should check for creation of monitor service", func() {
 			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
-
 			Expect(err).To(BeNil())
 
 		})
 
 	})
+
+	Context("Setting the EngineState of ChaosEngine as Stop", func() {
+
+		It("Should delete chaos-resources", func() {
+
+			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			Expect(err).To(BeNil())
+
+			// setting the EngineState of chaosEngine to stop
+			engine.Spec.EngineState = v1alpha1.EngineStateStop
+
+			_, err = clientSet.ChaosEngines("litmus").Update(engine)
+			Expect(err).To(BeNil())
+
+			fmt.Println("Chaosengine updated successfully...")
+
+			//Wait till the creation of runner pod and monitor svc
+			time.Sleep(50 * time.Second)
+
+		})
+
+	})
+
+	Context("Checking Default ChaosResources", func() {
+
+		It("Should delete chaos-runner pod", func() {
+
+			//Fetching engine-nginx-runner pod
+			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-runner pod deletion verified")
+
+		})
+
+		It("Should delete chaos-monitor pod ", func() {
+
+			//Fetching engine-nginx-exporter pod
+			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-monitor pod deletion verified")
+
+		})
+
+		It("Should delete chaos-monitor service ", func() {
+
+			//Fetching engine-nginx-exporter pod
+			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-monitor service deletion verified")
+
+		})
+
+		It("Should change the engineStatus ", func() {
+
+			//Fetching engineStatus
+			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			Expect(err).To(BeNil())
+
+			isStopped := engine.Status.EngineStatus == v1alpha1.EngineStatusStopped
+			Expect(isStopped).To(BeTrue())
+		})
+	})
+
+	Context("Deletion of ChaosEngine", func() {
+
+		It("Should delete chaos engine", func() {
+
+			err := clientSet.ChaosEngines("litmus").Delete("engine-nginx", &metav1.DeleteOptions{})
+			Expect(err).To(BeNil())
+
+			fmt.Println("chaos engine deleted successfully")
+
+		})
+
+	})
+
+	Context("Creation of ChaosEngine with invalid experiment", func() {
+
+		It("Should create invalid chaos engine", func() {
+
+			//Creating chaosEngine
+			By("Creating ChaosEngine")
+			chaosEngine := &v1alpha1.ChaosEngine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "engine-nginx",
+					Namespace: "litmus",
+				},
+				Spec: v1alpha1.ChaosEngineSpec{
+					Appinfo: v1alpha1.ApplicationParams{
+						Appns:    "litmus",
+						Applabel: "app=nginx",
+						AppKind:  "deployment",
+					},
+					ChaosServiceAccount: "litmus",
+					Components: v1alpha1.ComponentParams{
+						Runner: v1alpha1.RunnerInfo{
+							Image: "litmuschaos/chaos-runner:ci",
+							Type:  "go",
+						},
+					},
+					JobCleanUpPolicy: "delete",
+					Monitoring:       true,
+					EngineState:      "active",
+					Experiments: []v1alpha1.ExperimentList{
+						{
+							Name: "pod-delete-1",
+						},
+					},
+				},
+			}
+
+			_, err := clientSet.ChaosEngines("litmus").Create(chaosEngine)
+			Expect(err).To(BeNil())
+
+			time.Sleep(50 * time.Second)
+
+		})
+	})
+
+	Context("Check for Chaos Resources for invalid engine", func() {
+
+		It("Should delete chaos-runner pod", func() {
+
+			//Fetching engine-nginx-runner pod
+			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-runner pod deletion verified")
+
+		})
+
+		It("Should delete chaos-monitor pod ", func() {
+
+			//Fetching engine-nginx-exporter pod
+			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			fmt.Printf("%v", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-monitor pod deletion verified")
+
+		})
+
+		It("Should delete chaos-monitor service ", func() {
+
+			//Fetching engine-nginx-exporter pod
+			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
+			fmt.Printf("%v\n", err)
+			isNotFound := errors.IsNotFound(err)
+			Expect(isNotFound).To(BeTrue())
+			fmt.Println("chaos-monitor service deletion verified")
+
+		})
+
+		It("Should change EngineStatus ", func() {
+
+			//Fetching engineStatus
+			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			Expect(err).To(BeNil())
+
+			isComplete := engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted
+			Expect(isComplete).To(BeTrue())
+
+		})
+	})
+
 })
 
 //Deleting all unused resources
