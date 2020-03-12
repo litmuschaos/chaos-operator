@@ -174,6 +174,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		if err := r.updateStatus(engine, litmuschaosv1alpha1.EngineStatusCompleted); err != nil {
 			return reconcile.Result{}, err
 		}
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineCompleted", "Chaos Engine completed, will delete or retain the resources according to jobCleanUpPolicy")
 	}
 
 	// Verify that the engineStatus is set to completed,
@@ -756,18 +757,13 @@ func checkEngineStatusForComplete(engine *chaosTypes.EngineInfo) bool {
 }
 
 func (r *ReconcileChaosEngine) reconcileForComplete(request reconcile.Request) (reconcile.Result, error) {
+	deletetimeStamp := engine.Instance.ObjectMeta.GetDeletionTimestamp()
+	if deletetimeStamp != nil {
+		return r.reconcileForDelete(request)
+	}
 	_, err := r.removeDefaultChaosResources(request)
 	if err != nil {
 		return reconcile.Result{}, err
-	}
-	if engine.Instance.ObjectMeta.Finalizers != nil {
-		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
-		if engine.Instance.Spec.JobCleanUpPolicy == litmuschaosv1alpha1.CleanUpPolicyDelete {
-			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineStopped", "Deleted all experiment resources allocated to ChaosEngine: %v in Namespace: %v", engine.Instance.Name, engine.Instance.Namespace)
-		} else if engine.Instance.Spec.JobCleanUpPolicy == litmuschaosv1alpha1.CleanUpPolicyRetain {
-			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineStopped", "Retained all experiment resources allocated to ChaosEngine: %v in Namespace: %v", engine.Instance.Name, engine.Instance.Namespace)
-
-		}
 	}
 	err = r.updateState(engine, litmuschaosv1alpha1.EngineStateStop)
 	if err != nil {
