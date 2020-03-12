@@ -762,7 +762,12 @@ func (r *ReconcileChaosEngine) reconcileForComplete(request reconcile.Request) (
 	}
 	if engine.Instance.ObjectMeta.Finalizers != nil {
 		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngine Stopped", "Removing all experiment resources allocated to ChaosEngine: %v in Namespace: %v", engine.Instance.Name, engine.Instance.Namespace)
+		if engine.Instance.Spec.JobCleanUpPolicy == litmuschaosv1alpha1.CleanUpPolicyDelete {
+			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineStopped", "Deleted all experiment resources allocated to ChaosEngine: %v in Namespace: %v", engine.Instance.Name, engine.Instance.Namespace)
+		} else if engine.Instance.Spec.JobCleanUpPolicy == litmuschaosv1alpha1.CleanUpPolicyRetain {
+			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineStopped", "Retained all experiment resources allocated to ChaosEngine: %v in Namespace: %v", engine.Instance.Name, engine.Instance.Namespace)
+
+		}
 	}
 	err = r.updateState(engine, litmuschaosv1alpha1.EngineStateStop)
 	if err != nil {
