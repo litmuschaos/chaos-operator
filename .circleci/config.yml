@@ -51,6 +51,7 @@ jobs:
       - run: make test 
       - run: |
           docker save -o workspace/image.tar ${REPONAME}/${IMGNAME}:${IMGTAG}
+      - run: bash <(curl -s https://codecov.io/bash) -vz 
       - persist_to_workspace:
           root: workspace 
           paths: 

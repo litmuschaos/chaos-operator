@@ -174,10 +174,11 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 		if err := r.updateStatus(engine, litmuschaosv1alpha1.EngineStatusCompleted); err != nil {
 			return reconcile.Result{}, err
 		}
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineCompleted", "Chaos Engine completed, will delete or retain the resources according to jobCleanUpPolicy")
 	}
 
 	// Verify that the engineStatus is set to completed,
-	// if thats the case, then reconcile for completed
+	// if thats the case, then return reconcileForComplete
 	if checkEngineStatusForComplete(engine) {
 		return r.reconcileForComplete(request)
 	}
@@ -191,7 +192,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	// Verify that the engineStatus is set to stopped,
-	// then reconcile for delete
+	// then return reconcileForDelete
 	if checkEngineStatusForStopped(engine) {
 		return r.reconcileForDelete(request)
 	}
@@ -594,7 +595,7 @@ func getAnnotationCheck() error {
 
 // reconcileForDelete
 func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (reconcile.Result, error) {
-	reconcileResult, err := r.removeChaosResources(engine, request)
+	reconcileResult, err := r.forceRemoveAllChaosResources(engine, request)
 	if err != nil {
 		return reconcileResult, err
 	}
@@ -632,7 +633,7 @@ func (r *ReconcileChaosEngine) removeChaosServices(engine *chaosTypes.EngineInfo
 	return nil
 }
 
-func (r *ReconcileChaosEngine) removeChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileChaosEngine) forceRemoveAllChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
 	optsDelete := []client.DeleteAllOfOption{
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
@@ -709,16 +710,20 @@ func (r *ReconcileChaosEngine) checkRunnerPodCompleted(engine *chaosTypes.Engine
 }
 
 func (r *ReconcileChaosEngine) removeDefaultChaosResources(request reconcile.Request) (reconcile.Result, error) {
-	if err := r.removeChaosRunner(engine, request); err != nil {
-		return reconcile.Result{}, err
-	}
-	if err := r.removeChaosServices(engine, request); err != nil {
-		return reconcile.Result{}, err
+
+	if engine.Instance.Spec.JobCleanUpPolicy == litmuschaosv1alpha1.CleanUpPolicyDelete {
+		if err := r.removeChaosRunner(engine, request); err != nil {
+			return reconcile.Result{}, err
+		}
+		if err := r.removeChaosServices(engine, request); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 	return reconcile.Result{}, nil
 }
 
 func (r *ReconcileChaosEngine) removeChaosRunner(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
+
 	optsList := []client.ListOption{
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)},
@@ -750,14 +755,15 @@ func checkEngineStatusForComplete(engine *chaosTypes.EngineInfo) bool {
 	return engine.Instance.Status.EngineStatus == litmuschaosv1alpha1.EngineStatusCompleted
 
 }
+
 func (r *ReconcileChaosEngine) reconcileForComplete(request reconcile.Request) (reconcile.Result, error) {
+	deletetimeStamp := engine.Instance.ObjectMeta.GetDeletionTimestamp()
+	if deletetimeStamp != nil {
+		return r.reconcileForDelete(request)
+	}
 	_, err := r.removeDefaultChaosResources(request)
 	if err != nil {
 		return reconcile.Result{}, err
-	}
-	if engine.Instance.ObjectMeta.Finalizers != nil {
-		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngine Stopped", "Removing all experiment resources allocated to ChaosEngine: %v in Namespace: %v", engine.Instance.Name, engine.Instance.Namespace)
 	}
 	err = r.updateState(engine, litmuschaosv1alpha1.EngineStateStop)
 	if err != nil {

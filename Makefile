@@ -75,7 +75,7 @@ test:
 	@echo "------------------"
 	@echo "--> Run Go Test"
 	@echo "------------------"
-	@go test ./... -v 
+	@go test ./... -coverprofile=coverage.txt -covermode=atomic -v 
 
 .PHONY: dockerops 
 dockerops: 
