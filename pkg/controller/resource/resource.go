@@ -18,6 +18,7 @@ package resource
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
@@ -26,9 +27,24 @@ import (
 
 // Annotations on app to enable chaos on it
 const (
-	ChaosAnnotationKey   = "litmuschaos.io/chaos"
 	ChaosAnnotationValue = "true"
 )
+
+var (
+	ChaosAnnotationKey = getCustomAnnotation()
+)
+
+func getCustomAnnotation() string {
+	//ChaosAnnotationKey := "litmuschaos.io/chaos"
+
+	annotationKey := os.Getenv("CUSTOM_ANNOTATION")
+	if len(annotationKey) != 0 {
+		//ChaosAnnotationKey = os.Getenv("CUSTOM_ANNOTATION")
+		return annotationKey
+	}
+	return "litmuschaos.io/chaos"
+
+}
 
 // CheckChaosAnnotation will check for the annotation of required resources
 func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
