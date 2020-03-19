@@ -27,22 +27,23 @@ import (
 
 // Annotations on app to enable chaos on it
 const (
-	ChaosAnnotationValue = "true"
+	ChaosAnnotationValue      = "true"
+	DefaultChaosAnnotationKey = "litmuschaos.io/chaos"
 )
 
 var (
-	ChaosAnnotationKey = getCustomAnnotation()
+	// ChaosAnnotationKey is global variable used as the Key for annotation check.
+	ChaosAnnotationKey = getAnnotationKey()
 )
 
-func getCustomAnnotation() string {
-	//ChaosAnnotationKey := "litmuschaos.io/chaos"
+// getAnnotationKey() returns the annotation to be used while validating applications.
+func getAnnotationKey() string {
 
 	annotationKey := os.Getenv("CUSTOM_ANNOTATION")
 	if len(annotationKey) != 0 {
-		//ChaosAnnotationKey = os.Getenv("CUSTOM_ANNOTATION")
 		return annotationKey
 	}
-	return "litmuschaos.io/chaos"
+	return DefaultChaosAnnotationKey
 
 }
 
