@@ -36,7 +36,7 @@ var (
 	ChaosAnnotationKey = getAnnotationKey()
 )
 
-// getAnnotationKey() returns the annotation to be used while validating applications.
+// getAnnotationKey returns the annotation to be used while validating applications.
 func getAnnotationKey() string {
 
 	annotationKey := os.Getenv("CUSTOM_ANNOTATION")
