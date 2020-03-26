@@ -289,6 +289,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 			Name:  "CLIENT_UUID",
 			Value: ClientUUID,
 		},
+		{
+			Name:  "CHAOS_NAMESPACE",
+			Value: cr.Namespace,
+		},
 	}
 }
 
