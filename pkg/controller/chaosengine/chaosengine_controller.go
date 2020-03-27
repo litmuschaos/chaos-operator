@@ -883,6 +883,7 @@ func updateExperimentStatuses(engine *chaosTypes.EngineInfo) {
 		if engine.Instance.Status.Experiments[i].Status == "Running" || engine.Instance.Status.Experiments[i].Status == "Waiting for Job Creation" {
 			engine.Instance.Status.Experiments[i].Status = "Forcefully Aborted"
 			engine.Instance.Status.Experiments[i].Verdict = "Stopped"
+			engine.Instance.Status.Experiments[i].LastUpdateTime = metav1.Now()
 		}
 	}
 }
