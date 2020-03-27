@@ -74,6 +74,18 @@ jobs:
           docker load -i /tmp/workspace/image.tar
           ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=ci
 
+  trivy-check:
+    machine: true
+    steps:
+      - run: |
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+          trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-operator:ci
+          trivy --exit-code 1 --severity CRITICAL --no-progress litmuschaos/chaos-operator:ci
+
   release: 
     machine: 
       image: circleci/classic:201808-01
@@ -99,6 +111,12 @@ workflows:
             ## build jobs needs to be run for branch commits as well as tagged releases
             tags:
               only: /.*/
+      - trivy-check:
+          requires:
+            - push
+          filters:
+            tags:
+              only: /.*/
       - push:
           requires: 
             - build
@@ -116,4 +134,3 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-  
