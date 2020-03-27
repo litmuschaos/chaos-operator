@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/litmuschaos/chaos-operator)](https://goreportcard.com/report/github.com/litmuschaos/chaos-operator)
 [![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-operator?branch=master)](https://bettercodehub.com/)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-operator.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-operator?ref=badge_shield)
+[![codecov](https://codecov.io/gh/litmuschaos/chaos-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/litmuschaos/chaos-operator)
   
 Litmus chaos operator is used by Kubernetes application developers and SREs to inject chaos into the applications 
 and Kubernetes infrastructure in a managed fashion. Its objective is to make the process of validation and 
