@@ -418,7 +418,7 @@ func newMonitorServiceForCR(engine chaosTypes.EngineInfo) (*corev1.Service, erro
 		WithNamespace(engine.Instance.Namespace).
 		WithLabels(map[string]string{"app": "chaos-exporter", "chaosUID": string(engine.Instance.UID)}).
 		WithPorts([]corev1.ServicePort{{Name: "metrics", Port: 8080}}).
-		WithSelectorsNew(map[string]string{"monitorFor": engine.Instance.Name}).Build()
+		WithSelectorsNew(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).Build()
 	if err != nil {
 		return nil, err
 	}
@@ -620,6 +620,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineStopped", " Chaos resources deleted successfully")
 	}
+	updateExperimentStatuses(engine)
 	if err := r.client.Update(context.TODO(), engine.Instance, &opts); err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to update chaosengine")
 		return reconcile.Result{}, fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
@@ -875,4 +876,14 @@ func (r *ReconcileChaosEngine) reconcileForCreationAndRunning(engine *chaosTypes
 		return reconcileResult, err
 	}
 	return reconcile.Result{}, nil
+}
+
+func updateExperimentStatuses(engine *chaosTypes.EngineInfo) {
+	for i := range engine.Instance.Status.Experiments {
+		if engine.Instance.Status.Experiments[i].Status == "Running" || engine.Instance.Status.Experiments[i].Status == "Waiting for Job Creation" {
+			engine.Instance.Status.Experiments[i].Status = "Forcefully Aborted"
+			engine.Instance.Status.Experiments[i].Verdict = "Stopped"
+			engine.Instance.Status.Experiments[i].LastUpdateTime = metav1.Now()
+		}
+	}
 }
