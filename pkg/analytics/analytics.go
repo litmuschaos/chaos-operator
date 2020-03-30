@@ -42,7 +42,7 @@ const (
 	label = "Chaos-Operator"
 )
 
-// TriggerAnalytics is reponsible for sending out events
+// TriggerAnalytics is responsible for sending out events
 func TriggerAnalytics() error {
 	client, err := ga.NewClient(clientID)
 	if err != nil {
