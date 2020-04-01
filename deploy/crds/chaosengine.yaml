@@ -9,7 +9,7 @@
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: nginx-network-chaos
+  name: nginx-pod-delete
   namespace: default
 spec:
   # It can be delete/retain
@@ -26,26 +26,7 @@ spec:
     # FYI, To see app label, apply kubectl get pods --show-labels
     applabel: 'app=nginx'
     appkind: 'deployment'
-  chaosServiceAccount: pod-network-loss-sa 
+  chaosServiceAccount: litmus
   experiments:
-    - name: pod-network-loss
-      spec:
-        components:
-          env:
-            #Container name where chaos has to be injected              
-            - name: TARGET_CONTAINER
-              value: 'nginx' 
-
-            - name: LIB_IMAGE
-              value: 'gaiaadm/pumba:0.6.5'
-
-            #Network interface inside target container
-            - name: NETWORK_INTERFACE
-              value: 'eth0'    
-
-            - name: NETWORK_PACKET_LOSS_PERCENTAGE
-              value: '100'
-
-            - name: TOTAL_CHAOS_DURATION
-              value: '60' # in seconds
+    - name: pod-delete
             
