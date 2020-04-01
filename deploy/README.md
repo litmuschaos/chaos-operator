@@ -28,28 +28,28 @@ Apply the Kubernetes manifests in the described order to trigger the experiment.
 
 - Create a serviceaccount with just enough permissions to execute the experiment
 
-```
-kubectl apply -f 04-rbac-manifest.yaml
-```
+    ```
+    kubectl apply -f 04-rbac-manifest.yaml
+    ```
         
 - Create the chaosengine custom resource which ties the nginx app instance with the pod-delete experiment specification.
 
-```
-kubectl apply -f 05-chaos-engine.yaml
-```
+    ```
+    kubectl apply -f 05-chaos-engine.yaml
+    ```
         
 - To check the status of the this experiment, refer to the chaosengine status
         
-```
-kubectl describe chaosengine engine -n litmus
-```
-```
-...
-Status:
-  Engine Status:  completed
-  Experiments:
-    Last Update Time:  2020-03-31T15:05:39Z
-    Name:              pod-delete-ceqkir
-    Status:            Execution Successful
-    Verdict:           Pass
-```
+    ```
+    kubectl describe chaosengine engine -n litmus
+    ```
+    ```
+    ...
+    Status:
+      Engine Status:  completed
+      Experiments:
+        Last Update Time:  2020-03-31T15:05:39Z
+        Name:              pod-delete-ceqkir
+        Status:            Execution Successful
+        Verdict:           Pass
+    ```
