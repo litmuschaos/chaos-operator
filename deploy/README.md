@@ -1,25 +1,46 @@
 #### Sample Chaos Experiment 
 
-This folder has the required manifests to create, and run a simple pod delete experiment.
-For more details, about Litmus and other experiments, please ref: docs.litmuschaos.io
+This folder has the required manifests to create, and run a simple pod delete chaos experiment.
+For more details, about Litmus and other experiments, please ref: https://docs.litmuschaos.io
 
 
 ### Steps to follow to run this experiment:
 
-    - Apply the following YAML files
+Apply the Kubernetes manifests in the described order to trigger the experiment. 
 
-        - Apply Chaos Operator: `kubectl apply -f 01-chaos-operator.yaml`
+- Deploy the Litmus chaos operator YAML. This will install the chaos CRDs in the cluster & also chaos operator deployment in `litmus` namespace
 
-        - Apply Nginx Deployment: `kubectl apply -f 02-annotated-nginx-deploy.yaml`
+  ```
+  kubectl apply -f 01-chaos-operator.yaml`
+  ```
 
-        - Apply Pod Delete Chaos Experiment: `kubectl apply -f 03-pod-delete-experiment.yaml`
+- Create a sample nginx deployment which is annotated for chaos
 
-        - Apply RBAC Manifest for Chaos Engine: `kubectl apply -f 05-chaos-engine.yaml`
+  ```
+  kubectl apply -f 02-annotated-nginx-deploy.yaml
+  ```
+
+- Install the pod-delete chaosexperiment custom resource. 
+
+  ```
+  kubectl apply -f 03-pod-delete-experiment.yaml 
+  ```
+
+- Create a serviceaccount with just enough permissions to execute the experiment
+
+```
+kubectl apply -f 04-rbac-manifest.yaml
+```
         
-        - At last, apply the ChaosEngine: `kubectl apply -f 04-rbac-manifest.yaml`
-        
-        - To check the status of the this experiment, use this command
-        
-          `kubectl get chaosengine engine -n litmus -oyaml`
+- Create the chaosengine custom resource which ties the nginx app instance with the pod-delete experiment specification.
 
-            And check the status of variou experiments executed.
+```
+kubectl apply -f 05-chaos-engine.yaml
+```
+        
+- To check the status of the this experiment, refer to the chaosengine status
+        
+```
+kubectl describe chaosengine engine 
+```
+  
