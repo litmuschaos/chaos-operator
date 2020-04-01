@@ -1,0 +1,70 @@
+apiVersion: litmuschaos.io/v1alpha1
+description:
+  message: |
+    Deletes a pod belonging to a deployment/statefulset/daemonset
+kind: ChaosExperiment
+metadata:
+  name: pod-delete
+  namespace: litmus
+  version: 0.1.11
+spec:
+  definition:
+    scope: Namespaced
+    permissions:
+      - apiGroups:
+          - ""
+          - "apps"
+          - "batch"
+          - "litmuschaos.io"
+        resources:
+          - "deployments"
+          - "jobs"
+          - "pods"
+          - "pods/log"
+          - "events"
+          - "configmaps"
+          - "chaosengines"
+          - "chaosexperiments"
+          - "chaosresults"
+        verbs:
+          - "create"
+          - "list"
+          - "get"
+          - "patch"
+          - "update"
+          - "delete"
+      - apiGroups:
+          - ""
+        resources: 
+          - "nodes"
+        verbs:
+          - "get"
+          - "list"
+    image: "litmuschaos/ansible-runner:latest"
+    args:
+    - -c
+    - ansible-playbook ./experiments/generic/pod_delete/pod_delete_ansible_logic.yml -i /etc/ansible/hosts -vv; exit 0
+    command:
+    - /bin/bash
+    env:
+
+    - name: ANSIBLE_STDOUT_CALLBACK
+      value: 'default'
+
+    - name: TOTAL_CHAOS_DURATION
+      value: '15'
+
+    # Period to wait before injection of chaos in sec
+    - name: RAMP_TIME
+      value: ''
+
+    - name: FORCE
+      value: 'true'
+
+    - name: CHAOS_INTERVAL
+      value: '5'
+
+    - name: LIB
+      value: ''    
+    labels:
+      name: pod-delete

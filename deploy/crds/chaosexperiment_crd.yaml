@@ -30,37 +30,37 @@ spec:
         spec:
           type: object
           properties:
-            definition: 
+            definition:
               type: object
               properties:
-                args: 
+                args:
                   type: array
-                  items: 
+                  items:
                     type: string
-                command: 
+                command:
                   type: array
-                  items: 
+                  items:
                     type: string
                 env:
                   type: array
                   items:
                     type: object
-                    properties: 
-                      name: 
+                    properties:
+                      name:
                         type: string
-                      value: 
-                        type: string 
-                image: 
+                      value:
+                        type: string
+                image:
                   type: string
                 labels:
                   type: object
-                  properties: 
-                    name: 
+                  properties:
+                    name:
                       type: string
-                scope: 
+                scope:
                   type: string
                   pattern: ^(Namespaced|Cluster)$
-                permissions: 
+                permissions:
                   type: array
                   items:
                     type: object
@@ -90,29 +90,29 @@ spec:
                         type: array
                         items:
                           type: string
-                configmaps: 
+                configmaps:
                   type: array
-                  items: 
+                  items:
                     type: object
                     properties:
-                      name: 
+                      name:
                         type: string
                         allowEmptyValue: false
                         minLength: 1
-                      mountPath: 
+                      mountPath:
                         type: string
                         allowEmptyValue: false
                         minLength: 1
-                secrets: 
+                secrets:
                   type: array
-                  items: 
+                  items:
                     type: object
                     properties:
-                      name: 
+                      name:
                         type: string
                         allowEmptyValue: false
                         minLength: 1
-                      mountPath: 
+                      mountPath:
                         type: string
                         allowEmptyValue: false
                         minLength: 1
@@ -123,4 +123,3 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-
