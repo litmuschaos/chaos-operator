@@ -12,6 +12,6 @@ spec:
     applabel: "app=nginx"
     appkind: deployment
   chaosServiceAccount: pod-delete-sa
-  monitoring: true
+  monitoring: false
   experiments:
     - name: pod-delete

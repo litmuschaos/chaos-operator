@@ -41,6 +41,15 @@ kubectl apply -f 05-chaos-engine.yaml
 - To check the status of the this experiment, refer to the chaosengine status
         
 ```
-kubectl describe chaosengine engine 
+kubectl describe chaosengine engine -n litmus
 ```
-  
+```
+...
+Status:
+  Engine Status:  completed
+  Experiments:
+    Last Update Time:  2020-03-31T15:05:39Z
+    Name:              pod-delete-ceqkir
+    Status:            Execution Successful
+    Verdict:           Pass
+```
