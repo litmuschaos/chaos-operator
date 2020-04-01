@@ -11,7 +11,7 @@ spec:
     appns: litmus
     applabel: "app=nginx"
     appkind: deployment
-  chaosServiceAccount: litmus
+  chaosServiceAccount: pod-delete-sa
   monitoring: true
   experiments:
     - name: pod-delete
