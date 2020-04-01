@@ -29,29 +29,29 @@ spec:
         spec:
           type: object
           properties:
-            monitoring: 
+            monitoring:
               type: boolean
-            jobCleanUpPolicy: 
+            jobCleanUpPolicy:
               type: string
               pattern: ^(delete|retain)$
               # alternate ways to do this in case of complex pattern matches
               #oneOf:
               #  - pattern: '^delete$'
               #  - pattern: '^retain$'
-            annotationCheck: 
+            annotationCheck:
               type: string
               pattern: ^(true|false)$
             appinfo:
               type: object
               properties:
-                appkind: 
+                appkind:
                   type: string
                   pattern: ^(deployment|statefulset|daemonset)$
-                applabel: 
+                applabel:
                   type: string
-                appns: 
+                appns:
                   type: string
-            auxiliaryAppInfo: 
+            auxiliaryAppInfo:
               type: string
             engineState: 
               type: string
@@ -60,16 +60,16 @@ spec:
               type: string
             components:
               type: object
-              properties: 
-                monitor: 
-                  type: object
-                  properties: 
-                    image: 
-                      type: string
-                runner: 
+              properties:
+                monitor:
                   type: object
                   properties:
-                    image: 
+                    image:
+                      type: string
+                runner:
+                  type: object
+                  properties:
+                    image:
                       type: string
                     type:
                       type: string
@@ -79,7 +79,7 @@ spec:
               items:
                 type: object
                 properties:
-                  name: 
+                  name:
                     type: string
                   spec:
                     type: object
@@ -114,11 +114,12 @@ spec:
                                   type: string
                                 mountPath:
                                   type: string
+
+
         status:
           type: object
   version: v1alpha1
   versions:
   - name: v1alpha1
     served: true
-    storage: true	
-    
+    storage: true
