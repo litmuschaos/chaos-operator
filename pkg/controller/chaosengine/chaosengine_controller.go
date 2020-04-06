@@ -148,21 +148,20 @@ func watchChaosResources(clientSet client.Client, c controller.Controller) error
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := startReqLogger(request)
+
 	err := r.getChaosEngineInstance(request)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			//r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to find chaosengine")
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
 	}
 
 	//Handle deletion of Chaos Engine
-	deletetimeStamp := engine.Instance.ObjectMeta.GetDeletionTimestamp()
-	if deletetimeStamp != nil {
+	if engine.Instance.ObjectMeta.GetDeletionTimestamp() != nil {
 		return r.reconcileForDelete(request)
 	}
 
@@ -649,11 +648,7 @@ func (r *ReconcileChaosEngine) removeChaosServices(engine *chaosTypes.EngineInfo
 
 // forceRemoveAllChaosPods force removes all chaos-related pods
 func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
-	optsDelete := []client.DeleteAllOfOption{
-		client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
-		client.PropagationPolicy(metav1.DeletePropagationBackground),
-		client.GracePeriodSeconds(int64(0)),
-	}
+	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(metav1.DeletePropagationBackground), client.GracePeriodSeconds(int64(0))}
 	var deleteEvent []string
 	var err []error
 
