@@ -165,6 +165,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 	if deletetimeStamp != nil {
 		return r.reconcileForDelete(request)
 	}
+
 	// Start the reconcile by setting default values into Chaos Engine
 	if err := r.initEngine(engine); err != nil {
 		return reconcile.Result{}, err
@@ -682,13 +683,6 @@ func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.Engine
 	return nil
 }
 
-// updateEngineStatus updates Chaos Engine Status with given Status
-func (r *ReconcileChaosEngine) updateEngineStatus(engine *chaosTypes.EngineInfo, status litmuschaosv1alpha1.EngineStatus) error {
-	opts := client.UpdateOptions{}
-	engine.Instance.Status.EngineStatus = status
-	return r.client.Update(context.TODO(), engine.Instance, &opts)
-}
-
 // updateEngineState updates Chaos Engine Status with given State
 func (r *ReconcileChaosEngine) updateEngineState(engine *chaosTypes.EngineInfo, state litmuschaosv1alpha1.EngineState) error {
 	opts := client.UpdateOptions{}
@@ -822,8 +816,8 @@ func (r *ReconcileChaosEngine) reconcileForCreationAndRunning(engine *chaosTypes
 // updateExperimentStatusesForStop updates ChaosEngine.Status.Experiment with Abort Status.
 func updateExperimentStatusesForStop(engine *chaosTypes.EngineInfo) {
 	for i := range engine.Instance.Status.Experiments {
-		if engine.Instance.Status.Experiments[i].Status == "Running" || engine.Instance.Status.Experiments[i].Status == "Waiting for Job Creation" {
-			engine.Instance.Status.Experiments[i].Status = "Forcefully Aborted"
+		if engine.Instance.Status.Experiments[i].Status == litmuschaosv1alpha1.ExperimentStatusRunning || engine.Instance.Status.Experiments[i].Status == litmuschaosv1alpha1.ExperimentStatusWaiting {
+			engine.Instance.Status.Experiments[i].Status = litmuschaosv1alpha1.ExperimentStatusAborted
 			engine.Instance.Status.Experiments[i].Verdict = "Stopped"
 			engine.Instance.Status.Experiments[i].LastUpdateTime = metav1.Now()
 		}

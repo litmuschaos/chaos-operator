@@ -56,6 +56,17 @@ const (
 	EngineStateStop EngineState = "stop"
 )
 
+type ExperimentStatus string
+
+const (
+	ExperimentStatusRunning    ExperimentStatus = "Running"
+	ExperimentStatusCompleted  ExperimentStatus = "Completed"
+	ExperimentStatusWaiting    ExperimentStatus = "Waiting for Job Creation"
+	ExperimentStatusNotFound   ExperimentStatus = "ChaosExperiment Not Found"
+	ExperimentStatusSuccessful ExperimentStatus = "Execution Successful"
+	ExperimentStatusAborted    ExperimentStatus = "Forcefully Aborted"
+)
+
 // EngineStatus provides interface for all supported strings in status.EngineStatus
 type EngineStatus string
 
@@ -165,7 +176,7 @@ type ExperimentStatuses struct {
 	//Name of experiment whose status is detailed
 	Name string `json:"name"`
 	//Current state of chaos experiment
-	Status string `json:"status"`
+	Status ExperimentStatus `json:"status"`
 	//Result of a completed chaos experiment
 	Verdict string `json:"verdict"`
 	//Time of last state change of chaos experiment
