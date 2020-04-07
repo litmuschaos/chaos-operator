@@ -48,34 +48,34 @@ func getAnnotationKey() string {
 }
 
 // CheckChaosAnnotation will check for the annotation of required resources
-func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
+func CheckChaosAnnotation(engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
 	// Use client-Go to obtain a list of apps w/ specified labels
 	//var chaosEngine chaosTypes.EngineInfo
 	clientSet, err := k8s.CreateClientSet()
 	if err != nil {
-		return ce, fmt.Errorf("clientset generation failed with error: %+v", err)
+		return engine, fmt.Errorf("clientset generation failed with error: %+v", err)
 	}
-	switch strings.ToLower(ce.AppInfo.Kind) {
+	switch strings.ToLower(engine.AppInfo.Kind) {
 	case "deployment", "deployments":
-		ce, err = CheckDeploymentAnnotation(clientSet, ce)
+		engine, err = CheckDeploymentAnnotation(clientSet, engine)
 		if err != nil {
-			return ce, fmt.Errorf("resource type 'deployment', err: %+v", err)
+			return engine, fmt.Errorf("resource type 'deployment', err: %+v", err)
 		}
 	case "statefulset", "statefulsets":
-		ce, err = CheckStatefulSetAnnotation(clientSet, ce)
+		engine, err = CheckStatefulSetAnnotation(clientSet, engine)
 		if err != nil {
-			return ce, fmt.Errorf("resource type 'statefulset', err: %+v", err)
+			return engine, fmt.Errorf("resource type 'statefulset', err: %+v", err)
 		}
 	case "daemonset", "daemonsets":
-		ce, err = CheckDaemonSetAnnotation(clientSet, ce)
+		engine, err = CheckDaemonSetAnnotation(clientSet, engine)
 		if err != nil {
-			return ce, fmt.Errorf("resource type 'daemonset', err: %+v", err)
+			return engine, fmt.Errorf("resource type 'daemonset', err: %+v", err)
 		}
 	default:
-		return ce, fmt.Errorf("resource type '%s' not supported for induce chaos", ce.AppInfo.Kind)
+		return engine, fmt.Errorf("resource type '%s' not supported for induce chaos", engine.AppInfo.Kind)
 	}
-	chaosTypes.Log.Info("chaos candidate of", "kind:", ce.AppInfo.Kind, "appName: ", ce.AppName, "appUUID: ", ce.AppUUID)
-	return ce, nil
+	chaosTypes.Log.Info("chaos candidate of", "kind:", engine.AppInfo.Kind, "appName: ", engine.AppName, "appUUID: ", engine.AppUUID)
+	return engine, nil
 }
 
 // CountTotalChaosEnabled will count the number of chaos enabled applications

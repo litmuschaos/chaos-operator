@@ -291,15 +291,15 @@ func getChaosMonitorENV(cr *litmuschaosv1alpha1.ChaosEngine, aUUID types.UID) []
 }
 
 // newRunnerPodForCR defines secondary resource #1 in same namespace as CR
-func newRunnerPodForCR(ce *chaosTypes.EngineInfo) (*corev1.Pod, error) {
-	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.AnnotationCheck == "true" {
+func newRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
+	if (len(engine.AppExperiments) == 0 || engine.AppUUID == "") && engine.Instance.Spec.AnnotationCheck == "true" {
 		return nil, errors.New("application experiment list or UUID is empty")
 	}
 	//Initiate the Engine Info, with the type of runner to be used
-	if ce.Instance.Spec.Components.Runner.Type == "ansible" {
-		return newAnsibleRunnerPodForCR(ce)
+	if engine.Instance.Spec.Components.Runner.Type == "ansible" {
+		return newAnsibleRunnerPodForCR(engine)
 	}
-	return newGoRunnerPodForCR(ce)
+	return newGoRunnerPodForCR(engine)
 }
 
 // newGoRunnerPodForCR defines a new go-based Runner Pod
@@ -520,18 +520,18 @@ func getApplicationDetail(engine *chaosTypes.EngineInfo) error {
 }
 
 // Check if the engineRunner pod already exists, else create
-func (r *ReconcileChaosEngine) checkEngineRunnerPod(ce *chaosTypes.EngineInfo, reqLogger logr.Logger) error {
-	if (len(ce.AppExperiments) == 0 || ce.AppUUID == "") && ce.Instance.Spec.AnnotationCheck == "true" {
+func (r *ReconcileChaosEngine) checkEngineRunnerPod(engine *chaosTypes.EngineInfo, reqLogger logr.Logger) error {
+	if (len(engine.AppExperiments) == 0 || engine.AppUUID == "") && engine.Instance.Spec.AnnotationCheck == "true" {
 		return errors.New("application experiment list or UUID is empty")
 	}
 	var engineRunner *corev1.Pod
-	engineRunner, err := newGoRunnerPodForCR(ce)
+	engineRunner, err := newGoRunnerPodForCR(engine)
 	if err != nil {
 		return err
 	}
 	//Initiate the Engine Info, with the type of runner to be used
-	if ce.Instance.Spec.Components.Runner.Type == "ansible" {
-		engineRunner, err = newAnsibleRunnerPodForCR(ce)
+	if engine.Instance.Spec.Components.Runner.Type == "ansible" {
+		engineRunner, err = newAnsibleRunnerPodForCR(engine)
 		if err != nil {
 			return err
 		}
