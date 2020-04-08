@@ -155,7 +155,7 @@ func TestNewRunnerPodForCR(t *testing.T) {
 	for name, mock := range tests {
 		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
-			_, err := newRunnerPodForCR(mock.engine)
+			_, err := newRunnerPodForCR(&mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
