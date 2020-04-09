@@ -1,0 +1,17 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: engine
+  namespace: litmus
+spec:
+  jobCleanUpPolicy: "retain"
+  engineState: "active"
+  auxiliaryAppInfo: ""
+  appinfo:
+    appns: litmus
+    applabel: "app=nginx"
+    appkind: deployment
+  chaosServiceAccount: pod-delete-sa
+  monitoring: false
+  experiments:
+    - name: pod-delete

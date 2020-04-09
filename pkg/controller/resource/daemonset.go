@@ -28,46 +28,46 @@ import (
 )
 
 // CheckDaemonSetAnnotation will check the annotation of DaemonSet
-func CheckDaemonSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
-	targetAppList, err := getDaemonSetLists(clientSet, ce)
+func CheckDaemonSetAnnotation(clientSet *kubernetes.Clientset, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
+	targetAppList, err := getDaemonSetLists(clientSet, engine)
 	if err != nil {
-		return ce, err
+		return engine, err
 	}
-	ce, chaosEnabledDaemonSet, err := checkForChaosEnabledDaemonSet(targetAppList, ce)
+	engine, chaosEnabledDaemonSet, err := checkForChaosEnabledDaemonSet(targetAppList, engine)
 	if err != nil {
-		return ce, err
+		return engine, err
 	}
 	if chaosEnabledDaemonSet == 0 {
-		return ce, errors.New("no chaos-candidate found")
+		return engine, errors.New("no chaos-candidate found")
 	}
-	return ce, nil
+	return engine, nil
 }
 
 // getDaemonSetLists will list the daemonSets which having the chaos label
-func getDaemonSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*appsV1.DaemonSetList, error) {
-	targetAppList, err := clientSet.AppsV1().DaemonSets(ce.AppInfo.Namespace).List(metaV1.ListOptions{
-		LabelSelector: ce.Instance.Spec.Appinfo.Applabel,
+func getDaemonSetLists(clientSet *kubernetes.Clientset, engine *chaosTypes.EngineInfo) (*appsV1.DaemonSetList, error) {
+	targetAppList, err := clientSet.AppsV1().DaemonSets(engine.AppInfo.Namespace).List(metaV1.ListOptions{
+		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing daemonSets with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing daemonSets with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(targetAppList.Items) == 0 {
-		return nil, fmt.Errorf("no daemonSets apps with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no daemonSets apps with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	return targetAppList, err
 }
 
 // This will check and count the total chaos enabled application
-func checkForChaosEnabledDaemonSet(targetAppList *appsV1.DaemonSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+func checkForChaosEnabledDaemonSet(targetAppList *appsV1.DaemonSetList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDaemonSet := 0
 	for _, daemonSet := range targetAppList.Items {
-		ce.AppName = daemonSet.ObjectMeta.Name
-		ce.AppUUID = daemonSet.ObjectMeta.UID
+		engine.AppName = daemonSet.ObjectMeta.Name
+		engine.AppUUID = daemonSet.ObjectMeta.UID
 		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		chaosEnabledDaemonSet = CountTotalChaosEnabled(annotationValue, chaosEnabledDaemonSet)
 		if chaosEnabledDaemonSet > 1 {
-			return ce, chaosEnabledDaemonSet, errors.New("too many daemonsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
+			return engine, chaosEnabledDaemonSet, errors.New("too many daemonsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
 		}
 	}
-	return ce, chaosEnabledDaemonSet, nil
+	return engine, chaosEnabledDaemonSet, nil
 }
