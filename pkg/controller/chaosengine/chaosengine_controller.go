@@ -444,24 +444,6 @@ func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (re
 
 }
 
-// removeChaosServices removes chaos services
-func (r *ReconcileChaosEngine) removeChaosServices(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
-	optsList := []client.ListOption{
-		client.InNamespace(request.NamespacedName.Namespace),
-		client.MatchingLabels{"app": "chaos-exporter", "chaosUID": string(engine.Instance.UID)},
-	}
-	var serviceList corev1.ServiceList
-	if errList := r.client.List(context.TODO(), &serviceList, optsList...); errList != nil {
-		return errList
-	}
-	for _, v := range serviceList.Items {
-		if errDel := r.client.Delete(context.TODO(), &v, []client.DeleteOption{}...); errDel != nil {
-			return errDel
-		}
-	}
-	return nil
-}
-
 // forceRemoveAllChaosPods force removes all chaos-related pods
 func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
 	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(metav1.DeletePropagationBackground), client.GracePeriodSeconds(int64(0))}
@@ -513,9 +495,6 @@ func (r *ReconcileChaosEngine) gracefullyRemoveDefaultChaosResources(request rec
 
 	if engine.Instance.Spec.JobCleanUpPolicy == litmuschaosv1alpha1.CleanUpPolicyDelete {
 		if err := r.gracefullyRemoveChaosPods(engine, request); err != nil {
-			return reconcile.Result{}, err
-		}
-		if err := r.removeChaosServices(engine, request); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -686,10 +665,6 @@ func (r *ReconcileChaosEngine) updateEngineForRestart(engine *chaosTypes.EngineI
 
 func (r *ReconcileChaosEngine) forceRemoveChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
 	err := r.forceRemoveAllChaosPods(engine, request)
-	if err != nil {
-		return err
-	}
-	err = r.removeChaosServices(engine, request)
 	if err != nil {
 		return err
 	}

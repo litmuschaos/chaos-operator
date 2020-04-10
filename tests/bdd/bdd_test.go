@@ -252,7 +252,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			Expect(err).To(BeNil())
 			Expect(string(runner.Status.Phase)).To(Or(Equal("Running"), Equal("Succeeded")))
-			Expect(string(exporter.Status.Phase)).To(Equal("Running"))
 
 			// Check for EngineStatus
 			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})

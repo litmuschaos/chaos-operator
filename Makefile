@@ -1,4 +1,4 @@
-# Makefile for building Chaos Exporter
+# Makefile for building Chaos Operator
 # Reference Guide - https://www.gnu.org/software/make/manual/make.html
 
 IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
