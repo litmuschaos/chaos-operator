@@ -63,8 +63,6 @@ spec:
           env:
             - name: CHAOS_RUNNER_IMAGE
               value: "litmuschaos/chaos-runner:latest"
-            - name: CHAOS_MONITOR_IMAGE
-              value: "litmuschaos/chaos-exporter:latest"
             - name: WATCH_NAMESPACE
               value: 
             - name: POD_NAME
@@ -138,11 +136,6 @@ spec:
             components:
               type: object
               properties:
-                monitor:
-                  type: object
-                  properties:
-                    image:
-                      type: string
                 runner:
                   type: object
                   properties:

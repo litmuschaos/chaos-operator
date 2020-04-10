@@ -242,13 +242,11 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			fmt.Println("Chaosengine created successfully...")
 
-			//Wait till the creation of runner pod and monitor svc
+			//Wait till the creation of runner pod
 			time.Sleep(50 * time.Second)
 
 			//Fetching engine-nginx-runner pod
 			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
-			//Fetching engine-nginx-exporter pod
-			exporter, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
 			//Check for the Availabilty and status of the runner pod
 			fmt.Println("name : ", runner.Name)
 
@@ -263,17 +261,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 			isInit := engine.Status.EngineStatus == v1alpha1.EngineStatusInitialized
 			Expect(isInit).To(BeTrue())
 		})
-	})
-
-	// BDD TEST CASE 2
-	Context("check for the custom resources", func() {
-
-		It("Should check for creation of monitor service", func() {
-			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
-			Expect(err).To(BeNil())
-
-		})
-
 	})
 
 	Context("Setting the EngineState of ChaosEngine as Stop", func() {
@@ -291,7 +278,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			fmt.Println("Chaosengine updated successfully...")
 
-			//Wait till the creation of runner pod and monitor svc
+			//Wait till the creation of runner pod
 			time.Sleep(50 * time.Second)
 
 		})
@@ -308,28 +295,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 			isNotFound := errors.IsNotFound(err)
 			Expect(isNotFound).To(BeTrue())
 			fmt.Println("chaos-runner pod deletion verified")
-
-		})
-
-		It("Should delete chaos-monitor pod ", func() {
-
-			//Fetching engine-nginx-exporter pod
-			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
-			fmt.Printf("%v", err)
-			isNotFound := errors.IsNotFound(err)
-			Expect(isNotFound).To(BeTrue())
-			fmt.Println("chaos-monitor pod deletion verified")
-
-		})
-
-		It("Should delete chaos-monitor service ", func() {
-
-			//Fetching engine-nginx-exporter pod
-			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
-			fmt.Printf("%v", err)
-			isNotFound := errors.IsNotFound(err)
-			Expect(isNotFound).To(BeTrue())
-			fmt.Println("chaos-monitor service deletion verified")
 
 		})
 
@@ -410,28 +375,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 			isNotFound := errors.IsNotFound(err)
 			Expect(isNotFound).To(BeTrue())
 			fmt.Println("chaos-runner pod deletion verified")
-
-		})
-
-		It("Should delete chaos-monitor pod ", func() {
-
-			//Fetching engine-nginx-exporter pod
-			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
-			fmt.Printf("%v", err)
-			isNotFound := errors.IsNotFound(err)
-			Expect(isNotFound).To(BeTrue())
-			fmt.Println("chaos-monitor pod deletion verified")
-
-		})
-
-		It("Should delete chaos-monitor service ", func() {
-
-			//Fetching engine-nginx-exporter pod
-			_, err := client.CoreV1().Services("litmus").Get("engine-nginx-monitor", metav1.GetOptions{})
-			fmt.Printf("%v\n", err)
-			isNotFound := errors.IsNotFound(err)
-			Expect(isNotFound).To(BeTrue())
-			fmt.Println("chaos-monitor service deletion verified")
 
 		})
 
