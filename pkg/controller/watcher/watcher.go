@@ -33,75 +33,12 @@ import (
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 )
 
-// WatchForMonitorService creates a watcher for Chaos MonitorService
-func WatchForMonitorService(client client.Client, c controller.Controller) error {
-
-	monitorServiceHandler := handlerForMonitorService(client)
-
-	return c.Watch(&source.Kind{Type: &corev1.Service{}}, &monitorServiceHandler)
-}
-
 // WatchForRunnerPod creates watcher for Chaos Runner Pod
 func WatchForRunnerPod(client client.Client, c controller.Controller) error {
 
 	runnerPodHandler := handlerForRunnerPod(client)
 
 	return c.Watch(&source.Kind{Type: &corev1.Pod{}}, &runnerPodHandler)
-}
-
-// WatchForMonitorPod creates watcher for Chaos Monitor Pod
-func WatchForMonitorPod(client client.Client, c controller.Controller) error {
-
-	monitorPodHandler := handlerForMonitorPod(client)
-
-	return c.Watch(&source.Kind{Type: &corev1.Pod{}}, &monitorPodHandler)
-}
-
-// handlerForMonitorService creates a event handler for Monitor Service
-func handlerForMonitorService(clientSet client.Client) handler.EnqueueRequestsFromMapFunc {
-	reqLogger := chaosTypes.Log.WithName("Chaos Resources Watch")
-	var monitorServiceRequest []reconcile.Request
-	var err error
-
-	handlerForMonitorService := handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			monitorServiceCheck := strings.HasSuffix(a.Meta.GetName(), "-monitor")
-			if monitorServiceCheck {
-				monitorServiceRequest, err = createHandlerRequestForEngine(a, clientSet)
-				if err != nil {
-					reqLogger.Error(err, "Unable to get the ChaosEngine Resources", "namespace", a.Meta.GetNamespace())
-					return nil
-				}
-			}
-			return monitorServiceRequest
-
-		}),
-	}
-	return handlerForMonitorService
-
-}
-
-// handlerForMonitorPod creates a event Handler for Chaos Monitor Pod
-func handlerForMonitorPod(clientSet client.Client) handler.EnqueueRequestsFromMapFunc {
-	reqLogger := chaosTypes.Log.WithName("Chaos Resources Watch")
-	var monitorPodRequest []reconcile.Request
-	var err error
-
-	handlerForMonitorPod := handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			monitorNameCheck := strings.HasSuffix(a.Meta.GetName(), "-monitor")
-			if monitorNameCheck {
-				monitorPodRequest, err = createHandlerRequestForEngine(a, clientSet)
-				if err != nil {
-					reqLogger.Error(err, "Unable to get the ChaosEngine Resources", "namespace", a.Meta.GetNamespace())
-					return nil
-				}
-
-			}
-			return monitorPodRequest
-		}),
-	}
-	return handlerForMonitorPod
 }
 
 // handlerForRunnerPod creates a event Handler for Chaos Runner Pod
@@ -179,6 +116,6 @@ func createHandlerRequestForEngine(a handler.MapObject, clientSet client.Client)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
 	}
-	monitorServiceRequest := handlerRequestFromEngineList(listChaosEngine, chaosUID)
-	return monitorServiceRequest, nil
+	chaosEngineListRequest := handlerRequestFromEngineList(listChaosEngine, chaosUID)
+	return chaosEngineListRequest, nil
 }

@@ -62,11 +62,6 @@ spec:
             components:
               type: object
               properties:
-                monitor:
-                  type: object
-                  properties:
-                    image:
-                      type: string
                 runner:
                   type: object
                   properties:
