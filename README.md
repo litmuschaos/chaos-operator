@@ -33,8 +33,8 @@ which provides bootstrap support for new operator projects, allowing teams to fo
 
 The Litmus Chaos Operator helps reconcile the state of the ChaosEngine, a custom resource that holds the chaos intent 
 specified by a developer/devops engineer against a particular stateless/stateful Kubernetes deployment. The operator performs
-specific actions upon CRUD of the ChaosEngine, its primary resource. The operator also defines secondary resource (the engine 
-runner pod), which are created & managed by it in order to implement the reconcile functions. 
+specific actions upon CRUD of the ChaosEngine, its primary resource. The operator also defines a secondary resource (the engine 
+runner pod), which is created & managed by it in order to implement the reconcile functions. 
 
 ## What is a chaos engine?
 
