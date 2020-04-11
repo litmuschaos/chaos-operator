@@ -32,7 +32,7 @@ type ChaosEngineSpec struct {
 	AnnotationCheck string `json:"annotationCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
-	//Components contains the image of runnner
+	//Components contains the image, imagePullPolicy, arguments, and commands of runnner
 	Components ComponentParams `json:"components"`
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`

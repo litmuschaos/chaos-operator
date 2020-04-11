@@ -29,7 +29,7 @@ deps: _build_check_docker godeps
 .PHONY: godeps
 godeps:
 	@echo ""
-	@echo "INFO:\tverifying dependencies for chaos exporter build ..."
+	@echo "INFO:\tverifying dependencies for chaos operator build ..."
 	@go get -u -v golang.org/x/lint/golint
 	@go get -u -v golang.org/x/tools/cmd/goimports
 

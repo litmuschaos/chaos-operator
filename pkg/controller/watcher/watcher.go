@@ -116,6 +116,6 @@ func createHandlerRequestForEngine(a handler.MapObject, clientSet client.Client)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get the ChaosEngine Resources in namespace: %v", a.Meta.GetNamespace())
 	}
-	monitorServiceRequest := handlerRequestFromEngineList(listChaosEngine, chaosUID)
-	return monitorServiceRequest, nil
+	chaosEngineListRequest := handlerRequestFromEngineList(listChaosEngine, chaosUID)
+	return chaosEngineListRequest, nil
 }
