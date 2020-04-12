@@ -44,6 +44,14 @@ type ChaosEngineSpec struct {
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
 	//EngineStatus is a requirement for validation
 	EngineState EngineState `json:"engineState"`
+	// Annotations that needs to be provided in the pod for pod that is getting created
+	AppAnnotations ApplicationAnnotations `json:"appanotation"`
+}
+
+// Annotations that might be required for a custom application
+type ApplicationAnnotations struct {
+	AppAnnotationName string `json:"appanotation"`
+	AppAnnotationValue string `json:"appannotationvalue"`
 }
 
 // EngineState provides interface for all supported strings in spec.EngineState
