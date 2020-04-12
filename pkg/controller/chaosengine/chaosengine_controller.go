@@ -240,11 +240,16 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
 	}
 
+
+	annotationMap := make(map[string]string)
+	for _, annotation := range engine.Instance.Spec.AppAnnotations {
+		annotationMap[annotation.AppAnnotationName]=annotation.AppAnnotationValue
+	}
+
 	return pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithNamespace(engine.Instance.Namespace).
-		WithAnnotations(map[string]string{engine.Instance.Spec.AppAnnotations.AppAnnotationName:
-		engine.Instance.Spec.AppAnnotations.AppAnnotationValue}).
+		WithAnnotations(annotationMap).
 		WithLabels(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
