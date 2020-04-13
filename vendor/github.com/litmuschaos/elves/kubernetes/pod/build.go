@@ -135,24 +135,3 @@ func (b *Builder) Build() (*corev1.Pod, error) {
 	}
 	return b.pod.object, nil
 }
-
-
-// With Annotations - sets the Annotations field of Pod with provided value
-func (b *Builder) WithAnnotations(annotations map[string]string) *Builder {
-	if len(annotations) == 0 {
-		b.errs = append(
-			b.errs,
-			errors.New("failed to build pod object: missing annotation"),
-		)
-		return b
-	}
-
-	if b.pod.object.Annotations == nil {
-		b.pod.object.Annotations = map[string]string{}
-	}
-
-	for key, value := range annotations {
-		b.pod.object.Annotations[key] = value
-	}
-	return b
-}
