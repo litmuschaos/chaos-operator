@@ -82,6 +82,7 @@ jobs:
       - run: |
           export VERSION=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
           echo ${VERSION} 
+          sudo apt-get install rpm
           wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-${TRIVYARCH}.tar.gz
           tar zxvf trivy_${VERSION}_Linux-${TRIVYARCH}.tar.gz
           ./trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-operator:ci
