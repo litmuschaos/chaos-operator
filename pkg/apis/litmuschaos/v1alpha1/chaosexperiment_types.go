@@ -72,6 +72,8 @@ type ExperimentDef struct {
 	ConfigMaps []ConfigMap `json:"configmaps,omitempty"`
 	// Secrets contains a list of Secrets
 	Secrets []Secret `json:"secrets,omitempty"`
+	// Annotations that needs to be provided in the pod for pod that is getting created
+	AppAnnotations []ApplicationAnnotations `json:"appannotations"`
 }
 
 // ENVPair defines env var list to hold chaos params
@@ -79,6 +81,7 @@ type ENVPair struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+
 
 // +genclient
 // +resource:path=chaosexperiment

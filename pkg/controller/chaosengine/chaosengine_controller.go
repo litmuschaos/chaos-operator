@@ -242,7 +242,7 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 
 
 	annotationMap := make(map[string]string)
-	for _, annotation := range engine.Instance.Spec.AppAnnotations {
+	for _, annotation := range engine.Instance.Spec.Components.Runner.AppAnnotations {
 		annotationMap[annotation.AppAnnotationName]=annotation.AppAnnotationValue
 	}
 
