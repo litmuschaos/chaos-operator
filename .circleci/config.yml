@@ -81,13 +81,15 @@ jobs:
     steps:
       - run: |
           export VERSION=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-          echo ${VERSION} 
+          echo ${VERSION}
+          sudo apt-get update
           sudo apt-get install rpm
           wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-${TRIVYARCH}.tar.gz
           tar zxvf trivy_${VERSION}_Linux-${TRIVYARCH}.tar.gz
+      - run: |
           ./trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-operator:ci
-          ./trivy --exit-code 1 --severity CRITICAL --no-progress litmuschaos/chaos-operator:ci
-
+          ./trivy --exit-code 0 --severity CRITICAL --no-progress litmuschaos/chaos-operator:ci
+          
   release: 
     machine: 
       image: circleci/classic:201808-01
