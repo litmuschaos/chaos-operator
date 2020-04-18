@@ -415,6 +415,13 @@ func (in *ExperimentComponents) DeepCopyInto(out *ExperimentComponents) {
 		*out = make([]Secret, len(*in))
 		copy(*out, *in)
 	}
+	if in.ExperimentAnnotations != nil {
+		in, out := &in.ExperimentAnnotations, &out.ExperimentAnnotations
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
@@ -471,6 +478,13 @@ func (in *ExperimentDef) DeepCopyInto(out *ExperimentDef) {
 		in, out := &in.Secrets, &out.Secrets
 		*out = make([]Secret, len(*in))
 		copy(*out, *in)
+	}
+	if in.ExperimentAnnotations != nil {
+		in, out := &in.ExperimentAnnotations, &out.ExperimentAnnotations
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	return
 }
@@ -547,6 +561,13 @@ func (in *RunnerInfo) DeepCopyInto(out *RunnerInfo) {
 		in, out := &in.Command, &out.Command
 		*out = make([]string, len(*in))
 		copy(*out, *in)
+	}
+	if in.RunnerAnnotation != nil {
+		in, out := &in.RunnerAnnotation, &out.RunnerAnnotation
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	return
 }

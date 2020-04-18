@@ -46,12 +46,6 @@ type ChaosEngineSpec struct {
 	EngineState EngineState `json:"engineState"`
 }
 
-// Annotations that might be required for a custom application
-type ApplicationAnnotations struct {
-	AppAnnotationName string `json:"appanotation"`
-	AppAnnotationValue string `json:"appannotationvalue"`
-}
-
 // EngineState provides interface for all supported strings in spec.EngineState
 type EngineState string
 
@@ -137,7 +131,7 @@ type RunnerInfo struct {
 	//ImagePullPolicy for runner pod
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
 	// Annotations that needs to be provided in the pod for pod that is getting created
-	AppAnnotations []ApplicationAnnotations `json:"appannotations"`
+	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
@@ -162,7 +156,7 @@ type ExperimentComponents struct {
 	ENV        []ExperimentENV `json:"env,omitempty"`
 	ConfigMaps []ConfigMap     `json:"configMaps,omitempty"`
 	Secrets    []Secret        `json:"secrets,omitempty"`
-	AppAnnotations []ApplicationAnnotations `json:"appannotations"`
+	ExperimentAnnotations map[string]string `json:"runnerannotation,omitempty"`
 }
 
 // ExperimentENV varibles to override the default values in chaosexperiment

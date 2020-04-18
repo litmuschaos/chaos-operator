@@ -73,7 +73,7 @@ type ExperimentDef struct {
 	// Secrets contains a list of Secrets
 	Secrets []Secret `json:"secrets,omitempty"`
 	// Annotations that needs to be provided in the pod for pod that is getting created
-	AppAnnotations []ApplicationAnnotations `json:"appannotations"`
+	ExperimentAnnotations map[string]string `json:"experimentannotations,omitempty"`
 }
 
 // ENVPair defines env var list to hold chaos params
