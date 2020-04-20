@@ -130,7 +130,7 @@ type RunnerInfo struct {
 	Command []string `json:"command,omitempty"`
 	//ImagePullPolicy for runner pod
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
-	// Annotations that needs to be provided in the pod for pod that is getting created
+	// Runner Annotations that needs to be provided in the pod for pod that is getting created
 	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
 }
 
@@ -156,7 +156,7 @@ type ExperimentComponents struct {
 	ENV        []ExperimentENV `json:"env,omitempty"`
 	ConfigMaps []ConfigMap     `json:"configMaps,omitempty"`
 	Secrets    []Secret        `json:"secrets,omitempty"`
-	ExperimentAnnotations map[string]string `json:"runnerannotation,omitempty"`
+	ExperimentAnnotations map[string]string `json:"experimentannotation,omitempty"`
 }
 
 // ExperimentENV varibles to override the default values in chaosexperiment
