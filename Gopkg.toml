@@ -42,6 +42,10 @@ required = [
   version = "kubernetes-1.15.4"
 
 [[override]]
+  name = "github.com/litmuschaos/elves"
+  branch = "master"
+
+[[override]]
   name = "github.com/coreos/prometheus-operator"
   version = "=v0.29.0"
 

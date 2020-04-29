@@ -82,7 +82,6 @@ type ENVPair struct {
 	Value string `json:"value"`
 }
 
-
 // +genclient
 // +resource:path=chaosexperiment
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
