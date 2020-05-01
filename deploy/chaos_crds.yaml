@@ -70,6 +70,10 @@ spec:
                     type:
                       type: string
                       pattern: ^(go|ansible)$
+                    runnerannotation:
+                      type: object
+                      additionalProperties:
+                        type: string
             experiments:
               type: array
               items:
