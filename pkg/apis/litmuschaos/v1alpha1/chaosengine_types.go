@@ -153,9 +153,9 @@ type ExperimentAttributes struct {
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
 type ExperimentComponents struct {
-	ENV        []ExperimentENV `json:"env,omitempty"`
-	ConfigMaps []ConfigMap     `json:"configMaps,omitempty"`
-	Secrets    []Secret        `json:"secrets,omitempty"`
+	ENV                   []ExperimentENV   `json:"env,omitempty"`
+	ConfigMaps            []ConfigMap       `json:"configMaps,omitempty"`
+	Secrets               []Secret          `json:"secrets,omitempty"`
 	ExperimentAnnotations map[string]string `json:"experimentannotation,omitempty"`
 }
 
