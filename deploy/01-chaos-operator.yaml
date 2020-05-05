@@ -20,7 +20,7 @@ metadata:
     name: litmus
 rules:
   - apiGroups: ["","apps","batch","litmuschaos.io","openshift.io"]
-    resources: ["pods","jobs","deployments","daemonsets","replicaset","deploymentconfig","statefulsets","events","configmaps","services","chaosengines","chaosexperiments","chaosresults"]
+    resources: ["pods","jobs","deployments","replicationcontrollers","daemonsets","replicasets","deploymentconfigs","statefulsets","events","configmaps","services","chaosengines","chaosexperiments","chaosresults"]
     verbs: ["get","create","update","patch","delete","list","watch","deletecollection"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
