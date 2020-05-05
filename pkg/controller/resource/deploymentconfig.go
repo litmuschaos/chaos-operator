@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"fmt"
 	"errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,7 +9,6 @@ import (
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-
 )
 
 var (
@@ -22,32 +20,39 @@ var (
 )
 // CheckDeploymentAnnotation will check the annotation of deployment
 func CheckDeploymentConfigAnnotation(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
+
 	targetAppList, err := getDeploymentConfigLists(clientSet, engine)
 	if err != nil {
 		return engine, err
 	}
+
 	engine, chaosEnabledDeployment, err := checkForChaosEnabledDeploymentConfig(targetAppList, engine)
 	if err != nil {
 		return engine, err
 	}
-	fmt.Println("ChaosEnabled", chaosEnabledDeployment)
+
 	if chaosEnabledDeployment == 0 {
 		return engine, errors.New("no chaos-candidate found")
 	}
 	chaosTypes.Log.Info("Deployment chaos candidate:", "appName: ", engine.AppName, " appUUID: ", engine.AppUUID)
 
 	return engine, nil
-
 }
 
 func getDeploymentConfigLists(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*unstructured.UnstructuredList, error) {
+
 	dyn := clientSet.Resource(dcGVR)
-	targetAppList, _ := dyn.List(metav1.ListOptions{})
-	return targetAppList, nil
+	targetAppList, err := dyn.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return targetAppList, err
 }
 
 // This will check and count the total chaos enabled application
 func checkForChaosEnabledDeploymentConfig(targetAppList *unstructured.UnstructuredList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+
 	chaosEnabledDeployment := 0
 	for _, deploymentconfig := range targetAppList.Items {
 		engine.AppName = deploymentconfig.GetName()

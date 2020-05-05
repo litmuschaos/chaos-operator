@@ -1,9 +1,6 @@
 package dynamic
 
-
 import (
-	"fmt"
-
 	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
@@ -11,11 +8,11 @@ import (
 func CreateClientSet() (*dynamic.Interface, error){
 	restConfig, err := config.GetConfig()
 	if err != nil {
-		fmt.Print(err)
+		return nil, err
 	}
 	clientSet, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
-		fmt.Print(err)
+		return nil, err
 	}
 	return &clientSet, nil
 }
