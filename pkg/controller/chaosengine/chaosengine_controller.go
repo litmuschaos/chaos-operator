@@ -100,8 +100,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-var engine *chaosTypes.EngineInfo
-
 // watchSecondaryResources watch's for changes in chaos resources
 func watchChaosResources(clientSet client.Client, c controller.Controller) error {
 	// Watch for Primary Chaos Resource
@@ -125,8 +123,8 @@ func watchChaosResources(clientSet client.Client, c controller.Controller) error
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := startReqLogger(request)
-
-	err := r.getChaosEngineInstance(request)
+	engine := InitEngineInfo()
+	err := r.getChaosEngineInstance(engine, request)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -139,7 +137,7 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	//Handle deletion of Chaos Engine
 	if engine.Instance.ObjectMeta.GetDeletionTimestamp() != nil {
-		return r.reconcileForDelete(request)
+		return r.reconcileForDelete(engine, request)
 	}
 
 	// Start the reconcile by setting default values into Chaos Engine
@@ -154,17 +152,17 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 	// Handling Graceful completion of Chaos Engine
 	if engine.Instance.Spec.EngineState == litmuschaosv1alpha1.EngineStateStop && engine.Instance.Status.EngineStatus == litmuschaosv1alpha1.EngineStatusCompleted {
-		return r.reconcileForComplete(request)
+		return r.reconcileForComplete(engine, request)
 	}
 
 	// Handling forceful Abort of Chaos Engine
 	if engine.Instance.Spec.EngineState == litmuschaosv1alpha1.EngineStateStop && engine.Instance.Status.EngineStatus != litmuschaosv1alpha1.EngineStatusCompleted {
-		return r.reconcileForDelete(request)
+		return r.reconcileForDelete(engine, request)
 	}
 
 	// Handling restarting of Chaos Engine
 	if engine.Instance.Spec.EngineState == litmuschaosv1alpha1.EngineStateActive && (engine.Instance.Status.EngineStatus == litmuschaosv1alpha1.EngineStatusCompleted || engine.Instance.Status.EngineStatus == litmuschaosv1alpha1.EngineStatusStopped) {
-		return r.reconcileForRestart(request)
+		return r.reconcileForRestart(engine, request)
 	}
 
 	return reconcile.Result{}, nil
@@ -319,16 +317,14 @@ func engineRunnerPod(runnerPod *podEngineRunner) error {
 }
 
 // Fetch the ChaosEngine instance
-func (r *ReconcileChaosEngine) getChaosEngineInstance(request reconcile.Request) error {
+func (r *ReconcileChaosEngine) getChaosEngineInstance(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
 	instance := &litmuschaosv1alpha1.ChaosEngine{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		// Error reading the object - requeue the request.
 		return err
 	}
-	engine = &chaosTypes.EngineInfo{
-		Instance: instance,
-	}
+	engine.Instance = instance
 	return nil
 }
 
@@ -396,7 +392,7 @@ func (r *ReconcileChaosEngine) checkEngineRunnerPod(engine *chaosTypes.EngineInf
 //setChaosResourceImage take the runner image from engine spec
 //if it is not there then it will take from chaos-operator env
 //at last if it is not able to find image in engine spec and operator env then it will take default images
-func setChaosResourceImage() {
+func setChaosResourceImage(engine *chaosTypes.EngineInfo) {
 
 	ChaosRunnerImage := os.Getenv("CHAOS_RUNNER_IMAGE")
 
@@ -408,7 +404,7 @@ func setChaosResourceImage() {
 }
 
 // getAnnotationCheck() checks for annotation on the application
-func getAnnotationCheck() error {
+func getAnnotationCheck(engine *chaosTypes.EngineInfo) error {
 
 	if engine.Instance.Spec.AnnotationCheck == "" {
 		engine.Instance.Spec.AnnotationCheck = chaosTypes.DefaultAnnotationCheck
@@ -421,7 +417,7 @@ func getAnnotationCheck() error {
 }
 
 // reconcileForDelete reconciles for deletion/force deletion of Chaos Engine
-func (r *ReconcileChaosEngine) reconcileForDelete(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
 	err := r.forceRemoveChaosResources(engine, request)
 	if err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to delete chaos resources")
@@ -492,7 +488,7 @@ func (r *ReconcileChaosEngine) checkRunnerPodCompletedStatus(engine *chaosTypes.
 }
 
 // gracefullyRemoveDefaultChaosResources removes all chaos-resources gracefully
-func (r *ReconcileChaosEngine) gracefullyRemoveDefaultChaosResources(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileChaosEngine) gracefullyRemoveDefaultChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
 
 	if engine.Instance.Spec.JobCleanUpPolicy == litmuschaosv1alpha1.CleanUpPolicyDelete {
 		if err := r.gracefullyRemoveChaosPods(engine, request); err != nil {
@@ -521,9 +517,9 @@ func (r *ReconcileChaosEngine) gracefullyRemoveChaosPods(engine *chaosTypes.Engi
 }
 
 // reconcileForComplete reconciles for graceful completion of Chaos Engine
-func (r *ReconcileChaosEngine) reconcileForComplete(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileChaosEngine) reconcileForComplete(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
 
-	_, err := r.gracefullyRemoveDefaultChaosResources(request)
+	_, err := r.gracefullyRemoveDefaultChaosResources(engine, request)
 	if err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to delete chaos resources")
 		return reconcile.Result{}, err
@@ -537,7 +533,7 @@ func (r *ReconcileChaosEngine) reconcileForComplete(request reconcile.Request) (
 }
 
 // reconcileForRestart reconciles for restart of Chaos Engine
-func (r *ReconcileChaosEngine) reconcileForRestart(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileChaosEngine) reconcileForRestart(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
 	err := r.forceRemoveChaosResources(engine, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -614,10 +610,10 @@ func startReqLogger(request reconcile.Request) logr.Logger {
 
 func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.EngineInfo) error {
 	// Get the image for runner pod from chaosengine spec,operator env or default values.
-	setChaosResourceImage()
+	setChaosResourceImage(engine)
 
 	//getAnnotationCheck fetch the annotationCheck from engine spec
-	err := getAnnotationCheck()
+	err := getAnnotationCheck(engine)
 	if err != nil {
 		return err
 	}
@@ -670,4 +666,9 @@ func (r *ReconcileChaosEngine) forceRemoveChaosResources(engine *chaosTypes.Engi
 		return err
 	}
 	return nil
+}
+
+// InitEngineInfo provides reference to a new
+func InitEngineInfo() *chaosTypes.EngineInfo {
+	return &chaosTypes.EngineInfo{}
 }
