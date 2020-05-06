@@ -17,9 +17,12 @@ limitations under the License.
 package bdd
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"testing"
 	"time"
 
@@ -385,6 +388,46 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			isComplete := engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted
 			Expect(isComplete).To(BeTrue())
+
+		})
+	})
+
+	Context("Validate via Chaos-Operator Logs", func() {
+
+		It("Should Generate Operator logs", func() {
+			pods, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{})
+			Expect(err).To(BeNil())
+			var podName string
+			for i := range pods.Items {
+				matched, _ := regexp.MatchString("litmus-*", pods.Items[i].Name)
+				if matched == true {
+					podName = pods.Items[i].Name
+				}
+			}
+			Expect(podName).To(
+				Not(BeEmpty()),
+				"Unable to get the pod, might be something wrong with chaos-operator BDD",
+			)
+
+			fmt.Printf("Got Pod Name: %v\n", podName)
+			podLogOpts := v1.PodLogOptions{}
+			req := client.CoreV1().Pods("litmus").GetLogs(podName, &podLogOpts)
+			podLogs, err := req.Stream()
+			Expect(err).To(BeNil())
+			// if err != nil {
+			// 	return "error in opening stream"
+			// }
+			defer podLogs.Close()
+
+			buf := new(bytes.Buffer)
+			_, err = io.Copy(buf, podLogs)
+			Expect(err).To(BeNil())
+			// if err != nil {
+			// 	return "error in copy information from podLogs to buf"
+			// }
+			str := buf.String()
+
+			fmt.Printf("%v\n", str)
 
 		})
 	})

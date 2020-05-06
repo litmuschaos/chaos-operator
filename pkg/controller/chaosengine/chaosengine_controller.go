@@ -123,7 +123,7 @@ func watchChaosResources(clientSet client.Client, c controller.Controller) error
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := startReqLogger(request)
-	var engine &chaosTypes.EngineInfo{}
+	engine := &chaosTypes.EngineInfo{}
 	err := r.getChaosEngineInstance(engine, request)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
