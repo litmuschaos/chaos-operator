@@ -396,7 +396,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 		It("Should Generate Operator logs", func() {
 			pods, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("%v=%v","name","chaos-operator"),
+				LabelSelector: fmt.Sprintf("%v=%v", "name", "chaos-operator"),
 			})
 			Expect(err).To(BeNil())
 

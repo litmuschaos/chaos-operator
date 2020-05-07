@@ -423,7 +423,8 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to delete chaos resources")
 		return reconcile.Result{}, err
 	}
-	opts := client.UpdateOptions{}
+	//opts := client.UpdateOptions{}
+	patch := client.MergeFrom(engine.Instance.DeepCopy())
 
 	if engine.Instance.ObjectMeta.Finalizers != nil {
 		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
@@ -433,7 +434,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 	updateExperimentStatusesForStop(engine)
 	engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusStopped
 
-	if err := r.client.Update(context.TODO(), engine.Instance, &opts); err != nil {
+	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to update chaosengine")
 		return reconcile.Result{}, fmt.Errorf("Unable to remove Finalizer from chaosEngine Resource, due to error: %v", err)
 	}
