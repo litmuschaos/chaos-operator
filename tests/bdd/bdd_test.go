@@ -442,7 +442,28 @@ var _ = Describe("BDD on chaos-operator", func() {
 //Deleting all unused resources
 var _ = AfterSuite(func() {
 
-	By("Deleting all CRDs")
-	crdDeletion := exec.Command("kubectl", "delete", "-f", "../../deploy/chaos_crds.yaml").Run()
-	Expect(crdDeletion).To(BeNil())
+	//Deleting ChaosExperiments
+	By("Deleting ChaosExperiments")
+	err = exec.Command("kubectl", "delete", "chaosexperiments", "--all", "-n", "litmus").Run()
+	Expect(err).To(BeNil())
+
+	//Deleting ChaosEngines
+	By("Deleting ChaosEngines")
+	err = exec.Command("kubectl", "delete", "chaosengine", "--all", "-n", "litmus").Run()
+	Expect(err).To(BeNil())
+
+	//Deleting CRD's
+	By("deleting chaosengine crd")
+	err = exec.Command("kubectl", "delete", "-f", "../../deploy/chaos_crds.yaml").Run()
+	Expect(err).To(BeNil())
+
+	//Deleting rbacs
+	err = exec.Command("kubectl", "delete", "-f", "../../deploy/rbac.yaml").Run()
+	Expect(err).To(BeNil())
+
+	//Deleting Chaos-Operator
+	By("Deleting operator")
+	err = exec.Command("kubectl", "delete", "-f", "../../deploy/operator.yaml").Run()
+	Expect(err).To(BeNil())
+
 })
