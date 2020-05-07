@@ -410,21 +410,20 @@ var _ = Describe("BDD on chaos-operator", func() {
 			)
 
 			fmt.Printf("Got Pod Name: %v\n", podName)
+
 			podLogOpts := v1.PodLogOptions{}
+
 			req := client.CoreV1().Pods("litmus").GetLogs(podName, &podLogOpts)
+
 			podLogs, err := req.Stream()
 			Expect(err).To(BeNil())
-			// if err != nil {
-			// 	return "error in opening stream"
-			// }
+
 			defer podLogs.Close()
 
 			buf := new(bytes.Buffer)
 			_, err = io.Copy(buf, podLogs)
 			Expect(err).To(BeNil())
-			// if err != nil {
-			// 	return "error in copy information from podLogs to buf"
-			// }
+
 			str := buf.String()
 
 			fmt.Printf("%v\n", str)
