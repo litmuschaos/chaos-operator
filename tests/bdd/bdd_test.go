@@ -458,6 +458,7 @@ var _ = AfterSuite(func() {
 	Expect(err).To(BeNil())
 
 	//Deleting rbacs
+	By("Deleting RBAC's")
 	err = exec.Command("kubectl", "delete", "-f", "../../deploy/rbac.yaml").Run()
 	Expect(err).To(BeNil())
 
