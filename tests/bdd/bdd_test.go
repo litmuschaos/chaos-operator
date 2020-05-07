@@ -22,7 +22,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"testing"
 	"time"
 
@@ -37,6 +36,7 @@ import (
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 
 	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
@@ -86,7 +86,7 @@ var _ = BeforeSuite(func() {
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/operator.yaml").Run()
 	Expect(err).To(BeNil())
 
-	fmt.Println("chaos-operator created successfully")
+	klog.Infoln("chaos-operator created successfully")
 
 	//Wait for the creation of chaos-operator
 	time.Sleep(50 * time.Second)
@@ -154,7 +154,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			_, err := client.AppsV1().Deployments("litmus").Create(deployment)
 			if err != nil {
-				fmt.Println("Deployment is not created and error is ", err)
+				klog.Infoln("Deployment is not created and error is ", err)
 			}
 
 			//creating chaos-experiment for pod-delete
@@ -207,7 +207,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			_, err = clientSet.ChaosExperiments("litmus").Create(ChaosExperiment)
 			Expect(err).To(BeNil())
 
-			fmt.Println("ChaosExperiment created successfully...")
+			klog.Infoln("ChaosExperiment created successfully...")
 
 			//Creating chaosEngine
 			By("Creating ChaosEngine")
@@ -243,7 +243,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			_, err = clientSet.ChaosEngines("litmus").Create(chaosEngine)
 			Expect(err).To(BeNil())
 
-			fmt.Println("Chaosengine created successfully...")
+			klog.Infoln("Chaosengine created successfully...")
 
 			//Wait till the creation of runner pod
 			time.Sleep(50 * time.Second)
@@ -278,7 +278,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			_, err = clientSet.ChaosEngines("litmus").Update(engine)
 			Expect(err).To(BeNil())
 
-			fmt.Println("Chaosengine updated successfully...")
+			klog.Infoln("Chaosengine updated successfully...")
 
 			//Wait till the creation of runner pod
 			time.Sleep(50 * time.Second)
@@ -293,10 +293,10 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			//Fetching engine-nginx-runner pod
 			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
-			fmt.Printf("%v", err)
+			klog.Infof("%v\n", err)
 			isNotFound := errors.IsNotFound(err)
 			Expect(isNotFound).To(BeTrue())
-			fmt.Println("chaos-runner pod deletion verified")
+			klog.Infoln("chaos-runner pod deletion verified")
 
 		})
 
@@ -318,7 +318,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			err := clientSet.ChaosEngines("litmus").Delete("engine-nginx", &metav1.DeleteOptions{})
 			Expect(err).To(BeNil())
 
-			fmt.Println("chaos engine deleted successfully")
+			klog.Infoln("chaos engine deleted successfully")
 
 		})
 
@@ -373,10 +373,10 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			//Fetching engine-nginx-runner pod
 			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
-			fmt.Printf("%v", err)
+			klog.Infof("%v\n", err)
 			isNotFound := errors.IsNotFound(err)
 			Expect(isNotFound).To(BeTrue())
-			fmt.Println("chaos-runner pod deletion verified")
+			klog.Infoln("chaos-runner pod deletion verified")
 
 		})
 
@@ -395,21 +395,27 @@ var _ = Describe("BDD on chaos-operator", func() {
 	Context("Validate via Chaos-Operator Logs", func() {
 
 		It("Should Generate Operator logs", func() {
-			pods, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{})
+			pods, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%v=%v","name","chaos-operator"),
+			})
 			Expect(err).To(BeNil())
-			var podName string
-			for i := range pods.Items {
-				matched, _ := regexp.MatchString("litmus-*", pods.Items[i].Name)
-				if matched == true {
-					podName = pods.Items[i].Name
-				}
+
+			if len(pods.Items) > 1 {
+				klog.Infof("Multiple Chaos-Operator Pods found")
+				return
 			}
+			if len(pods.Items) < 1 {
+				klog.Infof("Unable to find Chaos-Operator Pod")
+				return
+			}
+
+			podName := pods.Items[0].Name
 			Expect(podName).To(
 				Not(BeEmpty()),
-				"Unable to get the pod, might be something wrong with chaos-operator BDD",
+				"Unable to get the operator pod name",
 			)
 
-			fmt.Printf("Got Pod Name: %v\n", podName)
+			klog.Infof("Got Pod Name: %v\n", podName)
 
 			podLogOpts := v1.PodLogOptions{}
 
@@ -426,7 +432,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			str := buf.String()
 
-			fmt.Printf("%v\n", str)
+			klog.Infof("Chaos Operator Logs:\n%v\n", str)
 
 		})
 	})
