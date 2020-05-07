@@ -444,7 +444,7 @@ var _ = AfterSuite(func() {
 
 	//Deleting ChaosExperiments
 	By("Deleting ChaosExperiments")
-	err = exec.Command("kubectl", "delete", "chaosexperiments", "--all", "-n", "litmus").Run()
+	err := exec.Command("kubectl", "delete", "chaosexperiments", "--all", "-n", "litmus").Run()
 	Expect(err).To(BeNil())
 
 	//Deleting ChaosEngines
