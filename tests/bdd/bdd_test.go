@@ -452,9 +452,9 @@ var _ = AfterSuite(func() {
 	err = exec.Command("kubectl", "delete", "chaosengine", "--all", "-n", "litmus").Run()
 	Expect(err).To(BeNil())
 
-	//Deleting CRD's
-	By("deleting chaosengine crd")
-	err = exec.Command("kubectl", "delete", "-f", "../../deploy/chaos_crds.yaml").Run()
+	//Deleting Chaos-Operator
+	By("Deleting operator")
+	err = exec.Command("kubectl", "delete", "-f", "../../deploy/operator.yaml").Run()
 	Expect(err).To(BeNil())
 
 	//Deleting rbacs
@@ -462,9 +462,9 @@ var _ = AfterSuite(func() {
 	err = exec.Command("kubectl", "delete", "-f", "../../deploy/rbac.yaml").Run()
 	Expect(err).To(BeNil())
 
-	//Deleting Chaos-Operator
-	By("Deleting operator")
-	err = exec.Command("kubectl", "delete", "-f", "../../deploy/operator.yaml").Run()
+	//Deleting CRD's
+	By("Deleting chaosengine crd")
+	err = exec.Command("kubectl", "delete", "-f", "../../deploy/chaos_crds.yaml").Run()
 	Expect(err).To(BeNil())
 
 })
