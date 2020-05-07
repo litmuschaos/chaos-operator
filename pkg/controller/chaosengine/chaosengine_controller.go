@@ -423,7 +423,6 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to delete chaos resources")
 		return reconcile.Result{}, err
 	}
-	//opts := client.UpdateOptions{}
 	patch := client.MergeFrom(engine.Instance.DeepCopy())
 
 	if engine.Instance.ObjectMeta.Finalizers != nil {

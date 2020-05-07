@@ -21,8 +21,8 @@ import (
 	"os"
 	"strings"
 
-	dynamic "github.com/litmuschaos/chaos-operator/pkg/dynamic"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
+	dynamic "github.com/litmuschaos/chaos-operator/pkg/dynamic"
 	k8s "github.com/litmuschaos/chaos-operator/pkg/kubernetes"
 )
 
