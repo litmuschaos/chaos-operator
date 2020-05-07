@@ -19,9 +19,9 @@ metadata:
   labels:
     name: litmus
 rules:
-- apiGroups: ["","apps","batch","litmuschaos.io"]
-  resources: ["pods","jobs","deployments","daemonsets","statefulsets","events","configmaps","services","chaosengines","chaosexperiments","chaosresults"]
-  verbs: ["get","create","update","patch","delete","list","watch","deletecollection"]
+  - apiGroups: ["","apps","batch","litmuschaos.io","openshift.io"]
+    resources: ["pods","jobs","deployments","replicationcontrollers","daemonsets","replicasets","deploymentconfigs","statefulsets","events","configmaps","services","chaosengines","chaosexperiments","chaosresults"]
+    verbs: ["get","create","update","patch","delete","list","watch","deletecollection"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -34,9 +34,9 @@ roleRef:
   kind: ClusterRole
   name: litmus
 subjects:
-- kind: ServiceAccount
-  name: litmus
-  namespace: litmus
+  - kind: ServiceAccount
+    name: litmus
+    namespace: litmus
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -56,15 +56,15 @@ spec:
       serviceAccountName: litmus
       containers:
         - name: chaos-operator
-          image: kublitmuschaos/chaos-operator:latest
+          image: litmuschaos/chaos-operator:latest
           command:
-          - chaos-operator
+            - chaos-operator
           imagePullPolicy: Always
           env:
             - name: CHAOS_RUNNER_IMAGE
               value: "litmuschaos/chaos-runner:latest"
             - name: WATCH_NAMESPACE
-              value: 
+              value:
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -121,14 +121,14 @@ spec:
               properties:
                 appkind:
                   type: string
-                  pattern: ^(deployment|statefulset|daemonset)$
+                  pattern: ^(deployment|statefulset|daemonset|deploymentconfig)$
                 applabel:
                   type: string
                 appns:
                   type: string
             auxiliaryAppInfo:
               type: string
-            engineState: 
+            engineState:
               type: string
               pattern: ^(active|stop|initialized|stopped)$
             chaosServiceAccount:
@@ -154,7 +154,7 @@ spec:
                   spec:
                     type: object
                     properties:
-                      components: 
+                      components:
                         type: object
                         properties:
                           env:
@@ -180,7 +180,7 @@ spec:
                             items:
                               type: object
                               properties:
-                                name: 
+                                name:
                                   type: string
                                 mountPath:
                                   type: string
@@ -190,9 +190,9 @@ spec:
           type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -262,9 +262,9 @@ spec:
                     type: object
                     minProperties: 3
                     required:
-                    - apiGroups
-                    - resources
-                    - verbs
+                      - apiGroups
+                      - resources
+                      - verbs
                     properties:
                       apiGroups:
                         type: array
@@ -316,9 +316,9 @@ spec:
           type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -353,6 +353,6 @@ spec:
           type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true

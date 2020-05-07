@@ -21,6 +21,7 @@ import (
 	"os"
 	"strings"
 
+	dynamic "github.com/litmuschaos/chaos-operator/pkg/dynamic"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	k8s "github.com/litmuschaos/chaos-operator/pkg/kubernetes"
 )
@@ -52,6 +53,8 @@ func CheckChaosAnnotation(engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo
 	// Use client-Go to obtain a list of apps w/ specified labels
 	//var chaosEngine chaosTypes.EngineInfo
 	clientSet, err := k8s.CreateClientSet()
+	dynamicClientSet, err := dynamic.CreateClientSet()
+
 	if err != nil {
 		return engine, fmt.Errorf("clientset generation failed with error: %+v", err)
 	}
@@ -70,6 +73,11 @@ func CheckChaosAnnotation(engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo
 		engine, err = CheckDaemonSetAnnotation(clientSet, engine)
 		if err != nil {
 			return engine, fmt.Errorf("resource type 'daemonset', err: %+v", err)
+		}
+	case "deploymentconfig", "deploymentconfigs":
+		engine, err = CheckDeploymentConfigAnnotation(*dynamicClientSet, engine)
+		if err != nil {
+			return engine, fmt.Errorf("resource type 'deploymentconfig', err: %+v", err)
 		}
 	default:
 		return engine, fmt.Errorf("resource type '%s' not supported for induce chaos", engine.AppInfo.Kind)
