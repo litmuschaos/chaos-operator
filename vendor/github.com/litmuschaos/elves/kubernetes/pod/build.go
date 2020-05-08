@@ -136,6 +136,8 @@ func (b *Builder) Build() (*corev1.Pod, error) {
 	return b.pod.object, nil
 }
 
+// WithAnnotations merges existing annotations if any
+// with the ones that are provided here
 func (b *Builder) WithAnnotations(annotations map[string]string) *Builder {
 
 	if b.pod.object.Annotations == nil {
