@@ -19,7 +19,8 @@ var (
 		Resource: "deploymentconfigs",
 	}
 )
-// CheckDeploymentAnnotation will check the annotation of deployment
+
+// CheckDeploymentConfigAnnotation will check the annotation of deployment
 func CheckDeploymentConfigAnnotation(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
 
 	deploymentConfigList, err := getDeploymentConfigList(clientSet, engine)

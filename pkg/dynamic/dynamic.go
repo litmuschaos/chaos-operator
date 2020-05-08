@@ -5,7 +5,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-func CreateClientSet() (*dynamic.Interface, error){
+// CreateClientSet returns a Dynamic Kubernetes ClientSet
+func CreateClientSet() (*dynamic.Interface, error) {
 	restConfig, err := config.GetConfig()
 	if err != nil {
 		return nil, err
