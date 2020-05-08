@@ -19,7 +19,7 @@ metadata:
   labels:
     name: litmus
 rules:
-  - apiGroups: ["","apps","batch","litmuschaos.io","openshift.io"]
+  - apiGroups: ["","apps","batch","litmuschaos.io","apps.openshift.io"]
     resources: ["pods","jobs","deployments","replicationcontrollers","daemonsets","replicasets","deploymentconfigs","statefulsets","events","configmaps","services","chaosengines","chaosexperiments","chaosresults"]
     verbs: ["get","create","update","patch","delete","list","watch","deletecollection"]
 ---
