@@ -475,9 +475,12 @@ func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.Engine
 
 // updateEngineState updates Chaos Engine Status with given State
 func (r *ReconcileChaosEngine) updateEngineState(engine *chaosTypes.EngineInfo, state litmuschaosv1alpha1.EngineState) error {
-	opts := client.UpdateOptions{}
+	patch := client.MergeFrom(engine.Instance.DeepCopy())
 	engine.Instance.Spec.EngineState = state
-	return r.client.Update(context.TODO(), engine.Instance, &opts)
+	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil {
+		return fmt.Errorf("Unable to patch state of chaosEngine Resource, due to error: %v", err)
+	}
+	return nil
 }
 
 // checkRunnerPodCompletedStatus checks runner-pod status for Completed
@@ -527,7 +530,7 @@ func (r *ReconcileChaosEngine) reconcileForComplete(engine *chaosTypes.EngineInf
 	err = r.updateEngineState(engine, litmuschaosv1alpha1.EngineStateStop)
 	if err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to update chaosengine")
-		return reconcile.Result{}, err
+		return reconcile.Result{}, fmt.Errorf("Unable to Update Engine State: %v", err)
 	}
 	return reconcile.Result{}, nil
 }
@@ -545,7 +548,7 @@ func (r *ReconcileChaosEngine) reconcileForRestart(engine *chaosTypes.EngineInfo
 
 }
 
-// initEngine initilizes Chaos Engine, and add a finalizer to it.
+// initEngine initialize Chaos Engine, and add a finalizer to it.
 func (r *ReconcileChaosEngine) initEngine(engine *chaosTypes.EngineInfo) error {
 	if engine.Instance.Spec.EngineState == "" {
 		engine.Instance.Spec.EngineState = litmuschaosv1alpha1.EngineStateActive
@@ -558,7 +561,7 @@ func (r *ReconcileChaosEngine) initEngine(engine *chaosTypes.EngineInfo) error {
 			engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineInitialized", "%s created successfully", engine.Instance.Name+"-runner")
 			if err := r.client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-				return err
+				return fmt.Errorf("Unable to initialize ChaosEngine, because of Update Error: %v", err)
 			}
 		}
 	}
@@ -643,7 +646,7 @@ func (r *ReconcileChaosEngine) updateEngineForComplete(engine *chaosTypes.Engine
 		engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusCompleted
 		engine.Instance.Spec.EngineState = litmuschaosv1alpha1.EngineStateStop
 		if err := r.client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-			return err
+			return fmt.Errorf("Unable to update ChaosEngine Status, due to update error: %v", err)
 		}
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineCompleted", "Chaos Engine completed, will delete or retain the resources according to jobCleanUpPolicy")
 	}
@@ -655,7 +658,7 @@ func (r *ReconcileChaosEngine) updateEngineForRestart(engine *chaosTypes.EngineI
 	engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusInitialized
 	engine.Instance.Status.Experiments = nil
 	if err := r.client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-		return err
+		return fmt.Errorf("Unable to restart ChaosEngine, due to update error: %v", err)
 	}
 	return nil
 }
