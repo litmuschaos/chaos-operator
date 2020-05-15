@@ -11,7 +11,6 @@ metadata:
   labels:
     name: litmus
 ---
-# Source: openebs/templates/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
@@ -22,6 +21,9 @@ rules:
   - apiGroups: ["","apps","batch","litmuschaos.io","apps.openshift.io"]
     resources: ["pods","jobs","deployments","replicationcontrollers","daemonsets","replicasets","deploymentconfigs","statefulsets","events","configmaps","services","chaosengines","chaosexperiments","chaosresults"]
     verbs: ["get","create","update","patch","delete","list","watch","deletecollection"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations"]
+    verbs: ["get","create","list","delete","update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
