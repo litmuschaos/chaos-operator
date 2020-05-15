@@ -66,9 +66,9 @@ spec:
                     type: object
                     minProperties: 3
                     required:
-                    - apiGroups
-                    - resources
-                    - verbs
+                      - apiGroups
+                      - resources
+                      - verbs
                     properties:
                       apiGroups:
                         type: array
@@ -120,6 +120,6 @@ spec:
           type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
