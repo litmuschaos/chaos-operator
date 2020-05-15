@@ -69,6 +69,19 @@ spec:
                     type:
                       type: string
                       pattern: ^(go|ansible)$
+                    runnerannotation:
+                      type: object
+                      additionalProperties:
+                        type: string
+                        properties:
+                          key:
+                            type: string
+                            minLength: 1
+                            allowEmptyValue: false
+                          value:
+                            type: string
+                            minLength: 1
+                            allowEmptyValue: false
             experiments:
               type: array
               items:
@@ -109,6 +122,19 @@ spec:
                                   type: string
                                 mountPath:
                                   type: string
+                          experimentannotation:
+                            type: object
+                            additionalProperties:
+                              type: string
+                              properties:
+                                key:
+                                  type: string
+                                  minLength: 1
+                                  allowEmptyValue: false
+                                value:
+                                  type: string
+                                  minLength: 1
+                                  allowEmptyValue: false
 
 
         status:
