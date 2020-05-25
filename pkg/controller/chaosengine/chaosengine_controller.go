@@ -635,7 +635,7 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 		if err != nil {
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to get chaosengine")
 			chaosTypes.Log.Info("Annotation check failed with", "error:", err)
-			return nil
+			return err
 		}
 	}
 	return nil
