@@ -56,8 +56,10 @@ type ExperimentDef struct {
 	// Default labels of the runner pod
 	// +optional
 	Labels map[string]string `json:"labels"`
-	// Image of the chaos executor
+	// Image of the chaos experiment
 	Image string `json:"image"`
+	// ImagePullPolicy of the chaos experiment container
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty"`
 	//Scope specifies the service account scope (& thereby blast radius) of the experiment
 	Scope string `json:"scope"`
 	// List of Permission needed for a service account to execute experiment
