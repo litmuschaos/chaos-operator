@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -56,8 +57,10 @@ type ExperimentDef struct {
 	// Default labels of the runner pod
 	// +optional
 	Labels map[string]string `json:"labels"`
-	// Image of the chaos executor
+	// Image of the chaos experiment
 	Image string `json:"image"`
+	// ImagePullPolicy of the chaos experiment container
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
 	//Scope specifies the service account scope (& thereby blast radius) of the experiment
 	Scope string `json:"scope"`
 	// List of Permission needed for a service account to execute experiment
