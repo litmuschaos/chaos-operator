@@ -18,15 +18,41 @@ package chaosengine
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/scheme"
+	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
+	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
+
+var (
+	kubeconfig string
+	config     *restclient.Config
+	r          *ReconcileChaosEngine
+	clients    *kubernetes.Clientset
+	clientSet  *chaosClient.LitmuschaosV1alpha1Client
+)
+
+func init() {
+	kubeconfig := os.Getenv("HOME") + "/.kube/config"
+	config, _ := clientcmd.BuildConfigFromFlags("", kubeconfig)
+
+	clients, _ = kubernetes.NewForConfig(config)
+
+	clientSet, _ = chaosClient.NewForConfig(config)
+
+	v1alpha1.AddToScheme(scheme.Scheme)
+}
 
 func TestNewRunnerPodForCR(t *testing.T) {
 	tests := map[string]struct {
@@ -65,6 +91,54 @@ func TestNewRunnerPodForCR(t *testing.T) {
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						Monitoring:          false,
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			isErr: false,
+		},
+		"Test Positive-3": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+						AnnotationCheck:     "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			isErr: false,
+		},
+		"Test Positive-4": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+						AnnotationCheck:     "true",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -143,7 +217,6 @@ func TestNewRunnerPodForCR(t *testing.T) {
 		},
 	}
 	for name, mock := range tests {
-		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 			_, err := newRunnerPodForCR(&mock.engine)
 			if mock.isErr && err == nil {
@@ -180,7 +253,6 @@ func TestInitializeApplicationInfo(t *testing.T) {
 		},
 	}
 	for name, mock := range tests {
-		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 			appInfo := &chaosTypes.ApplicationInfo{
 				Namespace: "namespace",
@@ -270,7 +342,6 @@ func TestGetChaosRunnerENV(t *testing.T) {
 		},
 	}
 	for name, mock := range tests {
-		name, mock := name, mock
 		t.Run(name, func(t *testing.T) {
 			actualResult := getChaosRunnerENV(mock.instance, mock.aExList, fakeClientUUID)
 			println(actualResult)
@@ -281,6 +352,148 @@ func TestGetChaosRunnerENV(t *testing.T) {
 				if result.Value != mock.expectedResult[index].Value {
 					t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, mock.expectedResult[index])
 				}
+			}
+		})
+	}
+}
+
+func TestGetApplicationDetail(t *testing.T) {
+	tests := map[string]struct {
+		engine chaosTypes.EngineInfo
+		isErr  bool
+	}{
+		"Test Positive": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-monitor",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "key=value",
+						},
+					},
+				},
+			},
+			isErr: false,
+		},
+		"Test Negative": {
+			engine: chaosTypes.EngineInfo{
+				Instance: nil,
+			},
+			isErr: true,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := getApplicationDetail(&mock.engine)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				fmt.Println(err)
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+
+func TestGetAnnotationCheck(t *testing.T) {
+	tests := map[string]struct {
+		engine chaosTypes.EngineInfo
+		isErr  bool
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          true,
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "run=nginx",
+						},
+						AnnotationCheck: "true",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: false,
+		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "run=nginx",
+						},
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			isErr: false,
+		},
+		"Test Negative-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+						AnnotationCheck:     "fakeCheck",
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "run=nginx",
+						},
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: true,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := getAnnotationCheck(&mock.engine)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				fmt.Println(err)
+				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
 		})
 	}
