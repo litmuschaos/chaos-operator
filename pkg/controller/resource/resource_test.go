@@ -64,7 +64,7 @@ func init() {
 	// create sample nginx application
 	deployment := &appv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "nginx",
+			Name: "nginx-1",
 			Labels: map[string]string{
 				"app": "nginx-1",
 			},
@@ -165,7 +165,7 @@ func init() {
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx",
+			Name:      "nginx-3",
 			Namespace: "default",
 			Labels: map[string]string{
 				"app": "nginx-3",
