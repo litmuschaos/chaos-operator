@@ -658,7 +658,7 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
 			if err != nil {
-				fmt.Printf("engine nai bna, err: %v", err)
+				fmt.Printf("engine not created, err: %v", err)
 			}
 			err = r.validateAnnontatedApplication(&mock.engine)
 			if mock.isErr && err == nil {
@@ -741,7 +741,7 @@ func TestUpdateEngineForComplete(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
 			if err != nil {
-				fmt.Printf("engine nai bna, err: %v", err)
+				fmt.Printf("engine not created, err: %v", err)
 			}
 			err = r.updateEngineForComplete(&mock.engine, true)
 			if mock.isErr && err == nil {
