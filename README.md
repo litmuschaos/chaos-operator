@@ -11,16 +11,16 @@ and Kubernetes infrastructure in a managed fashion. Its objective is to make the
 hardening of application workloads on Kubernetes easy by automating the execution of chaos experiments. A sample chaos 
 injection workflow could be as simple as:
 
-- Install the Litmus infrastructure components (RBAC, CRDs), the Operator & Experiment custom resource bundles via the operator manifest
-- Annotate the application under test (AUT), enabling it for chaos
-- Create a ChaosEngine custom resource tied to the AUT, which describes the experiment to be executed 
+  - Install the Litmus infrastructure components (RBAC, CRDs), the Operator & Experiment custom resource bundles via the operator manifest
+  - Annotate the application under test (AUT), enabling it for chaos
+  - Create a ChaosEngine custom resource tied to the AUT, which describes the experiment to be executed 
 
 Benefits provided by the Chaos Operator include: 
 
-- Standardised chaos experiment spec 
-- Categorized chaos bundles for stateless/stateful/vendor-specific
-- Test-Run resiliency 
-- Ability to chaos run as a background service based on annotations
+  - Standardised chaos experiment spec 
+  - Categorized chaos bundles for stateless/stateful/vendor-specific
+  - Test-Run resiliency 
+  - Ability to chaos run as a background service based on annotations
 
 ## What is a chaos operator and how is it built?
 
@@ -40,12 +40,12 @@ runner pod), which is created & managed by it in order to implement the reconcil
 
 The ChaosEngine is the core schema that defines the chaos workflow for a given application. Currently, it defines the following:
 
-- Application info (namespace, labels, kind) of primary (AUT) and auxiliary (dependent) applications 
-- ServiceAccount used for execution of the experiment
-- Flag to turn on/off chaos annotation checks on applications
-- Chaos Experiment to be executed on the application
-- Attributes of the experiments (overrides defaults specified in the experiment CRs)
-- Flag to retain/cleanup chaos resources after experiment execution
+  - Application info (namespace, labels, kind) of primary (AUT) and auxiliary (dependent) applications 
+  - ServiceAccount used for execution of the experiment
+  - Flag to turn on/off chaos annotation checks on applications
+  - Chaos Experiment to be executed on the application
+  - Attributes of the experiments (overrides defaults specified in the experiment CRs)
+  - Flag to retain/cleanup chaos resources after experiment execution
 
 The ChaosEngine is the referenced as the owner of the secondary (reconcile) resource with Kubernetes deletePropagation 
 ensuring these also are removed upon deletion of the ChaosEngine CR.
@@ -144,7 +144,6 @@ The Chaos Operator is in _alpha_ stage and needs all the help you can provide! P
 improving the documentation, contributing to the core framework and tooling, etc.
 
 Head over to the [Contribution guide](CONTRIBUTING.md)
-
 
 ## License
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-operator.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-operator?ref=badge_large)
