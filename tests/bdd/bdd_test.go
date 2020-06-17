@@ -73,9 +73,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).To(BeNil())
 
 	//Creating crds
-	By("creating chaosengine crd")
+	By("creating all crds")
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/chaos_crds.yaml").Run()
-	Expect(err).To(BeNil())
 
 	//Creating rbacs
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/rbac.yaml").Run()
@@ -193,7 +192,11 @@ var _ = Describe("BDD on chaos-operator", func() {
 							},
 							{
 								Name:  "LIB",
-								Value: "",
+								Value: "litmus",
+							},
+							{
+								Name:  "LIB_IMAGE",
+								Value: "litmuschaos/pod-delete-helper:latest",
 							},
 						},
 
@@ -249,10 +252,8 @@ var _ = Describe("BDD on chaos-operator", func() {
 			time.Sleep(50 * time.Second)
 
 			//Fetching engine-nginx-runner pod
-			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
 			//Check for the Availabilty and status of the runner pod
-			//fmt.Println("name : ", runner.Name)
-
+			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
 			Expect(err).To(BeNil())
 			Expect(string(runner.Status.Phase)).To(Or(Equal("Running"), Equal("Succeeded")))
 
