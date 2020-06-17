@@ -70,7 +70,7 @@ func init() {
 	r = newReconciler1(mgr)
 
 	// create chaosengine crds
-	exec.Command("kubectl", "apply", "-f", "../../deploy/crds/chaosengine_crd.yaml").Run()
+	exec.Command("kubectl", "apply", "-f", "../../../deploy/crds/chaosengine_crd.yaml").Run()
 
 	// create sample nginx application
 	deployment := &appv1.Deployment{
@@ -558,7 +558,6 @@ func TestGetAnnotationCheck(t *testing.T) {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
 			if !mock.isErr && err != nil {
-				fmt.Println(err)
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
 		})
@@ -677,9 +676,9 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
 			if !mock.isErr && err != nil {
-				fmt.Println(err)
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
+			err = clientSet.ChaosEngines(mock.engine.Instance.Namespace).Delete(mock.engine.Instance.Name, &metav1.DeleteOptions{})
 		})
 	}
 }
@@ -721,6 +720,33 @@ func TestUpdateEngineForComplete(t *testing.T) {
 			},
 			isErr: false,
 		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-complete-p2",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			isErr: false,
+		},
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -733,9 +759,9 @@ func TestUpdateEngineForComplete(t *testing.T) {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
 			if !mock.isErr && err != nil {
-				fmt.Println(err)
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
+			err = clientSet.ChaosEngines(mock.engine.Instance.Namespace).Delete(mock.engine.Instance.Name, &metav1.DeleteOptions{})
 		})
 	}
 }
@@ -1292,6 +1318,7 @@ func TestUpdateEngineState(t *testing.T) {
 			if !mock.isErr && err != nil {
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
+			err = clientSet.ChaosEngines(mock.engine.Instance.Namespace).Delete(mock.engine.Instance.Name, &metav1.DeleteOptions{})
 		})
 	}
 }
@@ -1379,6 +1406,7 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 			if !mock.isErr && val == true {
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
+			err = clientSet.ChaosEngines(mock.engine.Instance.Namespace).Delete(mock.engine.Instance.Name, &metav1.DeleteOptions{})
 		})
 	}
 }
