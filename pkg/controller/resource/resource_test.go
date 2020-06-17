@@ -107,11 +107,15 @@ func init() {
 
 
 func TestValidateAnnontatedApplication(t *testing.T) {
+	var labels map[string]string
+	labels = make(map[string]string)
+	labels["app"] = "nginx"
+
 	tests := map[string]struct {
 		engine chaosTypes.EngineInfo
 		isErr  bool
 	}{
-		"Test Positive-1": {
+		"Test Postive-1": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -137,6 +141,10 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 							},
 						},
 					},
+				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "deployment",
+					Label: labels,
 				},
 				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
@@ -171,6 +179,10 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 						},
 					},
 				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "deployment",
+					Label: labels,
+				},
 				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
@@ -190,7 +202,7 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 							AppKind:  "deployment",
 						},
 						EngineState:     "active",
-						AnnotationCheck: "fakeCheck",
+						AnnotationCheck: "false",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -203,6 +215,10 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 						},
 					},
 				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "deployment",
+					Label: labels,
+				},
 			},
 			isErr: false,
 		},
@@ -213,6 +229,7 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}
+
 			engine, err := CheckChaosAnnotation(&mock.engine)
 			if mock.isErr && err == nil && engine != nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
