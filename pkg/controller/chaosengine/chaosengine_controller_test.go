@@ -1,12 +1,9 @@
 /*
 Copyright 2019 LitmusChaos Authors
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
    http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,108 +14,25 @@ limitations under the License.
 package chaosengine
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 	"testing"
 
-	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog"
 
 	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	"github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/scheme"
-	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
-	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
-	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	apis "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
+	litmusFakeClientset "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
-
-var (
-	kubeconfig string
-	config     *restclient.Config
-	r          *ReconcileChaosEngine
-	clients    *kubernetes.Clientset
-	clientSet  *chaosClient.LitmuschaosV1alpha1Client
-)
-
-// newReconciler returns a new reconcile.Reconciler
-func newReconciler1(mgr manager.Manager) *ReconcileChaosEngine {
-	return &ReconcileChaosEngine{client: mgr.GetClient(), scheme: mgr.GetScheme(), recorder: mgr.GetEventRecorderFor("chaos-operator")}
-}
-
-func init() {
-	kubeconfig := os.Getenv("HOME") + "/.kube/config"
-	config, _ := clientcmd.BuildConfigFromFlags("", kubeconfig)
-
-	clients, _ = kubernetes.NewForConfig(config)
-
-	clientSet, _ = chaosClient.NewForConfig(config)
-
-	v1alpha1.AddToScheme(scheme.Scheme)
-
-	mgr, err := manager.New(config, manager.Options{MetricsBindAddress: "0", Scheme: scheme.Scheme})
-
-	r = newReconciler1(mgr)
-
-	// create chaosengine crds
-	exec.Command("kubectl", "apply", "-f", "../../../deploy/crds/chaosengine_crd.yaml").Run()
-
-	// create sample nginx application
-	deployment := &appv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "nginx",
-			Labels: map[string]string{
-				"app": "nginx",
-			},
-			Annotations: map[string]string{
-				"litmuschaos.io/chaos": "true",
-			},
-		},
-		Spec: appv1.DeploymentSpec{
-			Replicas: func(i int32) *int32 { return &i }(3),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": "nginx",
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": "nginx",
-					},
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx:latest",
-							Ports: []v1.ContainerPort{
-								{
-
-									ContainerPort: 80,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	_, err = clients.AppsV1().Deployments("default").Create(deployment)
-	if err != nil {
-		klog.Infoln("Deployment is not created and error is ", err)
-	}
-}
 
 func TestNewRunnerPodForCR(t *testing.T) {
 	tests := map[string]struct {
@@ -573,38 +487,6 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "validate-annotation-p1",
-						Namespace: "default",
-					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      true,
-						AnnotationCheck: "true",
-						EngineState:     "active",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx",
-							AppKind:  "deployment",
-						},
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
-								Image: "fake-runner-image",
-							},
-						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
-							{
-								Name: "exp-1",
-							},
-						},
-					},
-				},
-				AppUUID:        "fake_id",
-				AppExperiments: []string{"exp-1"},
-			},
-			isErr: false,
-		},
-		"Test Positive-2": {
-			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
 						Name:      "validate-annotation-p2",
 						Namespace: "default",
 					},
@@ -635,11 +517,11 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 
 			isErr: false,
 		},
-		"Test Positive-3": {
+		"Test Negetive-1": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "validate-annotation-p3",
+						Name:      "validate-annotation-n1",
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
@@ -648,7 +530,7 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 							AppKind:  "deployment",
 						},
 						EngineState:     "active",
-						AnnotationCheck: "false",
+						AnnotationCheck: "dummy",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -662,14 +544,48 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 					},
 				},
 			},
-			isErr: false,
+			isErr: true,
+		},
+		"Test Negetive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "validate-annotation-n2",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Monitoring:      true,
+						AnnotationCheck: "true",
+						EngineState:     "active",
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppName:        "fake_app",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: true,
 		},
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			r := CreateFakeClient(t)
+			err := r.client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
-				fmt.Printf("Unable to create the chaosengine, err: %v", err)
+				fmt.Printf("Unable to create engine: %v", err)
 			}
 			err = r.validateAnnontatedApplication(&mock.engine)
 			if mock.isErr && err == nil {
@@ -678,7 +594,6 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 			if !mock.isErr && err != nil {
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
-			err = clientSet.ChaosEngines(mock.engine.Instance.Namespace).Delete(mock.engine.Instance.Name, &metav1.DeleteOptions{})
 		})
 	}
 }
@@ -741,7 +656,34 @@ func TestUpdateEngineForComplete(t *testing.T) {
 						},
 					},
 					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+						EngineStatus: litmuschaosv1alpha1.EngineStatusInitialized,
+					},
+				},
+			},
+			isErr: false,
+		},
+		"Test Positive-3": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-complete-p3",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusStopped,
 					},
 				},
 			},
@@ -750,10 +692,12 @@ func TestUpdateEngineForComplete(t *testing.T) {
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			r := CreateFakeClient(t)
+			err := r.client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
-				fmt.Printf("Unable to create the chaosengine, err: %v", err)
+				fmt.Printf("Unable to create engine: %v", err)
 			}
+
 			err = r.updateEngineForComplete(&mock.engine, true)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
@@ -761,7 +705,90 @@ func TestUpdateEngineForComplete(t *testing.T) {
 			if !mock.isErr && err != nil {
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
-			err = clientSet.ChaosEngines(mock.engine.Instance.Namespace).Delete(mock.engine.Instance.Name, &metav1.DeleteOptions{})
+		})
+	}
+}
+
+func TestUpdateEngineForRestart(t *testing.T) {
+	tests := map[string]struct {
+		engine chaosTypes.EngineInfo
+		isErr  bool
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-restart-p1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			isErr: false,
+		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-restart-p2",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusInitialized,
+					},
+				},
+			},
+			isErr: false,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			r := CreateFakeClient(t)
+			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			if err != nil {
+				fmt.Printf("Unable to create engine: %v", err)
+			}
+
+			err = r.updateEngineForRestart(&mock.engine)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
 		})
 	}
 }
@@ -1220,7 +1247,7 @@ func TestInitEngine(t *testing.T) {
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-
+			r := CreateFakeClient(t)
 			err := r.initEngine(&mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
@@ -1307,9 +1334,10 @@ func TestUpdateEngineState(t *testing.T) {
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			r := CreateFakeClient(t)
+			err := r.client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
-				fmt.Printf("Unable to create chaosengine, err: %v", err)
+				fmt.Printf("Unable to create engine: %v", err)
 			}
 			err = r.updateEngineState(&mock.engine, mock.state)
 			if mock.isErr && err == nil {
@@ -1318,7 +1346,6 @@ func TestUpdateEngineState(t *testing.T) {
 			if !mock.isErr && err != nil {
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
-			err = clientSet.ChaosEngines(mock.engine.Instance.Namespace).Delete(mock.engine.Instance.Name, &metav1.DeleteOptions{})
 		})
 	}
 }
@@ -1395,9 +1422,10 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			r := CreateFakeClient(t)
+			err := r.client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
-				fmt.Printf("Unable to create chaosengine, err: %v", err)
+				fmt.Printf("Unable to create engine: %v", err)
 			}
 			val := r.checkRunnerPodCompletedStatus(&mock.engine)
 			if mock.isErr && val == false {
@@ -1406,7 +1434,63 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 			if !mock.isErr && val == true {
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
-			err = clientSet.ChaosEngines(mock.engine.Instance.Namespace).Delete(mock.engine.Instance.Name, &metav1.DeleteOptions{})
+		})
+	}
+}
+
+func TestEngineRunnerPod(t *testing.T) {
+	tests := map[string]struct {
+		isErr  bool
+		runner *podEngineRunner
+	}{
+		"Test Positive-1": {
+			runner: &podEngineRunner{
+				pod: &corev1.Pod{},
+				engineRunner: &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels:    make(map[string]string),
+						Name:      "dummypod",
+						Namespace: "dummyns",
+					},
+				},
+				reconcileEngine: &reconcileEngine{
+					r:         CreateFakeClient(t),
+					reqLogger: chaosTypes.Log.WithValues(),
+				},
+			},
+			isErr: false,
+		},
+		"Test Positive-2": {
+			runner: &podEngineRunner{
+				pod: &corev1.Pod{},
+				engineRunner: &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels:    make(map[string]string),
+						Name:      "dummypresentpod",
+						Namespace: "default",
+					},
+				},
+				reconcileEngine: &reconcileEngine{
+					r:         CreateFakeClient(t),
+					reqLogger: chaosTypes.Log.WithValues(),
+				},
+			},
+			isErr: false,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			if name == "Test Positive-2" {
+				mock.runner.r.client.Create(context.TODO(), mock.runner.engineRunner)
+			}
+			err := engineRunnerPod(mock.runner)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
 		})
 	}
 }
@@ -1436,4 +1520,705 @@ func TestStartReqLogger(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetChaosEngineInstance(t *testing.T) {
+	tests := map[string]struct {
+		isErr   bool
+		engine  chaosTypes.EngineInfo
+		request reconcile.Request
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-instance-p1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "engine-instance-p1",
+					Namespace: "default",
+				},
+			},
+			isErr: false,
+		},
+		"Test Negative-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-instance-n1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "engine-instance-n1",
+					Namespace: "default",
+				},
+			},
+			isErr: true,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			r := CreateFakeClient(t)
+			if name == "Test Positive-1" {
+				err := r.client.Create(context.TODO(), mock.engine.Instance)
+				if err != nil {
+					fmt.Printf("Unable to create engine: %v", err)
+				}
+			}
+			err := r.getChaosEngineInstance(&mock.engine, mock.request)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+
+func TestCheckEngineRunnerPod(t *testing.T) {
+	tests := map[string]struct {
+		engine chaosTypes.EngineInfo
+		isErr  bool
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          true,
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: false,
+		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			isErr: false,
+		},
+		"Test Positive-3": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+						AnnotationCheck:     "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			isErr: false,
+		},
+		"Test Positive-4": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+						AnnotationCheck:     "true",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			isErr: false,
+		},
+		"Test Negative-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: true,
+		},
+		"Test Negative-2 ": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+					},
+				},
+				AppUUID:        "",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: true,
+		},
+		"Test Negative-3 ": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{},
+			},
+			isErr: true,
+		},
+		"Test Negative-4 ": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-runner",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{},
+			},
+			isErr: true,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			r := CreateFakeClient(t)
+			reqLogger := chaosTypes.Log.WithValues()
+			err := r.checkEngineRunnerPod(&mock.engine, reqLogger)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+
+func TestReconcileForDelete(t *testing.T) {
+	tests := map[string]struct {
+		isErr   bool
+		engine  chaosTypes.EngineInfo
+		request reconcile.Request
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-instance-p1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "engine-instance-p1",
+					Namespace: "default",
+				},
+			},
+			isErr: false,
+		},
+		"Test Negative-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-instance-n1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "engine-instance-n1",
+					Namespace: "default",
+				},
+			},
+			isErr: true,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			r := CreateFakeClient(t)
+			if name == "Test Positive-1" {
+				err := r.client.Create(context.TODO(), mock.engine.Instance)
+				if err != nil {
+					fmt.Printf("Unable to create engine: %v", err)
+				}
+			}
+			_, err := r.reconcileForDelete(&mock.engine, mock.request)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+
+func TestForceRemoveAllChaosPods(t *testing.T) {
+	tests := map[string]struct {
+		isErr   bool
+		engine  chaosTypes.EngineInfo
+		request reconcile.Request
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-instance-p1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "engine-instance-p1",
+					Namespace: "default",
+				},
+			},
+			isErr: false,
+		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-instance-n1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+					},
+				},
+			},
+			request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "engine-instance-p2",
+					Namespace: "default",
+				},
+			},
+			isErr: false,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			r := CreateFakeClient(t)
+			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			if err != nil {
+				fmt.Printf("Unable to create engine: %v", err)
+			}
+			err = r.forceRemoveAllChaosPods(&mock.engine, mock.request)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+
+func TestGracefullyRemoveDefaultChaosResources(t *testing.T) {
+	tests := map[string]struct {
+		isErr   bool
+		engine  chaosTypes.EngineInfo
+		request reconcile.Request
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-instance-p1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "engine-instance-p1",
+					Namespace: "default",
+				},
+			},
+			isErr: false,
+		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "engine-instance-p2",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx",
+							AppKind:  "deployment",
+						},
+						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+					Status: litmuschaosv1alpha1.ChaosEngineStatus{
+						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					},
+				},
+			},
+			request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "engine-instance-p2",
+					Namespace: "default",
+				},
+			},
+			isErr: false,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			r := CreateFakeClient(t)
+			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			if err != nil {
+				fmt.Printf("Unable to create engine: %v", err)
+			}
+			_, err = r.gracefullyRemoveDefaultChaosResources(&mock.engine, mock.request)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+
+func TestReconcileForCreationAndRunning(t *testing.T) {
+	tests := map[string]struct {
+		engine chaosTypes.EngineInfo
+		isErr  bool
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "reconcile-1",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          true,
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "run=nginx",
+						},
+						AnnotationCheck: "false",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: false,
+		},
+		"Test Negative-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "reconcile-2",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          false,
+						AnnotationCheck:     "fakeCheck",
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "run=nginx",
+						},
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: true,
+		},
+		"Test Negative-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "reconcile-3",
+						Namespace: "test",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						Monitoring:          true,
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "run=nginx",
+						},
+						AnnotationCheck: "true",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+			isErr: true,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+			r := CreateFakeClient(t)
+			reqLogger := chaosTypes.Log.WithValues()
+			_, err := r.reconcileForCreationAndRunning(&mock.engine, reqLogger)
+			if mock.isErr && err == nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil {
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+
+func CreateFakeClient(t *testing.T) *ReconcileChaosEngine {
+
+	fakeClient := litmusFakeClientset.NewFakeClient()
+	if fakeClient == nil {
+		fmt.Println("litmusClient is not created")
+	}
+
+	s := scheme.Scheme
+
+	engineR := &apis.ChaosEngine{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: make(map[string]string),
+			Name:   "dummyengine",
+		},
+	}
+
+	s.AddKnownTypes(apis.SchemeGroupVersion, engineR)
+
+	recorder := record.NewFakeRecorder(1024)
+
+	r := &ReconcileChaosEngine{
+		client:   fakeClient,
+		scheme:   s,
+		recorder: recorder,
+	}
+
+	return r
 }
