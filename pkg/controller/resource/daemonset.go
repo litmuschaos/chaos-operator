@@ -28,8 +28,8 @@ import (
 )
 
 // CheckDaemonSetAnnotation will check the annotation of DaemonSet
-func CheckDaemonSetAnnotation(clientSet *kubernetes.Clientset, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
-	targetAppList, err := getDaemonSetLists(clientSet, engine)
+func CheckDaemonSetAnnotation(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
+	targetAppList, err := getDaemonSetLists(clientset, engine)
 	if err != nil {
 		return engine, err
 	}
@@ -44,8 +44,8 @@ func CheckDaemonSetAnnotation(clientSet *kubernetes.Clientset, engine *chaosType
 }
 
 // getDaemonSetLists will list the daemonSets which having the chaos label
-func getDaemonSetLists(clientSet *kubernetes.Clientset, engine *chaosTypes.EngineInfo) (*appsV1.DaemonSetList, error) {
-	targetAppList, err := clientSet.AppsV1().DaemonSets(engine.AppInfo.Namespace).List(metaV1.ListOptions{
+func getDaemonSetLists(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*appsV1.DaemonSetList, error) {
+	targetAppList, err := clientset.AppsV1().DaemonSets(engine.AppInfo.Namespace).List(metaV1.ListOptions{
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {

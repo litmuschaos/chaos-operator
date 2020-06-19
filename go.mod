@@ -3,17 +3,21 @@ module github.com/litmuschaos/chaos-operator
 go 1.13
 
 require (
+	github.com/containerd/ttrpc v1.0.1 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
+	github.com/kubernetes/client-go v11.0.0+incompatible // indirect
 	github.com/litmuschaos/elves v0.0.0-20200502084504-13be0e6937ee
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
+	github.com/openebs/api v1.11.0 // indirect
 	github.com/operator-framework/operator-sdk v0.15.2
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
-	k8s.io/api v0.0.0
-	k8s.io/apimachinery v0.0.0
+	github.com/sqs/goreturns v0.0.0-20181028201513-538ac6014518 // indirect
+	k8s.io/api v0.17.3
+	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d

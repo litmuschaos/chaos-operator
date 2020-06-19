@@ -36,7 +36,6 @@ import (
 	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -44,7 +43,6 @@ import (
 
 var (
 	kubeconfig string
-	config     *restclient.Config
 	r          *ReconcileChaosEngine
 	clients    *kubernetes.Clientset
 	clientSet  *chaosClient.LitmuschaosV1alpha1Client
