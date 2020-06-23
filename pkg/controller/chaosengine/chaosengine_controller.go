@@ -47,6 +47,8 @@ import (
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	"github.com/litmuschaos/chaos-operator/pkg/controller/utils"
 	"github.com/litmuschaos/chaos-operator/pkg/controller/watcher"
+	dynamicclientset "github.com/litmuschaos/chaos-operator/pkg/dynamic"
+	clientset "github.com/litmuschaos/chaos-operator/pkg/kubernetes"
 )
 
 const finalizer = "chaosengine.litmuschaos.io/finalizer"
@@ -615,8 +617,18 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 	// Get the image for runner pod from chaosengine spec,operator env or default values.
 	setChaosResourceImage(engine)
 
+	clientSet, err := clientset.CreateClientSet()
+	if err != nil {
+		return err
+	}
+
+	dynamicClient, err := dynamicclientset.CreateClientSet()
+	if err != nil {
+		return err
+	}
+
 	//getAnnotationCheck fetch the annotationCheck from engine spec
-	err := getAnnotationCheck(engine)
+	err = getAnnotationCheck(engine)
 	if err != nil {
 		return err
 	}
@@ -631,7 +643,7 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 
 	if engine.Instance.Spec.AnnotationCheck == "true" {
 		// Determine whether apps with matching labels have chaos annotation set to true
-		engine, err = resource.CheckChaosAnnotation(engine)
+		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
 		if err != nil {
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to get chaosengine")
 			chaosTypes.Log.Info("Annotation check failed with", "error:", err)

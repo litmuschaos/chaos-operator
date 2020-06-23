@@ -18,201 +18,42 @@ package resource
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"testing"
 
+	litmusFakeClientset "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/fake"
 	appv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	"github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/scheme"
-	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
-	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
-	kubeconfig string
-	config     *restclient.Config
-	clients    *kubernetes.Clientset
-	clientSet  *chaosClient.LitmuschaosV1alpha1Client
+	gvfake = schema.GroupVersionResource{
+		Group:    "apps.openshift.io",
+		Version:  "v1",
+		Resource: "deploymentconfigs",
+	}
 )
 
 func print32(p int32) *int32 {
 	return &p
 }
 
-func init() {
-	kubeconfig := os.Getenv("HOME") + "/.kube/config"
-	config, _ := clientcmd.BuildConfigFromFlags("", kubeconfig)
-
-	clients, _ = kubernetes.NewForConfig(config)
-
-	clientSet, _ = chaosClient.NewForConfig(config)
-
-	v1alpha1.AddToScheme(scheme.Scheme)
-
-	// create chaosengine crds
-	exec.Command("kubectl", "apply", "-f", "../../deploy/crds/chaosengine_crd.yaml").Run()
-
-	// create sample nginx application
-	deployment := &appv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "nginx-1",
-			Labels: map[string]string{
-				"app": "nginx-1",
-			},
-			Annotations: map[string]string{
-				"litmuschaos.io/chaos": "true",
-			},
-		},
-		Spec: appv1.DeploymentSpec{
-			Replicas: func(i int32) *int32 { return &i }(3),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": "nginx-1",
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": "nginx-1",
-					},
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx:latest",
-							Ports: []v1.ContainerPort{
-								{
-									ContainerPort: 80,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	_, err := clients.AppsV1().Deployments("default").Create(deployment)
-	if err != nil {
-		klog.Infoln("Deployment is not created and error is ", err)
-	}
-
-	statefulset := &appv1.StatefulSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "StatefulSet",
-			APIVersion: "apps/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "nginx-2",
-			Labels: map[string]string{
-				"app": "nginx-2",
-			},
-			Annotations: map[string]string{
-				"litmuschaos.io/chaos": "true",
-			},
-		},
-		Spec: appv1.StatefulSetSpec{
-			Replicas: print32(1),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": "nginx-2",
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": "nginx-2",
-					},
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						v1.Container{
-							Name:  "nginx",
-							Image: "k8s.gcr.io/nginx-slim:0.8",
-							Ports: []v1.ContainerPort{
-								v1.ContainerPort{
-									Name:          "web",
-									HostPort:      0,
-									ContainerPort: 80,
-								},
-							},
-							Resources: v1.ResourceRequirements{},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	_, err = clients.AppsV1().StatefulSets("default").Create(statefulset)
-	if err != nil {
-		klog.Infoln("statefulset is not created and error is ", err)
-	}
-
-	daemonset := &appv1.DaemonSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "DaemonSet",
-			APIVersion: "apps/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-3",
-			Namespace: "default",
-			Labels: map[string]string{
-				"app": "nginx-3",
-			},
-			Annotations: map[string]string{
-				"litmuschaos.io/chaos": "true",
-			},
-		},
-		Spec: appv1.DaemonSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": "nginx-3",
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": "nginx-3",
-					},
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						v1.Container{
-							Name:      "nginx",
-							Image:     "nginx",
-							Resources: v1.ResourceRequirements{},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	_, err = clients.AppsV1().DaemonSets("default").Create(daemonset)
-	if err != nil {
-		klog.Infoln("daemonset is not created and error is ", err)
-	}
-}
-
-
 func TestCheckChaosAnnotationDeployment(t *testing.T) {
 
 	tests := map[string]struct {
-		engine chaosTypes.EngineInfo
-		isErr  bool
+		engine     chaosTypes.EngineInfo
+		isErr      bool
+		deployment []appv1.Deployment
+		check      bool
 	}{
-		"Test Postive-1": {
+		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -220,11 +61,11 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      true,
+						Monitoring:      false,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-1",
+							Applabel: "app=nginx1",
 							AppKind:  "deployment",
 						},
 						Components: litmuschaosv1alpha1.ComponentParams{
@@ -242,15 +83,38 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "deployment",
 					Label: map[string]string{
-						"app": "nginx-1",
+						"app": "nginx1",
 					},
 				},
 				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
+			deployment: []appv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx1",
+						},
+						Annotations: map[string]string{
+							"litmuschaos.io/chaos": "true",
+						},
+					},
+					Spec: appv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx1",
+							},
+						},
+					},
+				},
+			},
+
 			isErr: false,
+			check: true,
 		},
-		"Test Negative-1": {
+		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -259,11 +123,10 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						EngineState:         "active",
 						AnnotationCheck:     "false",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-1",
+							Applabel: "app=nginx2",
 							AppKind:  "deployment",
 						},
 						Components: litmuschaosv1alpha1.ComponentParams{
@@ -281,16 +144,39 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "deployment",
 					Label: map[string]string{
-						"app": "nginx-1",
+						"app": "nginx2",
 					},
 				},
 				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
 
+			deployment: []appv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx2",
+						},
+						Annotations: map[string]string{
+							"litmuschaos.io/chaos": "true",
+						},
+					},
+					Spec: appv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx2",
+							},
+						},
+					},
+				},
+			},
+
 			isErr: false,
+			check: true,
 		},
-		"Test Negative-2": {
+		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -299,11 +185,11 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-1",
+							Applabel: "app=nginx3",
 							AppKind:  "deployment",
 						},
 						EngineState:     "active",
-						AnnotationCheck: "false",
+						AnnotationCheck: "true",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -319,21 +205,104 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "deployment",
 					Label: map[string]string{
-						"app": "nginx-1",
+						"app": "nginx3",
 					},
 				},
 			},
-			isErr: false,
+			isErr: true,
+			check: false,
+		},
+		"Test Negative-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "check-chaos-annotation-d4",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx4",
+							AppKind:  "deployment",
+						},
+						EngineState:     "active",
+						AnnotationCheck: "true",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "deployment",
+					Label: map[string]string{
+						"app": "nginx4",
+					},
+				},
+			},
+			deployment: []appv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx4",
+						},
+					},
+					Spec: appv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx4",
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx1",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx4",
+						},
+					},
+					Spec: appv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx4",
+							},
+						},
+					},
+				},
+			},
+
+			isErr: true,
+			check: true,
 		},
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+
+			f := newFixture(t)
+			f.SetFakeClient()
+			if mock.check == true {
+				for _, deploy := range mock.deployment {
+					_, err := f.k8sClient.AppsV1().Deployments(deploy.Namespace).Create(&deploy)
+					if err != nil {
+						fmt.Printf("deployment not created, err: %v", err)
+					}
+				}
+			}
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}
 
-			engine, err := CheckChaosAnnotation(&mock.engine)
+			engine, err := CheckChaosAnnotation(&mock.engine, f.k8sClient, f.dynamicClient)
 			if mock.isErr && err == nil && engine != nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -348,22 +317,24 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 
 	tests := map[string]struct {
-		engine chaosTypes.EngineInfo
-		isErr  bool
+		engine      chaosTypes.EngineInfo
+		isErr       bool
+		statefulSet []appv1.StatefulSet
+		check       bool
 	}{
-		"Test Postive-1": {
+		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "check-chaos-annotation-s1",
+						Name:      "check-chaos-annotation-d1",
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      true,
+						Monitoring:      false,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-2",
+							Applabel: "app=nginx1",
 							AppKind:  "statefulset",
 						},
 						Components: litmuschaosv1alpha1.ComponentParams{
@@ -381,30 +352,113 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "statefulset",
 					Label: map[string]string{
-						"app": "nginx-2",
+						"app": "nginx1",
 					},
 				},
 				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
+			statefulSet: []appv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx1",
+						},
+						Annotations: map[string]string{
+							"litmuschaos.io/chaos": "true",
+						},
+					},
+					Spec: appv1.StatefulSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx1",
+							},
+						},
+					},
+				},
+			},
+
 			isErr: false,
+			check: true,
+		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "check-chaos-annotation-d2",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						EngineState:         "active",
+						AnnotationCheck:     "false",
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx2",
+							AppKind:  "statefulset",
+						},
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "statefulset",
+					Label: map[string]string{
+						"app": "nginx2",
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			statefulSet: []appv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx2",
+						},
+						Annotations: map[string]string{
+							"litmuschaos.io/chaos": "true",
+						},
+					},
+					Spec: appv1.StatefulSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx2",
+							},
+						},
+					},
+				},
+			},
+
+			isErr: false,
+			check: true,
 		},
 		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "check-chaos-annotation-s2",
+						Name:      "check-chaos-annotation-d3",
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
-						EngineState:         "active",
-						AnnotationCheck:     "false",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-2",
+							Applabel: "app=nginx3",
 							AppKind:  "statefulset",
 						},
+						EngineState:     "active",
+						AnnotationCheck: "true",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -420,29 +474,27 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "statefulset",
 					Label: map[string]string{
-						"app": "nginx-2",
+						"app": "nginx3",
 					},
 				},
-				AppUUID:        "fake_id",
-				AppExperiments: []string{"exp-1"},
 			},
-
-			isErr: false,
+			isErr: true,
+			check: false,
 		},
 		"Test Negative-2": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "check-chaos-annotation-s3",
+						Name:      "check-chaos-annotation-d4",
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-2",
+							Applabel: "app=nginx4",
 							AppKind:  "statefulset",
 						},
 						EngineState:     "active",
-						AnnotationCheck: "false",
+						AnnotationCheck: "true",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -458,21 +510,68 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "statefulset",
 					Label: map[string]string{
-						"app": "nginx-2",
+						"app": "nginx4",
 					},
 				},
 			},
-			isErr: false,
+			statefulSet: []appv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx4",
+						},
+					},
+					Spec: appv1.StatefulSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx4",
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx1",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx4",
+						},
+					},
+					Spec: appv1.StatefulSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx4",
+							},
+						},
+					},
+				},
+			},
+
+			isErr: true,
+			check: true,
 		},
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+
+			f := newFixture(t)
+			f.SetFakeClient()
+			if mock.check == true {
+				for _, sts := range mock.statefulSet {
+					_, err := f.k8sClient.AppsV1().StatefulSets(sts.Namespace).Create(&sts)
+					if err != nil {
+						fmt.Printf("statefulset not created, err: %v", err)
+					}
+				}
+			}
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}
 
-			engine, err := CheckChaosAnnotation(&mock.engine)
+			engine, err := CheckChaosAnnotation(&mock.engine, f.k8sClient, f.dynamicClient)
 			if mock.isErr && err == nil && engine != nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -487,22 +586,24 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 
 	tests := map[string]struct {
-		engine chaosTypes.EngineInfo
-		isErr  bool
+		engine    chaosTypes.EngineInfo
+		isErr     bool
+		daemonset []appv1.DaemonSet
+		check     bool
 	}{
-		"Test Postive-1": {
+		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "check-chaos-annotation-ds1",
+						Name:      "check-chaos-annotation-d1",
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      true,
+						Monitoring:      false,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-3",
+							Applabel: "app=nginx1",
 							AppKind:  "daemonset",
 						},
 						Components: litmuschaosv1alpha1.ComponentParams{
@@ -520,30 +621,113 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "daemonset",
 					Label: map[string]string{
-						"app": "nginx-3",
+						"app": "nginx1",
 					},
 				},
 				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
+			daemonset: []appv1.DaemonSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx1",
+						},
+						Annotations: map[string]string{
+							"litmuschaos.io/chaos": "true",
+						},
+					},
+					Spec: appv1.DaemonSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx1",
+							},
+						},
+					},
+				},
+			},
+
 			isErr: false,
+			check: true,
+		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "check-chaos-annotation-d2",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						EngineState:         "active",
+						AnnotationCheck:     "false",
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx2",
+							AppKind:  "daemonset",
+						},
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "daemonset",
+					Label: map[string]string{
+						"app": "nginx2",
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			daemonset: []appv1.DaemonSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx2",
+						},
+						Annotations: map[string]string{
+							"litmuschaos.io/chaos": "true",
+						},
+					},
+					Spec: appv1.DaemonSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx2",
+							},
+						},
+					},
+				},
+			},
+
+			isErr: false,
+			check: true,
 		},
 		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "check-chaos-annotation-ds2",
+						Name:      "check-chaos-annotation-d3",
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
-						EngineState:         "active",
-						AnnotationCheck:     "false",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-3",
+							Applabel: "app=nginx3",
 							AppKind:  "daemonset",
 						},
+						EngineState:     "active",
+						AnnotationCheck: "true",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -559,29 +743,27 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "daemonset",
 					Label: map[string]string{
-						"app": "nginx-3",
+						"app": "nginx3",
 					},
 				},
-				AppUUID:        "fake_id",
-				AppExperiments: []string{"exp-1"},
 			},
-
-			isErr: false,
+			isErr: true,
+			check: false,
 		},
 		"Test Negative-2": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "check-chaos-annotation-ds3",
+						Name:      "check-chaos-annotation-d4",
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
-							Applabel: "app=nginx-3",
+							Applabel: "app=nginx4",
 							AppKind:  "daemonset",
 						},
 						EngineState:     "active",
-						AnnotationCheck: "false",
+						AnnotationCheck: "true",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -597,21 +779,68 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 				AppInfo: &chaosTypes.ApplicationInfo{
 					Kind: "daemonset",
 					Label: map[string]string{
-						"app": "nginx-3",
+						"app": "nginx4",
 					},
 				},
 			},
-			isErr: false,
+			daemonset: []appv1.DaemonSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx4",
+						},
+					},
+					Spec: appv1.DaemonSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx4",
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nginx1",
+						Namespace: "default",
+						Labels: map[string]string{
+							"app": "nginx4",
+						},
+					},
+					Spec: appv1.DaemonSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "nginx4",
+							},
+						},
+					},
+				},
+			},
+
+			isErr: true,
+			check: true,
 		},
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := clientSet.ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+
+			f := newFixture(t)
+			f.SetFakeClient()
+			if mock.check == true {
+				for _, ds := range mock.daemonset {
+					_, err := f.k8sClient.AppsV1().DaemonSets(ds.Namespace).Create(&ds)
+					if err != nil {
+						fmt.Printf("daemonset not created, err: %v", err)
+					}
+				}
+			}
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}
 
-			engine, err := CheckChaosAnnotation(&mock.engine)
+			engine, err := CheckChaosAnnotation(&mock.engine, f.k8sClient, f.dynamicClient)
 			if mock.isErr && err == nil && engine != nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -621,4 +850,325 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
+
+	tests := map[string]struct {
+		engine           chaosTypes.EngineInfo
+		isErr            bool
+		deploymentconfig []unstructured.Unstructured
+		check            bool
+	}{
+		"Test Positive-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "check-chaos-annotation-d1",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Monitoring:      false,
+						AnnotationCheck: "true",
+						EngineState:     "active",
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx1",
+							AppKind:  "deploymentconfig",
+						},
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "deploymentconfig",
+					Label: map[string]string{
+						"app": "nginx1",
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+			deploymentconfig: []unstructured.Unstructured{
+				{
+					Object: map[string]interface{}{
+						"apiVersion": "v1",
+						"kind":       "DeploymentConfig",
+						"metadata": map[string]interface{}{
+							"name":      "nginx",
+							"namespace": "default",
+							"labels": map[string]interface{}{
+								"app": "nginx1",
+							},
+							"annotations": map[string]interface{}{
+								"litmuschaos.io/chaos": "true",
+							},
+						},
+						"spec": map[string]interface{}{
+							"selector": map[string]interface{}{
+								"app": "nginx1",
+							},
+						},
+					},
+				},
+			},
+			isErr: false,
+			check: true,
+		},
+		"Test Positive-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "check-chaos-annotation-d2",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						ChaosServiceAccount: "fake-serviceAccount",
+						EngineState:         "active",
+						AnnotationCheck:     "false",
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx2",
+							AppKind:  "deploymentconfig",
+						},
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "deploymentconfig",
+					Label: map[string]string{
+						"app": "nginx2",
+					},
+				},
+				AppUUID:        "fake_id",
+				AppExperiments: []string{"exp-1"},
+			},
+
+			deploymentconfig: []unstructured.Unstructured{
+				{
+					Object: map[string]interface{}{
+						"apiVersion": "v1",
+						"kind":       "DeploymentConfig",
+						"metadata": map[string]interface{}{
+							"name":      "nginx",
+							"namespace": "default",
+							"labels": map[string]interface{}{
+								"app": "nginx2",
+							},
+							"annotations": map[string]interface{}{
+								"litmuschaos.io/chaos": "true",
+							},
+						},
+						"spec": map[string]interface{}{
+							"selector": map[string]interface{}{
+								"app": "nginx2",
+							},
+						},
+					},
+				},
+			},
+
+			isErr: false,
+			check: true,
+		},
+		"Test Negative-1": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "check-chaos-annotation-d3",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx3",
+							AppKind:  "deploymentconfig",
+						},
+						EngineState:     "active",
+						AnnotationCheck: "true",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "deploymentconfig",
+					Label: map[string]string{
+						"app": "nginx3",
+					},
+				},
+			},
+			isErr: true,
+			check: false,
+		},
+		"Test Negative-2": {
+			engine: chaosTypes.EngineInfo{
+				Instance: &litmuschaosv1alpha1.ChaosEngine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "check-chaos-annotation-d4",
+						Namespace: "default",
+					},
+					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+							Applabel: "app=nginx4",
+							AppKind:  "deploymentconfig",
+						},
+						EngineState:     "active",
+						AnnotationCheck: "true",
+						Components: litmuschaosv1alpha1.ComponentParams{
+							Runner: litmuschaosv1alpha1.RunnerInfo{
+								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
+				},
+				AppInfo: &chaosTypes.ApplicationInfo{
+					Kind: "deploymentconfig",
+					Label: map[string]string{
+						"app": "nginx4",
+					},
+				},
+			},
+			deploymentconfig: []unstructured.Unstructured{
+				{
+					Object: map[string]interface{}{
+						"apiVersion": "v1",
+						"kind":       "DeploymentConfig",
+						"metadata": map[string]interface{}{
+							"name":      "nginx",
+							"namespace": "default",
+							"labels": map[string]interface{}{
+								"app": "nginx4",
+							},
+							"annotations": map[string]interface{}{
+								"litmuschaos.io/chaos": "true",
+							},
+						},
+						"spec": map[string]interface{}{
+							"selector": map[string]interface{}{
+								"app": "nginx4",
+							},
+						},
+					},
+				},
+				{
+					Object: map[string]interface{}{
+						"apiVersion": "v1",
+						"kind":       "DeploymentConfig",
+						"metadata": map[string]interface{}{
+							"name":      "nginx1",
+							"namespace": "default",
+							"labels": map[string]interface{}{
+								"app": "nginx4",
+							},
+							"annotations": map[string]interface{}{
+								"litmuschaos.io/chaos": "true",
+							},
+						},
+						"spec": map[string]interface{}{
+							"selector": map[string]interface{}{
+								"app": "nginx4",
+							},
+						},
+					},
+				},
+			},
+
+			isErr: true,
+			check: true,
+		},
+	}
+	for name, mock := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			f := newFixture(t)
+			f.SetFakeClient()
+			dynamicClient := f.dynamicClient.Resource(gvfake)
+			dynamic := dynamicClient.Namespace("default")
+
+			if mock.check == true {
+				for _, dc := range mock.deploymentconfig {
+					_, err := dynamic.Create(&dc, metav1.CreateOptions{})
+					if err != nil {
+						fmt.Printf("deploymentconfig not created, err: %v", err)
+					}
+
+				}
+			}
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			if err != nil {
+				fmt.Printf("engine not created, err: %v", err)
+			}
+
+			engine, err := CheckChaosAnnotation(&mock.engine, f.k8sClient, f.dynamicClient)
+			if mock.isErr && err == nil && engine != nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
+			if !mock.isErr && err != nil && engine != nil {
+				fmt.Println(err)
+				t.Fatalf("Test %q failed: expected error to be nil", name)
+			}
+		})
+	}
+}
+
+type fixture struct {
+	t *testing.T
+	// k8sClient is the fake client set for k8s native objects.
+	k8sClient *fake.Clientset
+	// litmusClient is the fake client set for litmus cr objects.
+	litmusClient *litmusFakeClientset.Clientset
+
+	dynamicClient *dynamicfake.FakeDynamicClient
+
+	k8sObjects     []runtime.Object
+	litmusObjects  []runtime.Object
+	dynamicObjects []runtime.Object
+}
+
+// SetFakeClient initilizes the fake required clientsets
+func (f *fixture) SetFakeClient() {
+	// Load kubernetes client set by preloading with k8s objects.
+	f.k8sClient = fake.NewSimpleClientset(f.k8sObjects...)
+
+	// Load litmus client set by preloading with litmus objects.
+	f.litmusClient = litmusFakeClientset.NewSimpleClientset(f.litmusObjects...)
+
+	// Load dynamic client set by preloading with litmus objects.
+	f.dynamicClient = dynamicfake.NewSimpleDynamicClient(runtime.NewScheme(), f.dynamicObjects...)
+}
+
+func newFixture(t *testing.T) *fixture {
+	f := &fixture{}
+	f.t = t
+	f.k8sObjects = []runtime.Object{}
+	f.litmusObjects = []runtime.Object{}
+	f.dynamicObjects = []runtime.Object{}
+	return f
 }
