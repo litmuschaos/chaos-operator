@@ -28,8 +28,8 @@ import (
 )
 
 // CheckStatefulSetAnnotation will check the annotation of StatefulSet
-func CheckStatefulSetAnnotation(clientSet *kubernetes.Clientset, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
-	targetAppList, err := getStatefulSetLists(clientSet, engine)
+func CheckStatefulSetAnnotation(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
+	targetAppList, err := getStatefulSetLists(clientset, engine)
 	if err != nil {
 		return engine, err
 	}
@@ -45,8 +45,8 @@ func CheckStatefulSetAnnotation(clientSet *kubernetes.Clientset, engine *chaosTy
 }
 
 // getStatefulSetLists will list the statefulset which having the chaos label
-func getStatefulSetLists(clientSet *kubernetes.Clientset, engine *chaosTypes.EngineInfo) (*appsV1.StatefulSetList, error) {
-	targetAppList, err := clientSet.AppsV1().StatefulSets(engine.AppInfo.Namespace).List(metaV1.ListOptions{
+func getStatefulSetLists(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*appsV1.StatefulSetList, error) {
+	targetAppList, err := clientset.AppsV1().StatefulSets(engine.AppInfo.Namespace).List(metaV1.ListOptions{
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {

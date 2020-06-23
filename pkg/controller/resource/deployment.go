@@ -28,8 +28,8 @@ import (
 )
 
 // CheckDeploymentAnnotation will check the annotation of deployment
-func CheckDeploymentAnnotation(clientSet *kubernetes.Clientset, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
-	targetAppList, err := getDeploymentLists(clientSet, engine)
+func CheckDeploymentAnnotation(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
+	targetAppList, err := getDeploymentLists(clientset, engine)
 	if err != nil {
 		return engine, err
 	}
@@ -45,8 +45,8 @@ func CheckDeploymentAnnotation(clientSet *kubernetes.Clientset, engine *chaosTyp
 }
 
 // getDeploymentLists will list the deployments which having the chaos label
-func getDeploymentLists(clientSet *kubernetes.Clientset, engine *chaosTypes.EngineInfo) (*v1.DeploymentList, error) {
-	targetAppList, err := clientSet.AppsV1().Deployments(engine.AppInfo.Namespace).List(metaV1.ListOptions{
+func getDeploymentLists(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*v1.DeploymentList, error) {
+	targetAppList, err := clientset.AppsV1().Deployments(engine.AppInfo.Namespace).List(metaV1.ListOptions{
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {

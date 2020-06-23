@@ -5,15 +5,16 @@ go 1.13
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
+	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
+	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/litmuschaos/elves v0.0.0-20200502084504-13be0e6937ee
-	github.com/onsi/ginkgo v1.12.3
-	github.com/onsi/gomega v1.10.1
-	github.com/openebs/maya v1.11.0 // indirect
-	github.com/openebs/node-disk-manager v0.6.0 // indirect
+	github.com/onsi/ginkgo v1.10.1
+	github.com/onsi/gomega v1.7.0
 	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
+	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82 // indirect
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v12.0.0+incompatible
