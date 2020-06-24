@@ -77,6 +77,8 @@ type ExperimentDef struct {
 	Secrets []Secret `json:"secrets,omitempty"`
 	// Annotations that needs to be provided in the pod for pod that is getting created
 	ExperimentAnnotations map[string]string `json:"experimentannotations,omitempty"`
+	// SecurityContext holds security configuration that will be applied to a container
+	SecurityContext corev1.SecurityContext `json:"securityContext,omitempty"`
 }
 
 // ENVPair defines env var list to hold chaos params
