@@ -24,7 +24,7 @@ help:
 	@echo ""
 
 .PHONY: deps
-deps: _build_check_docker godeps 
+deps: _build_check_docker godeps unused-package-check
 
 .PHONY: godeps
 godeps:
@@ -84,3 +84,12 @@ dockerops:
 	@echo "------------------"
 	sudo docker build . -f build/Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	REPONAME=$(DOCKER_REPO) IMGNAME=$(DOCKER_IMAGE) IMGTAG=$(DOCKER_TAG) ./buildscripts/push
+
+unused-package-check:
+	@echo "------------------"
+	@echo "--> Check unused packages for the chaos-operator"
+	@echo "------------------"
+	@tidy=$$(go mod tidy); \
+	if [ -n "$${tidy}" ]; then \
+		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
+	fi
