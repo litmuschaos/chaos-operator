@@ -25,8 +25,12 @@ import (
 // The chaosresult holds the status of a chaos experiment that is listed as an item
 // in the chaos engine to be run against a given app.
 type ChaosResultSpec struct {
-	// Definition carries low-level chaos options
-	ExperimentStatus TestStatus `json:"experimentstatus"`
+	// EngineName defines the name of chaosEngine
+	EngineName string `json:"engine,omitempty"`
+	// ExperimentName defines the name of chaosexperiment
+	ExperimentName string `json:"experiment"`
+	// InstanceID defines the instance id
+	InstanceID string `json:"instance,omitempty"`
 }
 
 // ChaosResultStatus defines the observed state of ChaosResult
@@ -35,6 +39,9 @@ type ChaosResultStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	// Definition carries low-level chaos options
+	ExperimentStatus TestStatus `json:"experimentstatus"`
 }
 
 // TestStatus defines information about the status and results of a chaos experiment
@@ -43,6 +50,8 @@ type TestStatus struct {
 	Phase string `json:"phase"`
 	// Verdict defines whether an experiment result is pass or fail
 	Verdict string `json:"verdict"`
+	// FailStep defines step where the experiments fails
+	FailStep string `json:"failStep,omitempty"`
 }
 
 // +genclient

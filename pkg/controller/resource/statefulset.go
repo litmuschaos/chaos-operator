@@ -28,47 +28,47 @@ import (
 )
 
 // CheckStatefulSetAnnotation will check the annotation of StatefulSet
-func CheckStatefulSetAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
-	targetAppList, err := getStatefulSetLists(clientSet, ce)
+func CheckStatefulSetAnnotation(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
+	targetAppList, err := getStatefulSetLists(clientset, engine)
 	if err != nil {
-		return ce, err
+		return engine, err
 	}
-	ce, chaosEnabledStatefulSet, err := checkForChaosEnabledStatefulSet(targetAppList, ce)
+	engine, chaosEnabledStatefulSet, err := checkForChaosEnabledStatefulSet(targetAppList, engine)
 	if err != nil {
-		return ce, err
+		return engine, err
 	}
 	if chaosEnabledStatefulSet == 0 {
-		return ce, errors.New("no chaos-candidate found")
+		return engine, errors.New("no chaos-candidate found")
 	}
-	chaosTypes.Log.Info("Statefulset chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
-	return ce, nil
+	chaosTypes.Log.Info("Statefulset chaos candidate:", "appName: ", engine.AppName, " appUUID: ", engine.AppUUID)
+	return engine, nil
 }
 
 // getStatefulSetLists will list the statefulset which having the chaos label
-func getStatefulSetLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*appsV1.StatefulSetList, error) {
-	targetAppList, err := clientSet.AppsV1().StatefulSets(ce.AppInfo.Namespace).List(metaV1.ListOptions{
-		LabelSelector: ce.Instance.Spec.Appinfo.Applabel,
+func getStatefulSetLists(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*appsV1.StatefulSetList, error) {
+	targetAppList, err := clientset.AppsV1().StatefulSets(engine.AppInfo.Namespace).List(metaV1.ListOptions{
+		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing statefulsets with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing statefulsets with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(targetAppList.Items) == 0 {
-		return nil, fmt.Errorf("no statefulset apps with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no statefulset apps with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	return targetAppList, err
 }
 
 // This will check and count the total chaos enabled application
-func checkForChaosEnabledStatefulSet(targetAppList *appsV1.StatefulSetList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+func checkForChaosEnabledStatefulSet(targetAppList *appsV1.StatefulSetList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledStatefulSet := 0
 	for _, statefulSet := range targetAppList.Items {
-		ce.AppName = statefulSet.ObjectMeta.Name
-		ce.AppUUID = statefulSet.ObjectMeta.UID
+		engine.AppName = statefulSet.ObjectMeta.Name
+		engine.AppUUID = statefulSet.ObjectMeta.UID
 		annotationValue := statefulSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		chaosEnabledStatefulSet = CountTotalChaosEnabled(annotationValue, chaosEnabledStatefulSet)
 		if chaosEnabledStatefulSet > 1 {
-			return ce, chaosEnabledStatefulSet, errors.New("too many statefulsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
+			return engine, chaosEnabledStatefulSet, errors.New("too many statefulsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
 		}
 	}
-	return ce, chaosEnabledStatefulSet, nil
+	return engine, chaosEnabledStatefulSet, nil
 }

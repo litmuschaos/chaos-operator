@@ -18,47 +18,65 @@ package resource
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
-	k8s "github.com/litmuschaos/chaos-operator/pkg/kubernetes"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 )
 
 // Annotations on app to enable chaos on it
 const (
-	ChaosAnnotationKey   = "litmuschaos.io/chaos"
-	ChaosAnnotationValue = "true"
+	ChaosAnnotationValue      = "true"
+	DefaultChaosAnnotationKey = "litmuschaos.io/chaos"
 )
 
-// CheckChaosAnnotation will check for the annotation of required resources
-func CheckChaosAnnotation(ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
-	// Use client-Go to obtain a list of apps w/ specified labels
-	//var chaosEngine chaosTypes.EngineInfo
-	clientSet, err := k8s.CreateClientSet()
-	if err != nil {
-		return ce, fmt.Errorf("clientset generation failed with error: %+v", err)
+var (
+	// ChaosAnnotationKey is global variable used as the Key for annotation check.
+	ChaosAnnotationKey = getAnnotationKey()
+)
+
+// getAnnotationKey returns the annotation to be used while validating applications.
+func getAnnotationKey() string {
+
+	annotationKey := os.Getenv("CUSTOM_ANNOTATION")
+	if len(annotationKey) != 0 {
+		return annotationKey
 	}
-	switch strings.ToLower(ce.AppInfo.Kind) {
+	return DefaultChaosAnnotationKey
+
+}
+
+// CheckChaosAnnotation will check for the annotation of required resources
+func CheckChaosAnnotation(engine *chaosTypes.EngineInfo, clientset kubernetes.Interface, dynamicClientSet dynamic.Interface) (*chaosTypes.EngineInfo, error) {
+
+	switch strings.ToLower(engine.AppInfo.Kind) {
 	case "deployment", "deployments":
-		ce, err = CheckDeploymentAnnotation(clientSet, ce)
+		engine, err := CheckDeploymentAnnotation(clientset, engine)
 		if err != nil {
-			return ce, fmt.Errorf("resource type 'deployment', err: %+v", err)
+			return engine, fmt.Errorf("resource type 'deployment', err: %+v", err)
 		}
 	case "statefulset", "statefulsets":
-		ce, err = CheckStatefulSetAnnotation(clientSet, ce)
+		engine, err := CheckStatefulSetAnnotation(clientset, engine)
 		if err != nil {
-			return ce, fmt.Errorf("resource type 'statefulset', err: %+v", err)
+			return engine, fmt.Errorf("resource type 'statefulset', err: %+v", err)
 		}
 	case "daemonset", "daemonsets":
-		ce, err = CheckDaemonSetAnnotation(clientSet, ce)
+		engine, err := CheckDaemonSetAnnotation(clientset, engine)
 		if err != nil {
-			return ce, fmt.Errorf("resource type 'daemonset', err: %+v", err)
+			return engine, fmt.Errorf("resource type 'daemonset', err: %+v", err)
+		}
+	case "deploymentconfig", "deploymentconfigs":
+		engine, err := CheckDeploymentConfigAnnotation(dynamicClientSet, engine)
+		if err != nil {
+			return engine, fmt.Errorf("resource type 'deploymentconfig', err: %+v", err)
 		}
 	default:
-		return ce, fmt.Errorf("resource type '%s' not supported for induce chaos", ce.AppInfo.Kind)
+		return engine, fmt.Errorf("resource type '%s' not supported for induce chaos", engine.AppInfo.Kind)
 	}
-	chaosTypes.Log.Info("chaos candidate of", "kind:", ce.AppInfo.Kind, "appName: ", ce.AppName, "appUUID: ", ce.AppUUID)
-	return ce, nil
+	chaosTypes.Log.Info("chaos candidate of", "kind:", engine.AppInfo.Kind, "appName: ", engine.AppName, "appUUID: ", engine.AppUUID)
+	return engine, nil
 }
 
 // CountTotalChaosEnabled will count the number of chaos enabled applications

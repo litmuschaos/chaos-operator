@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -31,22 +32,78 @@ type ChaosEngineSpec struct {
 	AnnotationCheck string `json:"annotationCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
-	//Components contains the image of runnner and monitor pod
+	//Components contains the image, imagePullPolicy, arguments, and commands of runner
 	Components ComponentParams `json:"components"`
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`
 	//Monitor Enable Status
 	Monitoring bool `json:"monitoring,omitempty"`
 	//JobCleanUpPolicy decides to retain or delete the jobs
-	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
+	JobCleanUpPolicy CleanUpPolicy `json:"jobCleanUpPolicy,omitempty"`
 	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
+	//EngineStatus is a requirement for validation
+	EngineState EngineState `json:"engineState"`
 }
+
+// EngineState provides interface for all supported strings in spec.EngineState
+type EngineState string
+
+const (
+	// EngineStateActive starts the reconcile call
+	EngineStateActive EngineState = "active"
+	// EngineStateStop stops the reconcile call
+	EngineStateStop EngineState = "stop"
+)
+
+// ExperimentStatus is typecasted to string for supporting the values below.
+type ExperimentStatus string
+
+const (
+	// ExperimentStatusRunning is status of Experiment which is currently running
+	ExperimentStatusRunning ExperimentStatus = "Running"
+	// ExperimentStatusCompleted is status of Experiment which has been completed
+	ExperimentStatusCompleted ExperimentStatus = "Completed"
+	// ExperimentStatusWaiting is status of Experiment which will be executed via a Job
+	ExperimentStatusWaiting ExperimentStatus = "Waiting for Job Creation"
+	// ExperimentStatusNotFound is status of Experiment which is not found inside ChaosNamespace
+	ExperimentStatusNotFound ExperimentStatus = "ChaosExperiment Not Found"
+	// ExperimentStatusSuccessful is status of a Successful experiment execution
+	ExperimentStatusSuccessful ExperimentStatus = "Execution Successful"
+	// ExperimentStatusAborted is status of a Experiment is forcefully aborted
+	ExperimentStatusAborted ExperimentStatus = "Forcefully Aborted"
+)
+
+// EngineStatus provides interface for all supported strings in status.EngineStatus
+type EngineStatus string
+
+const (
+	// EngineStatusInitialized is used for reconcile calls to start reconcile for creation
+	EngineStatusInitialized EngineStatus = "initialized"
+	// EngineStatusCompleted is used for reconcile calls to start reconcile for completion
+	EngineStatusCompleted EngineStatus = "completed"
+	// EngineStatusStopped is used for reconcile calls to start reconcile for delete
+	EngineStatusStopped EngineStatus = "stopped"
+)
+
+// CleanUpPolicy defines the garbage collection method used by chaos-operator
+type CleanUpPolicy string
+
+const (
+	//CleanUpPolicyDelete sets the garbage collection policy of chaos-operator to Delete Chaos Resources
+	CleanUpPolicyDelete CleanUpPolicy = "delete"
+
+	//CleanUpPolicyRetain sets the garbage collection policy of chaos-operator to Retain Chaos Resources
+	CleanUpPolicyRetain CleanUpPolicy = "retain"
+)
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
 // +k8s:openapi-gen=true
+
 // ChaosEngineStatus derives information about status of individual experiments
 type ChaosEngineStatus struct {
+	//EngineStatus is a typed string to support limited values for ChaosEngine Status
+	EngineStatus EngineStatus `json:"engineStatus"`
 	//Detailed status of individual experiments
 	Experiments []ExperimentStatuses `json:"experiments"`
 }
@@ -62,26 +119,26 @@ type ApplicationParams struct {
 	AppKind string `json:"appkind"`
 }
 
-// ComponentParams defines information about the runner and monitor image
+// ComponentParams defines information about the runner
 type ComponentParams struct {
-	//Contains informations of the monitor pod
-	Monitor MonitorInfo `json:"monitor"`
 	//Contains informations of the the runner pod
 	Runner RunnerInfo `json:"runner"`
-}
-
-// MonitorInfo defines the information of the monitor pod
-type MonitorInfo struct {
-	//Image of the monitor pod
-	Image string `json:"image"`
 }
 
 // RunnerInfo defines the information of the runnerinfo pod
 type RunnerInfo struct {
 	//Image of the runner pod
 	Image string `json:"image,omitempty"`
-	//Type of Executor
+	//Type of runner
 	Type string `json:"type,omitempty"`
+	//Args of runner
+	Args []string `json:"args,omitempty"`
+	//Command for runner
+	Command []string `json:"command,omitempty"`
+	//ImagePullPolicy for runner pod
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+	// Runner Annotations that needs to be provided in the pod for pod that is getting created
+	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
@@ -103,9 +160,10 @@ type ExperimentAttributes struct {
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
 type ExperimentComponents struct {
-	ENV        []ExperimentENV `json:"env,omitempty"`
-	ConfigMaps []ConfigMap     `json:"configMaps,omitempty"`
-	Secrets    []Secret        `json:"secrets,omitempty"`
+	ENV                   []ExperimentENV   `json:"env,omitempty"`
+	ConfigMaps            []ConfigMap       `json:"configMaps,omitempty"`
+	Secrets               []Secret          `json:"secrets,omitempty"`
+	ExperimentAnnotations map[string]string `json:"experimentannotation,omitempty"`
 }
 
 // ExperimentENV varibles to override the default values in chaosexperiment
@@ -120,7 +178,7 @@ type ExperimentStatuses struct {
 	//Name of experiment whose status is detailed
 	Name string `json:"name"`
 	//Current state of chaos experiment
-	Status string `json:"status"`
+	Status ExperimentStatus `json:"status"`
 	//Result of a completed chaos experiment
 	Verdict string `json:"verdict"`
 	//Time of last state change of chaos experiment

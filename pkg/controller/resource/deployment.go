@@ -28,47 +28,47 @@ import (
 )
 
 // CheckDeploymentAnnotation will check the annotation of deployment
-func CheckDeploymentAnnotation(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
-	targetAppList, err := getDeploymentLists(clientSet, ce)
+func CheckDeploymentAnnotation(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
+	targetAppList, err := getDeploymentLists(clientset, engine)
 	if err != nil {
-		return ce, err
+		return engine, err
 	}
-	ce, chaosEnabledDeployment, err := checkForChaosEnabledDeployment(targetAppList, ce)
+	engine, chaosEnabledDeployment, err := checkForChaosEnabledDeployment(targetAppList, engine)
 	if err != nil {
-		return ce, err
+		return engine, err
 	}
 	if chaosEnabledDeployment == 0 {
-		return ce, errors.New("no chaos-candidate found")
+		return engine, errors.New("no chaos-candidate found")
 	}
-	chaosTypes.Log.Info("Deployment chaos candidate:", "appName: ", ce.AppName, " appUUID: ", ce.AppUUID)
-	return ce, nil
+	chaosTypes.Log.Info("Deployment chaos candidate:", "appName: ", engine.AppName, " appUUID: ", engine.AppUUID)
+	return engine, nil
 }
 
 // getDeploymentLists will list the deployments which having the chaos label
-func getDeploymentLists(clientSet *kubernetes.Clientset, ce *chaosTypes.EngineInfo) (*v1.DeploymentList, error) {
-	targetAppList, err := clientSet.AppsV1().Deployments(ce.AppInfo.Namespace).List(metaV1.ListOptions{
-		LabelSelector: ce.Instance.Spec.Appinfo.Applabel,
+func getDeploymentLists(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*v1.DeploymentList, error) {
+	targetAppList, err := clientset.AppsV1().Deployments(engine.AppInfo.Namespace).List(metaV1.ListOptions{
+		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing deployments with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing deployments with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(targetAppList.Items) == 0 {
-		return nil, fmt.Errorf("no deployments apps with matching labels %s", ce.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no deployments apps with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	return targetAppList, err
 }
 
 // This will check and count the total chaos enabled application
-func checkForChaosEnabledDeployment(targetAppList *v1.DeploymentList, ce *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+func checkForChaosEnabledDeployment(targetAppList *v1.DeploymentList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDeployment := 0
 	for _, deployment := range targetAppList.Items {
-		ce.AppName = deployment.ObjectMeta.Name
-		ce.AppUUID = deployment.ObjectMeta.UID
+		engine.AppName = deployment.ObjectMeta.Name
+		engine.AppUUID = deployment.ObjectMeta.UID
 		annotationValue := deployment.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		chaosEnabledDeployment = CountTotalChaosEnabled(annotationValue, chaosEnabledDeployment)
 		if chaosEnabledDeployment > 1 {
-			return ce, chaosEnabledDeployment, errors.New("too many deployments with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
+			return engine, chaosEnabledDeployment, errors.New("too many deployments with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
 		}
 	}
-	return ce, chaosEnabledDeployment, nil
+	return engine, chaosEnabledDeployment, nil
 }

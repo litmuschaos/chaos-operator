@@ -1,4 +1,4 @@
-# Makefile for building Chaos Exporter
+# Makefile for building Chaos Operator
 # Reference Guide - https://www.gnu.org/software/make/manual/make.html
 
 IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
@@ -29,7 +29,7 @@ deps: _build_check_docker godeps
 .PHONY: godeps
 godeps:
 	@echo ""
-	@echo "INFO:\tverifying dependencies for chaos exporter build ..."
+	@echo "INFO:\tverifying dependencies for chaos operator build ..."
 	@go get -u -v golang.org/x/lint/golint
 	@go get -u -v golang.org/x/tools/cmd/goimports
 
@@ -75,7 +75,7 @@ test:
 	@echo "------------------"
 	@echo "--> Run Go Test"
 	@echo "------------------"
-	@go test ./... -v 
+	@go test ./... -coverprofile=coverage.txt -covermode=atomic -v 
 
 .PHONY: dockerops 
 dockerops: 

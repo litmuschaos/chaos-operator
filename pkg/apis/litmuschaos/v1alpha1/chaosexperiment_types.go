@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -53,11 +54,13 @@ type Secret struct {
 
 // ExperimentDef defines information about nature of chaos & components subjected to it
 type ExperimentDef struct {
-	// Default labels of the executor pod
+	// Default labels of the runner pod
 	// +optional
 	Labels map[string]string `json:"labels"`
-	// Image of the chaos executor
+	// Image of the chaos experiment
 	Image string `json:"image"`
+	// ImagePullPolicy of the chaos experiment container
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
 	//Scope specifies the service account scope (& thereby blast radius) of the experiment
 	Scope string `json:"scope"`
 	// List of Permission needed for a service account to execute experiment
@@ -66,12 +69,14 @@ type ExperimentDef struct {
 	ENVList []ENVPair `json:"env"`
 	// Defines command to invoke experiment
 	Command []string `json:"command"`
-	// Defines arguments to executor's entrypoint command
+	// Defines arguments to runner's entrypoint command
 	Args []string `json:"args"`
 	// ConfigMaps contains a list of ConfigMaps
 	ConfigMaps []ConfigMap `json:"configmaps,omitempty"`
 	// Secrets contains a list of Secrets
 	Secrets []Secret `json:"secrets,omitempty"`
+	// Annotations that needs to be provided in the pod for pod that is getting created
+	ExperimentAnnotations map[string]string `json:"experimentannotations,omitempty"`
 }
 
 // ENVPair defines env var list to hold chaos params

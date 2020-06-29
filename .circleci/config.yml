@@ -51,6 +51,7 @@ jobs:
       - run: make test 
       - run: |
           docker save -o workspace/image.tar ${REPONAME}/${IMGNAME}:${IMGTAG}
+      - run: bash <(curl -s https://codecov.io/bash) -vz 
       - persist_to_workspace:
           root: workspace 
           paths: 
@@ -73,6 +74,22 @@ jobs:
           docker load -i /tmp/workspace/image.tar
           ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=ci
 
+  trivy-check:
+    machine: true
+    environment:
+      TRIVYARCH: "64bit"
+    steps:
+      - run: |
+          export VERSION=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+          echo ${VERSION}
+          sudo apt-get update
+          sudo apt-get install -y rpm
+          wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-${TRIVYARCH}.tar.gz
+          tar zxvf trivy_${VERSION}_Linux-${TRIVYARCH}.tar.gz
+      - run: |
+          ./trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-operator:ci
+          ./trivy --exit-code 0 --severity CRITICAL --no-progress litmuschaos/chaos-operator:ci
+          
   release: 
     machine: 
       image: circleci/classic:201808-01
@@ -98,6 +115,12 @@ workflows:
             ## build jobs needs to be run for branch commits as well as tagged releases
             tags:
               only: /.*/
+      - trivy-check:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
       - push:
           requires: 
             - build
@@ -115,4 +138,3 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-  

@@ -51,11 +51,8 @@ var (
 	// Log with default name ie: controller_chaosengine
 	Log = logf.Log.WithName("controller_chaosengine")
 
-	// DefaultChaosMonitorImage contains the default value of monitor resource
-	DefaultChaosMonitorImage = "litmuschaos/chaos-exporter:latest"
-
 	// DefaultChaosRunnerImage contains the default value of runner resource
-	DefaultChaosRunnerImage = "litmuschaos/ansible-runner:latest"
+	DefaultChaosRunnerImage = "litmuschaos/chaos-runner:latest"
 )
 
 // ApplicationInfo contains the chaos details for target application

@@ -47,23 +47,21 @@ spec:
               properties:
                 appkind:
                   type: string
-                  pattern: ^(deployment|statefulset|daemonset)$
+                  pattern: ^(deployment|statefulset|daemonset|deploymentconfig)$
                 applabel:
                   type: string
                 appns:
                   type: string
             auxiliaryAppInfo:
               type: string
+            engineState:
+              type: string
+              pattern: ^(active|stop|initialized|stopped)$
             chaosServiceAccount:
               type: string
             components:
               type: object
               properties:
-                monitor:
-                  type: object
-                  properties:
-                    image:
-                      type: string
                 runner:
                   type: object
                   properties:
@@ -72,6 +70,19 @@ spec:
                     type:
                       type: string
                       pattern: ^(go|ansible)$
+                    runnerannotation:
+                      type: object
+                      additionalProperties:
+                        type: string
+                        properties:
+                          key:
+                            type: string
+                            minLength: 1
+                            allowEmptyValue: false
+                          value:
+                            type: string
+                            minLength: 1
+                            allowEmptyValue: false
             experiments:
               type: array
               items:
@@ -82,7 +93,7 @@ spec:
                   spec:
                     type: object
                     properties:
-                      components: 
+                      components:
                         type: object
                         properties:
                           env:
@@ -108,19 +119,32 @@ spec:
                             items:
                               type: object
                               properties:
-                                name: 
+                                name:
                                   type: string
                                 mountPath:
                                   type: string
+                          experimentannotation:
+                            type: object
+                            additionalProperties:
+                              type: string
+                              properties:
+                                key:
+                                  type: string
+                                  minLength: 1
+                                  allowEmptyValue: false
+                                value:
+                                  type: string
+                                  minLength: 1
+                                  allowEmptyValue: false
 
 
         status:
           type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -190,9 +214,9 @@ spec:
                     type: object
                     minProperties: 3
                     required:
-                    - apiGroups
-                    - resources
-                    - verbs
+                      - apiGroups
+                      - resources
+                      - verbs
                     properties:
                       apiGroups:
                         type: array
@@ -244,9 +268,9 @@ spec:
           type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -260,8 +284,6 @@ spec:
     plural: chaosresults
     singular: chaosresult
   scope: Namespaced
-  subresources:
-    status: {}
   validation:
     openAPIV3Schema:
       properties:
@@ -283,6 +305,6 @@ spec:
           type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
