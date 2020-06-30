@@ -62,7 +62,7 @@ jobs:
           ls ${GOPATH}
           pwd
           ls
-          ls ${GOPATH}/src/github.com/litmuschaos/chaos-operator
+          ls ${GOPATH}/src/github.com/litmuschaos
           make deps
           make gotasks
           sudo docker build -f build/Dockerfile -t litmuschaos/chaos-operator:ci .
