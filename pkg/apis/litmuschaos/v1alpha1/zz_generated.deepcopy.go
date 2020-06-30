@@ -486,6 +486,7 @@ func (in *ExperimentDef) DeepCopyInto(out *ExperimentDef) {
 			(*out)[key] = val
 		}
 	}
+	in.SecurityContext.DeepCopyInto(&out.SecurityContext)
 	return
 }
 
