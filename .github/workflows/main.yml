@@ -1,0 +1,146 @@
+name: ChaosOperator-CI
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  tests:
+    if: contains(github.event.comment.html_url, '/pull/') && startsWith(github.event.comment.body, '/run-e2e')
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Notification for e2e Start
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: "${{ github.event.comment.id }}"
+          body: |
+            ****
+            **Test Status:** The e2e test has been started please wait for the results ...      
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.13.1' # The Go version to download (if necessary) and use.
+      - run: |
+          go version
+          mkdir -p ${HOME}/go/src/github.com/litmuschaos/
+          export GOPATH=${HOME}/go
+          cd ${GOPATH}/src/github.com/litmuschaos/
+
+      - name: Setting up GOPATH 
+        run: echo ::set-env name=GOPATH::${HOME}/go
+
+      - name: Echo GOPATH
+        run: echo ${GOPATH}
+
+      #Using the last commit id of pull request
+      - uses: octokit/request-action@v2.x
+        id: get_PR_commits
+        with:
+          route: GET /repos/:repo/pulls/:pull_number/commits
+          repo: ${{ github.repository }}
+          pull_number: ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: set commit to output
+        id: getcommit
+        run: | 
+           prsha=$(echo $response | jq '.[-1].sha'  | tr -d '"')
+           echo "::set-output name=sha::$prsha" 
+        env: 
+          response:  ${{ steps.get_PR_commits.outputs.data }}
+          
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{steps.getcommit.outputs.sha}}   
+
+      - name: Build docker image
+        run: |
+          make deps
+          make gotasks
+          sudo docker build -f build/Dockerfile -t litmuschaos/chaos-operator:ci .
+
+      #Install and configure a kind cluster
+      - name: Installing Prerequisites (KinD Cluster)
+        uses: engineerd/setup-kind@v0.4.0
+        with:
+            version: "v0.7.0"
+
+      - name: Configuring and testing the Installation
+        run: |
+          kubectl cluster-info --context kind-kind
+          kind get kubeconfig --internal >$HOME/.kube/config
+          kubectl get nodes            
+
+      - name: Load image on the nodes of the cluster
+        run: |
+          kind load docker-image --name=kind litmuschaos/chaos-operator:ci        
+
+      - name: Getting litmus-e2e repo
+        run: |
+          git clone https://github.com/uditgaurav/litmus-e2e.git -b generic-operator
+          cd litmus-e2e
+
+      - name: Install LitmusChaos
+        run: | 
+          go test tests/install-litmus.go -v -count=1
+        env:
+          OPERATOR_IMAGE: litmuschaos/chaos-operator:ci
+
+      - name: Run Admin mode test
+        if: startsWith(github.event.comment.body, '/run-e2e-admin-mode') || startsWith(github.event.comment.body, '/run-e2e-all')
+        run: |
+          go test operator/admin-mode_test.go -v -count=1
+
+      - name: Run Reconcile Resiliency test
+        if: startsWith(github.event.comment.body, '/run-e2e-reconcile-resiliency') || startsWith(github.event.comment.body, '/run-e2e-all')
+        run: |
+          go test operator/reconcile-resiliency_test.go -v -count=1         
+
+      - name: Check the test run
+        if: |
+         startsWith(github.event.comment.body, '/run-e2e-admin-mode') || startsWith(github.event.comment.body, '/run-e2e-reconcile-resiliency') ||
+         startsWith(github.event.comment.body, '/run-e2e-all')
+        run: |
+          echo ::set-env name=TEST_RUN::true
+
+      - name: Check for all the jobs are succeeded
+        if: ${{ success() && env.TEST_RUN == 'true' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: "${{ github.event.comment.id }}"
+          body: |  
+            **Test Result:** All tests are passed
+          reactions: hooray         
+
+      - name: Check for any job failed
+        if: ${{ failure() }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: "${{ github.event.comment.id }}"
+          body: |
+            **Test Failed:** Some tests are failed please check
+          reactions: confused
+
+      - name: Deleting KinD cluster
+        if: ${{ always() }}
+        run: kind delete cluster
+
+      - name: Check if any test ran or not
+        if: env.TEST_RUN != 'true'
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: "${{ github.event.comment.id }}"
+          body: |
+            **Test Result:** No test found
+          reactions: eyes 
+
+  merge:
+    if: contains(github.event.comment.html_url, '/pull/') && startsWith(github.event.comment.body, '/merge')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add a merge label when all jobs are passed
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          labels: merge
