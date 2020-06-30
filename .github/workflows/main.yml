@@ -53,6 +53,9 @@ jobs:
       - name: Build docker image
         run: |
           cd ${GOPATH}/src/github.com/litmuschaos/chaos-operator
+          pwd
+          ls
+          echo ${GOPATH}
           make deps
           make gotasks
           sudo docker build -f build/Dockerfile -t litmuschaos/chaos-operator:ci .
