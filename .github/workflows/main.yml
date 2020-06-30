@@ -59,7 +59,7 @@ jobs:
         run: |
           pwd
           ls
-          cd ${GOPATH}/src/github.com/litmuschaos/
+          cd ${GOPATH}/src/github.com/litmuschaos/chaos-operator
           pwd
           make deps
           make gotasks
