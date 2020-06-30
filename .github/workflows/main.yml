@@ -52,7 +52,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{steps.getcommit.outputs.sha}}
-          path: ${GOPATH}/src/github.com/litmuschaos/chaos-operator
+          path: /home/runner/go/src/github.com/litmuschaos/chaos-operator
           
       - name: Build docker image
         run: |
