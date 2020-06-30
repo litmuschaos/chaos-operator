@@ -22,9 +22,8 @@ jobs:
           go-version: '^1.13.1' # The Go version to download (if necessary) and use.
       - run: |
           go version
-          mkdir -p ${HOME}/go/src/github.com/litmuschaos/
+          mkdir -p ${HOME}/go/src/github.com/litmuschaos/chaos-operator
           export GOPATH=${HOME}/go
-          cd ${GOPATH}/src/github.com/litmuschaos/
 
       - name: Setting up GOPATH 
         run: echo ::set-env name=GOPATH::${HOME}/go
@@ -53,7 +52,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{steps.getcommit.outputs.sha}}
-          path: ${GOPATH}/src/github.com/litmuschaos
+          path: ${GOPATH}/src/github.com/litmuschaos/chaos-operator
           
       - name: Build docker image
         run: |
@@ -61,6 +60,7 @@ jobs:
           ls
           cd ${GOPATH}/src/github.com/litmuschaos/chaos-operator
           pwd
+          ls
           make deps
           make gotasks
           sudo docker build -f build/Dockerfile -t litmuschaos/chaos-operator:ci .
@@ -83,7 +83,7 @@ jobs:
 
       - name: Getting litmus-e2e repo
         run: |
-          cd ${GOPATH}/src/github.com/litmuschaos
+          cd ${GOPATH}/src/github.com/litmuschaos/
           git clone https://github.com/uditgaurav/litmus-e2e.git -b generic-operator
 
       - name: Install LitmusChaos
