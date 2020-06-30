@@ -264,6 +264,8 @@ spec:
                         type: string
                         allowEmptyValue: false
                         minLength: 1
+                securityContext:
+                  type: object
         status:
           type: object
   version: v1alpha1
