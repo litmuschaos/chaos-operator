@@ -22,11 +22,11 @@ jobs:
           go-version: '^1.13.1' # The Go version to download (if necessary) and use.
       - run: |
           go version
-          mkdir -p ${HOME}/go/src/github.com/litmuschaos/chaos-operator
+          mkdir -p ${GITHUB_WORKSPACE}/go/src/github.com/litmuschaos
           export GOPATH=${HOME}/go
 
       - name: Setting up GOPATH 
-        run: echo ::set-env name=GOPATH::${HOME}/go
+        run: echo ::set-env name=GOPATH::${GITHUB_WORKSPACE}/go
 
       - name: Echo GOPATH
         run: echo ${GOPATH}
@@ -52,15 +52,18 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{steps.getcommit.outputs.sha}}
-          path: /home/runner/go/src/github.com/litmuschaos/chaos-operator
+          path: go/src/github.com/litmuschaos
           
       - name: Build docker image
         run: |
           pwd
           ls
-          cd ${GOPATH}/src/github.com/litmuschaos/chaos-operator
+          cd ${GOPATH}/src/github.com/litmuschaos/
           pwd
           ls
+          cd chaos-operator
+          ls
+          pwd
           make deps
           make gotasks
           sudo docker build -f build/Dockerfile -t litmuschaos/chaos-operator:ci .
