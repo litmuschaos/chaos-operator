@@ -26,7 +26,7 @@ jobs:
           export GOPATH=${GITHUB_WORKSPACE}/go
 
       - name: Setting up GOPATH 
-        run: echo ::set-env name=GOPATH::${GITHUB_WORKSPACE}/go
+        run: echo ::set-env name=GOPATH::${GITHUB_WORKSPACE}
 
       - name: Echo GOPATH
         run: echo ${GOPATH}
@@ -52,17 +52,9 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{steps.getcommit.outputs.sha}}
-          path: /home/runner/work/chaos-operator/chaos-operator/go/src/github.com/litmuschaos
           
       - name: Build docker image
         run: |
-          pwd
-          ls
-          ls ${GOPATH}/src/github.com/litmuschaos/
-          ls ${GOPATH}
-          pwd
-          ls
-          ls ${GOPATH}/src/github.com/litmuschaos
           make deps
           make gotasks
           sudo docker build -f build/Dockerfile -t litmuschaos/chaos-operator:ci .
