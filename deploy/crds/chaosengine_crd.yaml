@@ -95,6 +95,8 @@ spec:
                       components:
                         type: object
                         properties:
+                          experimentImage:
+                            type: string
                           env:
                             type: array
                             items:
