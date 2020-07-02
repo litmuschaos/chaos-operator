@@ -118,6 +118,8 @@ spec:
                         minLength: 1
                 securityContext:
                   type: object
+                hostPID:
+                  type: bool
         status:
           type: object
   version: v1alpha1

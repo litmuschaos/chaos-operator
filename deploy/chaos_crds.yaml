@@ -11,7 +11,6 @@ spec:
     plural: chaosengines
     singular: chaosengine
   scope: Namespaced
-  subresources:
   validation:
     openAPIV3Schema:
       properties:
@@ -268,6 +267,8 @@ spec:
                         minLength: 1
                 securityContext:
                   type: object
+                hostPID:
+                  type: bool
         status:
           type: object
   version: v1alpha1

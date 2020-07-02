@@ -78,7 +78,17 @@ type ExperimentDef struct {
 	// Annotations that needs to be provided in the pod for pod that is getting created
 	ExperimentAnnotations map[string]string `json:"experimentannotations,omitempty"`
 	// SecurityContext holds security configuration that will be applied to a container
-	SecurityContext corev1.SecurityContext `json:"securityContext,omitempty"`
+	SecurityContext SecurityContext `json:"securityContext,omitempty"`
+	// HostPID is need to be provided in the chaospod
+	HostPID bool `json:"hostPID,omitempty"`
+}
+
+// SecurityContext defines the security contexts of the pod and container.
+type SecurityContext struct {
+	// PodSecurityContext holds security configuration that will be applied to a pod
+	PodSecurityContext corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
+	// ContainerSecurityContext holds security configuration that will be applied to a container
+	ContainerSecurityContext corev1.SecurityContext `json:"containerSecurityContext,omitempty"`
 }
 
 // ENVPair defines env var list to hold chaos params
