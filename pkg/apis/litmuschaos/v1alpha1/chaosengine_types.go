@@ -165,6 +165,7 @@ type ExperimentComponents struct {
 	Secrets               []Secret          `json:"secrets,omitempty"`
 	ExperimentAnnotations map[string]string `json:"experimentannotation,omitempty"`
 	ExperimentImage       string            `json:"experimentImage,omitempty"`
+	NodeSelector          map[string]string `json:"nodeSelector,omitempty"`
 }
 
 // ExperimentENV varibles to override the default values in chaosexperiment
