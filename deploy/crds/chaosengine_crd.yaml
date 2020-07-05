@@ -10,7 +10,6 @@ spec:
     plural: chaosengines
     singular: chaosengine
   scope: Namespaced
-  subresources:
   validation:
     openAPIV3Schema:
       properties:
@@ -95,6 +94,8 @@ spec:
                       components:
                         type: object
                         properties:
+                          experimentImage:
+                            type: string
                           env:
                             type: array
                             items:

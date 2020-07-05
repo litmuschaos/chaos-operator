@@ -18,13 +18,10 @@ might close your issue.  If we're wrong, PLEASE feel free to reopen it and
 explain why.
 -->
 
-
-
 **What happened**:
 
 **What you expected to happen**:
 
 **How to reproduce it (as minimally and precisely as possible)**:
-
 
 **Anything else we need to know?**:

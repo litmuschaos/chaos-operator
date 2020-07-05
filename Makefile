@@ -24,7 +24,7 @@ help:
 	@echo ""
 
 .PHONY: deps
-deps: _build_check_docker godeps 
+deps: _build_check_docker godeps unused-package-check
 
 .PHONY: godeps
 godeps:
@@ -44,7 +44,7 @@ _build_check_docker:
 
 .PHONY: gotasks
 gotasks: format lint build
- 
+
 .PHONY: format
 format:
 	@echo "------------------"
@@ -63,24 +63,33 @@ lint:
 	@echo "------------------"
 	@go vet $(PACKAGES)
 
-.PHONY: build  
+.PHONY: build
 build:
 	@echo "------------------"
 	@echo "--> Build Chaos Operator"
 	@echo "------------------"
-	@go build -o ${GOPATH}/src/github.com/litmuschaos/chaos-operator/build/_output/bin/chaos-operator -gcflags all=-trimpath=${GOPATH} -asmflags all=-trimpath=${GOPATH} github.com/litmuschaos/chaos-operator/cmd/manager 
+	@go build -o ${GOPATH}/src/github.com/litmuschaos/chaos-operator/build/_output/bin/chaos-operator -gcflags all=-trimpath=${GOPATH} -asmflags all=-trimpath=${GOPATH} github.com/litmuschaos/chaos-operator/cmd/manager
 
 .PHONY: test
 test:
 	@echo "------------------"
 	@echo "--> Run Go Test"
 	@echo "------------------"
-	@go test ./... -coverprofile=coverage.txt -covermode=atomic -v 
+	@go test ./... -coverprofile=coverage.txt -covermode=atomic -v
 
-.PHONY: dockerops 
-dockerops: 
+.PHONY: dockerops
+dockerops:
 	@echo "------------------"
-	@echo "--> Build & Push chaos-operator docker image" 
+	@echo "--> Build & Push chaos-operator docker image"
 	@echo "------------------"
 	sudo docker build . -f build/Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	REPONAME=$(DOCKER_REPO) IMGNAME=$(DOCKER_IMAGE) IMGTAG=$(DOCKER_TAG) ./buildscripts/push
+
+unused-package-check:
+	@echo "------------------"
+	@echo "--> Check unused packages for the chaos-operator"
+	@echo "------------------"
+	@tidy=$$(go mod tidy); \
+	if [ -n "$${tidy}" ]; then \
+		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
+	fi

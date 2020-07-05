@@ -22,8 +22,8 @@ import (
 	"strings"
 
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
-	dynamic "github.com/litmuschaos/chaos-operator/pkg/dynamic"
-	k8s "github.com/litmuschaos/chaos-operator/pkg/kubernetes"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 )
 
 // Annotations on app to enable chaos on it
@@ -49,33 +49,26 @@ func getAnnotationKey() string {
 }
 
 // CheckChaosAnnotation will check for the annotation of required resources
-func CheckChaosAnnotation(engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
-	// Use client-Go to obtain a list of apps w/ specified labels
-	//var chaosEngine chaosTypes.EngineInfo
-	clientSet, err := k8s.CreateClientSet()
-	dynamicClientSet, err := dynamic.CreateClientSet()
+func CheckChaosAnnotation(engine *chaosTypes.EngineInfo, clientset kubernetes.Interface, dynamicClientSet dynamic.Interface) (*chaosTypes.EngineInfo, error) {
 
-	if err != nil {
-		return engine, fmt.Errorf("clientset generation failed with error: %+v", err)
-	}
 	switch strings.ToLower(engine.AppInfo.Kind) {
 	case "deployment", "deployments":
-		engine, err = CheckDeploymentAnnotation(clientSet, engine)
+		engine, err := CheckDeploymentAnnotation(clientset, engine)
 		if err != nil {
 			return engine, fmt.Errorf("resource type 'deployment', err: %+v", err)
 		}
 	case "statefulset", "statefulsets":
-		engine, err = CheckStatefulSetAnnotation(clientSet, engine)
+		engine, err := CheckStatefulSetAnnotation(clientset, engine)
 		if err != nil {
 			return engine, fmt.Errorf("resource type 'statefulset', err: %+v", err)
 		}
 	case "daemonset", "daemonsets":
-		engine, err = CheckDaemonSetAnnotation(clientSet, engine)
+		engine, err := CheckDaemonSetAnnotation(clientset, engine)
 		if err != nil {
 			return engine, fmt.Errorf("resource type 'daemonset', err: %+v", err)
 		}
 	case "deploymentconfig", "deploymentconfigs":
-		engine, err = CheckDeploymentConfigAnnotation(*dynamicClientSet, engine)
+		engine, err := CheckDeploymentConfigAnnotation(dynamicClientSet, engine)
 		if err != nil {
 			return engine, fmt.Errorf("resource type 'deploymentconfig', err: %+v", err)
 		}
