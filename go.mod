@@ -3,9 +3,12 @@ module github.com/litmuschaos/chaos-operator
 go 1.13
 
 require (
+	github.com/emicklei/go-restful v2.12.0+incompatible // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/google/go-cmp v0.4.0 // indirect
+	github.com/google/gofuzz v1.1.0 // indirect
+	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
 	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/litmuschaos/elves v0.0.0-20200502084504-13be0e6937ee
@@ -13,8 +16,12 @@ require (
 	github.com/onsi/gomega v1.7.0
 	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.2.1
+	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82 // indirect
+	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v12.0.0+incompatible

@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litmus-admission-controllers
+  namespace: litmus
+  labels:
+    app: admission-controller
+    litmuschaos.io/component-name: admission-controller
+    litmuschaos.io/version: 1.4.0
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  selector:
+    matchLabels:
+      app: admission-controller
+  template:
+    metadata:
+      labels:
+        app: admission-controller
+        litmuschaos.io/component-name: admission-controller
+        litmuschaos.io/version: 1.4.0
+    spec:
+      serviceAccountName: litmus
+      containers:
+        - name: admission-controller
+          image: litmuschaos/admission-controllers:ci
+          imagePullPolicy: Always
+          args:
+            #- -alsologtostderr
+            - -v=2
+            #- 2>&1
+          env:
+            - name: LITMUS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ADMISSION_CONTROLLER_NAME
+              value: "litmus-admission-controllers"
+          # Process name used for matching is limited to the 15 characters
+          # present in the pgrep output.
+          # So fullname can't be used here with pgrep (>15 chars).A regular expression
+          # Anchor `^` : matches any string that starts with `admission-serve`
+          # `.*`: matche any string that has `admission-serve` followed by zero or more char
+          # that matches the entire command name has to specified.
+          #livenessProbe:
+          #  exec:
+          #    command:
+          #    - sh
+          #    - -c
+          #    - test `pgrep -c "^admission-controller.*"` = 1
+          #  initialDelaySeconds: 30
+          #  periodSeconds: 60
