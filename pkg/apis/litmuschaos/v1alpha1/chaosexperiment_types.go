@@ -52,6 +52,12 @@ type Secret struct {
 	MountPath string `json:"mountPath"`
 }
 
+type HostFile struct {
+	Name      string `json:"name"`
+	MountPath string `json:"mountPath"`
+	NodePath  string `json:"nodePath"`
+}
+
 // ExperimentDef defines information about nature of chaos & components subjected to it
 type ExperimentDef struct {
 	// Default labels of the runner pod
@@ -75,6 +81,8 @@ type ExperimentDef struct {
 	ConfigMaps []ConfigMap `json:"configmaps,omitempty"`
 	// Secrets contains a list of Secrets
 	Secrets []Secret `json:"secrets,omitempty"`
+	// HostFileVolume defines the host directory/file to be mounted
+	HostFileVolume HostFile `json:"hostFileVolume,omitempty"`
 	// Annotations that needs to be provided in the pod for pod that is getting created
 	ExperimentAnnotations map[string]string `json:"experimentannotations,omitempty"`
 	// SecurityContext holds security configuration that will be applied to a container
