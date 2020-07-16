@@ -486,7 +486,11 @@ func (in *ExperimentDef) DeepCopyInto(out *ExperimentDef) {
 		*out = make([]Secret, len(*in))
 		copy(*out, *in)
 	}
-	out.HostFileVolume = in.HostFileVolume
+	if in.HostFileVolumes != nil {
+		in, out := &in.HostFileVolumes, &out.HostFileVolumes
+		*out = make([]HostFile, len(*in))
+		copy(*out, *in)
+	}
 	if in.ExperimentAnnotations != nil {
 		in, out := &in.ExperimentAnnotations, &out.ExperimentAnnotations
 		*out = make(map[string]string, len(*in))
