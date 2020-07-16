@@ -268,7 +268,7 @@ spec:
                 securityContext:
                   type: object
                 hostPID:
-                  type: bool
+                  type: boolean
         status:
           type: object
   version: v1alpha1
