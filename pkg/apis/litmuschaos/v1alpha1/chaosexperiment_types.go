@@ -82,7 +82,7 @@ type ExperimentDef struct {
 	// Secrets contains a list of Secrets
 	Secrets []Secret `json:"secrets,omitempty"`
 	// HostFileVolume defines the host directory/file to be mounted
-	HostFileVolume HostFile `json:"hostFileVolume,omitempty"`
+	HostFileVolumes []HostFile `json:"hostFileVolumes,omitempty"`
 	// Annotations that needs to be provided in the pod for pod that is getting created
 	ExperimentAnnotations map[string]string `json:"experimentannotations,omitempty"`
 	// SecurityContext holds security configuration that will be applied to a container
