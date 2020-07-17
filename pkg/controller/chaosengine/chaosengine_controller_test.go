@@ -1427,7 +1427,7 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
-			val := r.checkRunnerPodCompletedStatus(&mock.engine)
+			val := r.checkRunnerContainerCompletedStatus(&mock.engine)
 			if mock.isErr && val == false {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
