@@ -485,11 +485,23 @@ func (r *ReconcileChaosEngine) updateEngineState(engine *chaosTypes.EngineInfo, 
 	return nil
 }
 
-// checkRunnerPodCompletedStatus checks runner-pod status for Completed
-func (r *ReconcileChaosEngine) checkRunnerPodCompletedStatus(engine *chaosTypes.EngineInfo) bool {
+// checkRunnerContainerCompletedStatus check for the runner pod's container status for Completed
+func (r *ReconcileChaosEngine) checkRunnerContainerCompletedStatus(engine *chaosTypes.EngineInfo) bool {
 	runnerPod := corev1.Pod{}
+	isCompleted := false
 	r.client.Get(context.TODO(), types.NamespacedName{Name: engine.Instance.Name + "-runner", Namespace: engine.Instance.Namespace}, &runnerPod)
-	return runnerPod.Status.Phase == corev1.PodSucceeded
+
+	if runnerPod.Status.Phase == corev1.PodRunning || runnerPod.Status.Phase == corev1.PodSucceeded {
+		for _, container := range runnerPod.Status.ContainerStatuses {
+			if container.Name == "chaos-runner" && container.State.Terminated != nil {
+				if container.State.Terminated.Reason == "Completed" {
+					isCompleted = !container.Ready
+				}
+
+			}
+		}
+	}
+	return isCompleted
 }
 
 // gracefullyRemoveDefaultChaosResources removes all chaos-resources gracefully
@@ -585,7 +597,7 @@ func (r *ReconcileChaosEngine) reconcileForCreationAndRunning(engine *chaosTypes
 		return reconcile.Result{}, err
 	}
 
-	isCompleted := r.checkRunnerPodCompletedStatus(engine)
+	isCompleted := r.checkRunnerContainerCompletedStatus(engine)
 	if isCompleted {
 		err := r.updateEngineForComplete(engine, isCompleted)
 		if err != nil {

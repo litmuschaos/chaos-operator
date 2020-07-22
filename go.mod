@@ -3,6 +3,7 @@ module github.com/litmuschaos/chaos-operator
 go 1.13
 
 require (
+	github.com/docker/docker v1.4.2-0.20181221150755-2cb26cfe9cbf
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/google/go-cmp v0.4.0 // indirect

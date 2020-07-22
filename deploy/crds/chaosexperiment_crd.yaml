@@ -94,6 +94,7 @@ spec:
                   type: array
                   items:
                     type: object
+                    minProperties: 2
                     properties:
                       name:
                         type: string
@@ -107,6 +108,7 @@ spec:
                   type: array
                   items:
                     type: object
+                    minProperties: 2
                     properties:
                       name:
                         type: string
@@ -116,10 +118,28 @@ spec:
                         type: string
                         allowEmptyValue: false
                         minLength: 1
+                hostFileVolumes:
+                  type: array
+                  items:
+                    type: object
+                    minProperties: 3
+                    properties:
+                      name:
+                        type: string
+                        allowEmptyValue: false
+                        minLength: 1
+                      mountPath:
+                        type: string
+                        allowEmptyValue: false
+                        minLength: 1
+                      nodePath:
+                        type: string
+                        allowEmptyValue: false
+                        minLength: 1
                 securityContext:
                   type: object
                 hostPID:
-                  type: bool
+                  type: boolean
         status:
           type: object
   version: v1alpha1
