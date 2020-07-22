@@ -94,6 +94,9 @@ spec:
                       components:
                         type: object
                         properties:
+                          nodeSelector:
+                            type: object
+                            minLength: 1
                           experimentImage:
                             type: string
                           env:
