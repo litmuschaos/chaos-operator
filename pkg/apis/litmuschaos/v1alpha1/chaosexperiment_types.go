@@ -52,6 +52,7 @@ type Secret struct {
 	MountPath string `json:"mountPath"`
 }
 
+// HostFile is an simpler implementation of corev1.HostPath, needed for experiments
 type HostFile struct {
 	Name      string `json:"name"`
 	MountPath string `json:"mountPath"`
