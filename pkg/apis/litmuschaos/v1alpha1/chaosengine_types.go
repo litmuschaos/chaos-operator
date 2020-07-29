@@ -160,12 +160,19 @@ type ExperimentAttributes struct {
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
 type ExperimentComponents struct {
-	ENV                   []ExperimentENV   `json:"env,omitempty"`
-	ConfigMaps            []ConfigMap       `json:"configMaps,omitempty"`
-	Secrets               []Secret          `json:"secrets,omitempty"`
-	ExperimentAnnotations map[string]string `json:"experimentannotation,omitempty"`
-	ExperimentImage       string            `json:"experimentImage,omitempty"`
-	NodeSelector          map[string]string `json:"nodeSelector,omitempty"`
+	ENV                   []ExperimentENV    `json:"env,omitempty"`
+	ConfigMaps            []ConfigMap        `json:"configMaps,omitempty"`
+	Secrets               []Secret           `json:"secrets,omitempty"`
+	ExperimentAnnotations map[string]string  `json:"experimentannotation,omitempty"`
+	ExperimentImage       string             `json:"experimentImage,omitempty"`
+	NodeSelector          map[string]string  `json:"nodeSelector,omitempty"`
+	StatusCheckTimeouts   StatusCheckTimeout `json:"statusCheckTimeouts,omitempty"`
+}
+
+// StatusCheckTimeout contains Delay and timeouts for the status checks
+type StatusCheckTimeout struct {
+	Delay   int `json:"delay,omitempty"`
+	Timeout int `json:"timeout,omitempty"`
 }
 
 // ExperimentENV varibles to override the default values in chaosexperiment
