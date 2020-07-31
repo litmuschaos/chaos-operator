@@ -184,8 +184,12 @@ type ExperimentENV struct {
 // ExperimentStatuses defines information about status of individual experiments
 // These fields are immutable, and are derived by kubernetes(operator)
 type ExperimentStatuses struct {
-	//Name of experiment whose status is detailed
+	//Name of the chaos experiment 
 	Name string `json:"name"`
+	//Name of chaos-runner pod managing this experiment
+	Runner string `json:"runner"`
+	//Name of experiment pod executing the chaos
+	ExpPod string `json:"experimentPod"`
 	//Current state of chaos experiment
 	Status ExperimentStatus `json:"status"`
 	//Result of a completed chaos experiment
