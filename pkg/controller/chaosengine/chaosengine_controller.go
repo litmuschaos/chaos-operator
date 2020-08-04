@@ -420,16 +420,41 @@ func getAnnotationCheck(engine *chaosTypes.EngineInfo) error {
 
 // reconcileForDelete reconciles for deletion/force deletion of Chaos Engine
 func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
-	err := r.forceRemoveChaosResources(engine, request)
+
+	patch := client.MergeFrom(engine.Instance.DeepCopy())
+
+	chaosTypes.Log.Info("Checking if there are any chaos resources to be deleted for", "chaosengine", engine.Instance.Name)
+
+	chaosPodList := &corev1.PodList{}
+	opts := []client.ListOption{
+		client.InNamespace(request.NamespacedName.Namespace),
+		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
+	}
+	err := r.client.List(context.TODO(), chaosPodList, opts...)
 	if err != nil {
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to delete chaos resources")
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to get chaos resources")
 		return reconcile.Result{}, err
 	}
-	patch := client.MergeFrom(engine.Instance.DeepCopy())
+
+	if len(chaosPodList.Items)!= 0 {
+		chaosTypes.Log.Info("Performing a force delete of chaos resources", "chaosengine", engine.Instance.Name)
+		err := r.forceRemoveChaosResources(engine, request)
+		if err != nil {
+			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to delete chaos resources")
+			return reconcile.Result{}, err
+		}
+	}
 
 	if engine.Instance.ObjectMeta.Finalizers != nil {
 		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineStopped", " Chaos resources deleted successfully")
+
+		//we are repeating this condition/check here as we want the events for 'ChaosEngineStopped' 
+		//generated only after successful finalizer removal
+		if len(chaosPodList.Items)!= 0 {
+			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineStopped", "Chaos resources deleted successfully")
+		} else {
+			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosEngineStopped", "Chaos stopped due to failed app identification")
+		}
 	}
 	// Update ChaosEngine ExperimentStatuses, with aborted Status.
 	updateExperimentStatusesForStop(engine)
@@ -587,6 +612,13 @@ func (r *ReconcileChaosEngine) reconcileForCreationAndRunning(engine *chaosTypes
 
 	err := r.validateAnnontatedApplication(engine)
 	if err != nil {
+		//return reconcile.Result{}, err
+		stop_engine_with_annotation_error_message := r.updateEngineState(engine, litmuschaosv1alpha1.EngineStateStop)
+		if stop_engine_with_annotation_error_message != nil {
+			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to update chaosengine")
+			return reconcile.Result{}, fmt.Errorf("Unable to Update Engine State: %v", err)
+		}
+		//do we return error ? 
 		return reconcile.Result{}, err
 	}
 
@@ -649,7 +681,7 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 	// Also check, if the app is annotated for chaos & that the labels are unique
 	err = getApplicationDetail(engine)
 	if err != nil {
-		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to update chaosengine")
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to get chaosengine")
 		return err
 	}
 
@@ -657,7 +689,9 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
 		if err != nil {
-			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to get chaosengine")
+			//using an event msg that indicates the app couldn't be identified. By this point in execution, 
+			//if the engine could not be found or accessed, it would already be caught in r.initEngine & getApplicationDetail
+			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to filter app by specified info")
 			chaosTypes.Log.Info("Annotation check failed with", "error:", err)
 			return err
 		}
@@ -688,6 +722,7 @@ func (r *ReconcileChaosEngine) updateEngineForRestart(engine *chaosTypes.EngineI
 }
 
 func (r *ReconcileChaosEngine) forceRemoveChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
+
 	err := r.forceRemoveAllChaosPods(engine, request)
 	if err != nil {
 		return err
