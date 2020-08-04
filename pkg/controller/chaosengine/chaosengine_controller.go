@@ -612,13 +612,11 @@ func (r *ReconcileChaosEngine) reconcileForCreationAndRunning(engine *chaosTypes
 
 	err := r.validateAnnontatedApplication(engine)
 	if err != nil {
-		//return reconcile.Result{}, err
 		stop_engine_with_annotation_error_message := r.updateEngineState(engine, litmuschaosv1alpha1.EngineStateStop)
 		if stop_engine_with_annotation_error_message != nil {
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to update chaosengine")
 			return reconcile.Result{}, fmt.Errorf("Unable to Update Engine State: %v", err)
 		}
-		//do we return error ? 
 		return reconcile.Result{}, err
 	}
 
