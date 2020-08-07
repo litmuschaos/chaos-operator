@@ -17,6 +17,7 @@ limitations under the License.
 package resource
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -46,7 +47,7 @@ func CheckDeploymentAnnotation(clientset kubernetes.Interface, engine *chaosType
 
 // getDeploymentLists will list the deployments which having the chaos label
 func getDeploymentLists(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*v1.DeploymentList, error) {
-	targetAppList, err := clientset.AppsV1().Deployments(engine.AppInfo.Namespace).List(metaV1.ListOptions{
+	targetAppList, err := clientset.AppsV1().Deployments(engine.AppInfo.Namespace).List(context.TODO(), metaV1.ListOptions{
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {
