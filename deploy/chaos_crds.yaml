@@ -49,6 +49,7 @@ spec:
                   pattern: ^(deployment|statefulset|daemonset|deploymentconfig)$
                 applabel:
                   type: string
+                  pattern: ([a-z0-9A-Z_\.-/]+)=([a-z0-9A-Z_\.-/_]+)
                 appns:
                   type: string
             auxiliaryAppInfo:
@@ -183,6 +184,13 @@ spec:
                       components:
                         type: object
                         properties:
+                          statusCheckTimeouts:
+                            type: object
+                            properties:
+                              delay:
+                                type: int
+                              timeout:
+                                type: int
                           nodeSelector:
                             type: object
                             minLength: 1
