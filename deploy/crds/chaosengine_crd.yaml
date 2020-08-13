@@ -92,6 +92,94 @@ spec:
                   spec:
                     type: object
                     properties:
+                      k8sProbe:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            inputs:
+                              type: object
+                              properties:
+                                command:
+                                  type: object
+                                  properties:
+                                    group:
+                                      type: string
+                                    version:
+                                      type: string
+                                    resource:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                    fieldSelector:
+                                      type: string
+                                expectedResult:
+                                  type: string
+                            runProperties:
+                              type: object
+                              properties:
+                                probeTimeout:
+                                  type: int
+                                interval:
+                                  type: int
+                                retry: 
+                                  type: int
+                            mode:
+                              type: string
+                      cmdProbe:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            inputs:
+                              type: object
+                              properties:
+                                command:
+                                  type: string
+                                expectedResult:
+                                  type: string
+                                source:
+                                  type: string
+                            runProperties:
+                              type: object
+                              properties:
+                                probeTimeout:
+                                  type: int
+                                interval:
+                                  type: int
+                                retry: 
+                                  type: int
+                            mode:
+                              type: string
+                      httpProbe:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            inputs:
+                              type: object
+                              properties:
+                                url:
+                                  type: string
+                                expectedResponseCode:
+                                  type: string
+                            runProperties:
+                              type: object
+                              properties:
+                                probeTimeout:
+                                  type: int
+                                interval:
+                                  type: int
+                                retry: 
+                                  type: int
+                            mode:
+                              type: string
                       components:
                         type: object
                         properties:
