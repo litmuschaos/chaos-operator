@@ -175,7 +175,21 @@ type K8sProbeAttributes struct {
 	RunProperties RunProperty `json:"runProperties,omitempty"`
 	// mode for k8s probe
 	// it can be SOT, EOT, Edge
-	Mode string `json:"mode,omitempty"`
+	Mode      string         `json:"mode,omitempty"`
+	Operation string         `json:"operation,omitempty"`
+	DataFrom  DataFromSource `json:"dataFrom,omitempty"`
+}
+
+// DataFromSource represents the source of a set of ConfigMaps
+type DataFromSource struct {
+	// The ConfigMap to select from
+	// +optional
+	ConfigMapRef ConfigMapEnvSource `json:"configMapRef,omitempty"`
+}
+
+// ConfigMapEnvSource contains configmap details
+type ConfigMapEnvSource struct {
+	Name string `json:"name,omitempty"`
 }
 
 // CmdProbeAttributes contains details of cmd probe, which can be applied on the experiments
@@ -281,7 +295,7 @@ type ExperimentENV struct {
 // ExperimentStatuses defines information about status of individual experiments
 // These fields are immutable, and are derived by kubernetes(operator)
 type ExperimentStatuses struct {
-	//Name of the chaos experiment 
+	//Name of the chaos experiment
 	Name string `json:"name"`
 	//Name of chaos-runner pod managing this experiment
 	Runner string `json:"runner"`
