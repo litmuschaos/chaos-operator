@@ -21,8 +21,8 @@ spec:
           - chaos-operator
           imagePullPolicy: IfNotPresent
           env:
-            #- name: CHAOS_RUNNER_IMAGE
-            #  value: "litmuschaos/chaos-runner:ci"
+            - name: CHAOS_RUNNER_IMAGE
+              value: "litmuschaos/chaos-runner:ci"
             - name: WATCH_NAMESPACE
               value: 
             - name: POD_NAME
