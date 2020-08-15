@@ -172,6 +172,15 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 
 // getChaosRunnerENV return the env required for chaos-runner
 func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, ClientUUID string) []corev1.EnvVar {
+
+	var appNS string
+
+	if cr.Spec.Appinfo.Appns != "" {
+        appNS = cr.Spec.Appinfo.Appns
+    } else {
+        appNS = cr.Namespace
+    }
+
 	return []corev1.EnvVar{
 		{
 			Name:  "CHAOSENGINE",
@@ -183,7 +192,7 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 		},
 		{
 			Name:  "APP_NAMESPACE",
-			Value: cr.Spec.Appinfo.Appns,
+			Value: appNS,
 		},
 		{
 			Name:  "EXPERIMENT_LIST",
@@ -248,7 +257,13 @@ func initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine, appInf
 	chaosTypes.AppLabelValue = appLabel[1]
 	appInfo.Label = make(map[string]string)
 	appInfo.Label[chaosTypes.AppLabelKey] = chaosTypes.AppLabelValue
-	appInfo.Namespace = instance.Spec.Appinfo.Appns
+
+	if instance.Spec.Appinfo.Appns != "" {
+		appInfo.Namespace = instance.Spec.Appinfo.Appns
+	} else {
+		appInfo.Namespace = instance.Namespace
+	}
+
 	appInfo.ExperimentList = instance.Spec.Experiments
 	appInfo.ServiceAccountName = instance.Spec.ChaosServiceAccount
 	appInfo.Kind = instance.Spec.Appinfo.AppKind
