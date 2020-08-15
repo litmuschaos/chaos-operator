@@ -122,11 +122,11 @@ spec:
                               type: object
                               properties:
                                 probeTimeout:
-                                  type: int
+                                  type: integer
                                 interval:
-                                  type: int
+                                  type: integer
                                 retry: 
-                                  type: int
+                                  type: integer
                             mode:
                               type: string
                       cmdProbe:
@@ -149,11 +149,11 @@ spec:
                               type: object
                               properties:
                                 probeTimeout:
-                                  type: int
+                                  type: integer
                                 interval:
-                                  type: int
+                                  type: integer
                                 retry: 
-                                  type: int
+                                  type: integer
                             mode:
                               type: string
                       httpProbe:
@@ -174,11 +174,11 @@ spec:
                               type: object
                               properties:
                                 probeTimeout:
-                                  type: int
+                                  type: integer
                                 interval:
-                                  type: int
+                                  type: integer
                                 retry: 
-                                  type: int
+                                  type: integer
                             mode:
                               type: string
                       components:
@@ -188,9 +188,9 @@ spec:
                             type: object
                             properties:
                               delay:
-                                type: int
+                                type: integer
                               timeout:
-                                type: int
+                                type: integer
                           nodeSelector:
                             type: object
                             minLength: 1
