@@ -208,18 +208,6 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 	}
 }
 
-// newRunnerPodForCR defines secondary resource #1 in same namespace as CR
-func newRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
-	if (len(engine.AppExperiments) == 0 || engine.AppUUID == "") && engine.Instance.Spec.AnnotationCheck == "true" {
-		return nil, errors.New("application experiment list or UUID is empty")
-	}
-	//Initiate the Engine Info, with the type of runner to be used
-	if engine.Instance.Spec.Components.Runner.Type == "ansible" {
-		return newAnsibleRunnerPodForCR(engine)
-	}
-	return newGoRunnerPodForCR(engine)
-}
-
 // newGoRunnerPodForCR defines a new go-based Runner Pod
 func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	containerForRunner := container.NewBuilder().
@@ -248,38 +236,6 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(containerForRunner).Build()
-}
-
-// newAnsibleRunnerPodForCR defines a new ansible-based Runner Pod
-func newAnsibleRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
-	containerForRunner := container.NewBuilder().
-		WithName("chaos-runner").
-		WithImage(engine.Instance.Spec.Components.Runner.Image).
-		WithImagePullPolicy(corev1.PullIfNotPresent).
-		WithCommandNew([]string{"/bin/bash"}).
-		WithArgumentsNew([]string{"-c", "ansible-playbook ./executor/test.yml -i /etc/ansible/hosts; exit 0"}).
-		WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID))
-
-	if engine.Instance.Spec.Components.Runner.ImagePullPolicy != "" {
-		containerForRunner.WithImagePullPolicy(engine.Instance.Spec.Components.Runner.ImagePullPolicy)
-	}
-
-	if engine.Instance.Spec.Components.Runner.Args != nil {
-		containerForRunner.WithArgumentsNew(engine.Instance.Spec.Components.Runner.Args)
-	}
-
-	if engine.Instance.Spec.Components.Runner.Command != nil {
-		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
-	}
-
-	return pod.NewBuilder().
-		WithName(engine.Instance.Name + "-runner").
-		WithLabels(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).
-		WithNamespace(engine.Instance.Namespace).
-		WithRestartPolicy("OnFailure").
-		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
-		WithContainerBuilder(containerForRunner).
-		Build()
 }
 
 // initializeApplicationInfo to initialize application info
@@ -364,13 +320,6 @@ func (r *ReconcileChaosEngine) checkEngineRunnerPod(engine *chaosTypes.EngineInf
 	engineRunner, err := newGoRunnerPodForCR(engine)
 	if err != nil {
 		return err
-	}
-	//Initiate the Engine Info, with the type of runner to be used
-	if engine.Instance.Spec.Components.Runner.Type == "ansible" {
-		engineRunner, err = newAnsibleRunnerPodForCR(engine)
-		if err != nil {
-			return err
-		}
 	}
 
 	// Create an object of engine reconcile.

@@ -69,7 +69,7 @@ spec:
                       type: string
                     type:
                       type: string
-                      pattern: ^(go|ansible)$
+                      pattern: ^(go)$
                     runnerannotation:
                       type: object
                       additionalProperties:
