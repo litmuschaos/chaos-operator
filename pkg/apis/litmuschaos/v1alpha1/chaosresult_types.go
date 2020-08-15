@@ -64,8 +64,8 @@ type TestStatus struct {
 	Verdict string `json:"verdict"`
 	// FailStep defines step where the experiments fails
 	FailStep string `json:"failStep,omitempty"`
-	// ResilienceScore defines the score of the experiment on the basis of probes result
-	ResilienceScore string `json:"resilienceScore,omitempty"`
+	// ProbeSuccessPercentage defines the score of the probes
+	ProbeSuccessPercentage string `json:"probeSuccessPercentage,omitempty"`
 }
 
 // +genclient
