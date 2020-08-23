@@ -45,7 +45,9 @@ jobs:
             cat workspace/env-vars >> $BASH_ENV
             source $BASH_ENV
       - run: make deps
-      - run: make gotasks
+      - run: |
+          wget https://dl.google.com/go/go1.14.6.linux-amd64.tar.gz && sudo tar -xvf go1.14.6.linux-amd64.tar.gz && sudo rm -rf /usr/local/go && sudo mv go /usr/local && export GOROOT=/usr/local/go
+          make gotasks
       - run: |
           docker build . -f build/Dockerfile -t ${REPONAME}/${IMGNAME}:${IMGTAG}
       - run: make test 
