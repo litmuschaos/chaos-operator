@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var chaosresultsResource = schema.GroupVersionResource{Group: "litmuschaos.io", 
 var chaosresultsKind = schema.GroupVersionKind{Group: "litmuschaos.io", Version: "v1alpha1", Kind: "ChaosResult"}
 
 // Get takes name of the chaosResult, and returns the corresponding chaosResult object, and an error if there is any.
-func (c *FakeChaosResults) Get(name string, options v1.GetOptions) (result *v1alpha1.ChaosResult, err error) {
+func (c *FakeChaosResults) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ChaosResult, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(chaosresultsResource, c.ns, name), &v1alpha1.ChaosResult{})
 
@@ -50,7 +52,7 @@ func (c *FakeChaosResults) Get(name string, options v1.GetOptions) (result *v1al
 }
 
 // List takes label and field selectors, and returns the list of ChaosResults that match those selectors.
-func (c *FakeChaosResults) List(opts v1.ListOptions) (result *v1alpha1.ChaosResultList, err error) {
+func (c *FakeChaosResults) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ChaosResultList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(chaosresultsResource, chaosresultsKind, c.ns, opts), &v1alpha1.ChaosResultList{})
 
@@ -72,14 +74,14 @@ func (c *FakeChaosResults) List(opts v1.ListOptions) (result *v1alpha1.ChaosResu
 }
 
 // Watch returns a watch.Interface that watches the requested chaosResults.
-func (c *FakeChaosResults) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeChaosResults) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(chaosresultsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a chaosResult and creates it.  Returns the server's representation of the chaosResult, and an error, if there is any.
-func (c *FakeChaosResults) Create(chaosResult *v1alpha1.ChaosResult) (result *v1alpha1.ChaosResult, err error) {
+func (c *FakeChaosResults) Create(ctx context.Context, chaosResult *v1alpha1.ChaosResult, opts v1.CreateOptions) (result *v1alpha1.ChaosResult, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(chaosresultsResource, c.ns, chaosResult), &v1alpha1.ChaosResult{})
 
@@ -90,7 +92,7 @@ func (c *FakeChaosResults) Create(chaosResult *v1alpha1.ChaosResult) (result *v1
 }
 
 // Update takes the representation of a chaosResult and updates it. Returns the server's representation of the chaosResult, and an error, if there is any.
-func (c *FakeChaosResults) Update(chaosResult *v1alpha1.ChaosResult) (result *v1alpha1.ChaosResult, err error) {
+func (c *FakeChaosResults) Update(ctx context.Context, chaosResult *v1alpha1.ChaosResult, opts v1.UpdateOptions) (result *v1alpha1.ChaosResult, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(chaosresultsResource, c.ns, chaosResult), &v1alpha1.ChaosResult{})
 
@@ -102,7 +104,7 @@ func (c *FakeChaosResults) Update(chaosResult *v1alpha1.ChaosResult) (result *v1
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeChaosResults) UpdateStatus(chaosResult *v1alpha1.ChaosResult) (*v1alpha1.ChaosResult, error) {
+func (c *FakeChaosResults) UpdateStatus(ctx context.Context, chaosResult *v1alpha1.ChaosResult, opts v1.UpdateOptions) (*v1alpha1.ChaosResult, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(chaosresultsResource, "status", c.ns, chaosResult), &v1alpha1.ChaosResult{})
 
@@ -113,7 +115,7 @@ func (c *FakeChaosResults) UpdateStatus(chaosResult *v1alpha1.ChaosResult) (*v1a
 }
 
 // Delete takes name of the chaosResult and deletes it. Returns an error if one occurs.
-func (c *FakeChaosResults) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeChaosResults) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(chaosresultsResource, c.ns, name), &v1alpha1.ChaosResult{})
 
@@ -121,15 +123,15 @@ func (c *FakeChaosResults) Delete(name string, options *v1.DeleteOptions) error 
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeChaosResults) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(chaosresultsResource, c.ns, listOptions)
+func (c *FakeChaosResults) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(chaosresultsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ChaosResultList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched chaosResult.
-func (c *FakeChaosResults) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ChaosResult, err error) {
+func (c *FakeChaosResults) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ChaosResult, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(chaosresultsResource, c.ns, name, pt, data, subresources...), &v1alpha1.ChaosResult{})
 

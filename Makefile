@@ -61,7 +61,7 @@ lint:
 	@echo "------------------"
 	@echo "--> Running go vet"
 	@echo "------------------"
-	@go vet $(PACKAGES)
+	@go get -v && go vet $(PACKAGES)
 
 .PHONY: build
 build:
