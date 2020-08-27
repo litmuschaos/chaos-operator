@@ -647,7 +647,7 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 		return err
 	}
 
-	if engine.Instance.Spec.AnnotationCheck == "true" || os.Getenv("CUSTOM_ANNOTATION") != resource.ChaosAnnotationValue {
+	if engine.Instance.Spec.AnnotationCheck == "true" || os.Getenv("CUSTOM_ANNOTATION") == resource.ChaosAnnotationValue {
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
 		if err != nil {
