@@ -253,6 +253,9 @@ type RunProperty struct {
 	Interval int `json:"interval,omitempty"`
 	// Retry contains the retry count for the probe
 	Retry int `json:"retry,omitempty"`
+	//ProbePollingInterval contains time interval, for which continuous probe should be sleep
+	// after each iteration
+	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
 }
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
@@ -281,7 +284,7 @@ type ExperimentENV struct {
 // ExperimentStatuses defines information about status of individual experiments
 // These fields are immutable, and are derived by kubernetes(operator)
 type ExperimentStatuses struct {
-	//Name of the chaos experiment 
+	//Name of the chaos experiment
 	Name string `json:"name"`
 	//Name of chaos-runner pod managing this experiment
 	Runner string `json:"runner"`
