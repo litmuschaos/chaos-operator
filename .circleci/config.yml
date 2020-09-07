@@ -7,7 +7,7 @@ jobs:
 
   build:
     machine: 
-      image: circleci/classic:201808-01
+      image: ubuntu-1604:202007-01
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     environment:
       K8S_VERSION: v1.12.0
@@ -17,13 +17,28 @@ jobs:
       CHANGE_MINIKUBE_NONE_USER: true
       REPONAME: litmuschaos
       IMGNAME: chaos-operator
-      IMGTAG: ci
+      IMGTAG: dev
     steps:
       - checkout
+      
+      - run: 
+          name: Setup buildx
+          command: |
+            mkdir -vp ~/.docker/cli-plugins/
+            curl --silent -L --output ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+            chmod a+x ~/.docker/cli-plugins/docker-buildx
+            docker buildx version
+            export DOCKER_CLI_EXPERIMENTAL=enabled
+            sudo apt-get update && sudo apt-get install qemu-user-static -y
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes i
+            docker buildx create --name multibuilder
+            docker buildx inspect multibuilder --bootstrap
+            docker buildx use multibuilder
+       
       - run:
-         name: Setup kubectl
-         command: | 
-           curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+          name: Setup kubectl
+          command: | 
+            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
       - run:
           name: Setup minikube
           command: |
@@ -41,38 +56,47 @@ jobs:
             echo 'export PATH="$GOPATH/bin:$PATH"' >> workspace/env-vars
             echo 'export REPONAME="litmuschaos"' >> workspace/env-vars
             echo 'export IMGNAME="chaos-operator"' >> workspace/env-vars
-            echo 'export IMGTAG="ci"' >> workspace/env-vars
+            echo 'export IMGTAG="dev"' >> workspace/env-vars
             cat workspace/env-vars >> $BASH_ENV
             source $BASH_ENV
       - run: make deps
       - run: make gotasks
-      - run: |
-          docker build . -f build/Dockerfile -t ${REPONAME}/${IMGNAME}:${IMGTAG}
+      - run: |   
+          docker buildx build --file build/Dockerfile --progress plane --platform linux/arm64,linux/amd64 --tag ${REPONAME}/${IMGNAME}:${IMGTAG} .    
       - run: make test 
-      - run: |
-          docker save -o workspace/image.tar ${REPONAME}/${IMGNAME}:${IMGTAG}
-      - run: bash <(curl -s https://codecov.io/bash) -vz 
-      - persist_to_workspace:
-          root: workspace 
-          paths: 
-            - image.tar
-            - env-vars
 
   push:
     machine: 
-      image: circleci/classic:201808-01
+      image: ubuntu-1604:202007-01
     environment:
-      IMGTAG: ci
+      IMGTAG: dev
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     steps: 
       - attach_workspace:
           at: /tmp/workspace
-      - run: |
-          cat /tmp/workspace/env-vars >> $BASH_ENV
       - checkout
-      - run: |
-          docker load -i /tmp/workspace/image.tar
-          ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=ci
+
+      - run: 
+          name: Setup buildx
+          command: |
+            mkdir -vp ~/.docker/cli-plugins/
+            curl --silent -L --output ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+            chmod a+x ~/.docker/cli-plugins/docker-buildx
+            docker buildx version
+            export DOCKER_CLI_EXPERIMENTAL=enabled
+            sudo apt-get update && sudo apt-get install qemu-user-static -y
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes i
+            docker buildx create --name multibuilder
+            docker buildx inspect multibuilder --bootstrap
+            docker buildx use multibuilder
+
+      - run: 
+          name: push
+          command: ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=dev
+          environment:
+            REPONAME: litmuschaos
+            IMGNAME: chaos-operator
+            IMGTAG: dev
 
   trivy-check:
     machine: true
@@ -87,24 +111,40 @@ jobs:
           wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-${TRIVYARCH}.tar.gz
           tar zxvf trivy_${VERSION}_Linux-${TRIVYARCH}.tar.gz
       - run: |
-          ./trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-operator:ci
-          ./trivy --exit-code 0 --severity CRITICAL --no-progress litmuschaos/chaos-operator:ci
+          ./trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-operator:dev
+          ./trivy --exit-code 0 --severity CRITICAL --no-progress litmuschaos/chaos-operator:dev
           
   release: 
     machine: 
-      image: circleci/classic:201808-01
+      image: ubuntu-1604:202007-01
     environment:
-      IMGTAG: ci
+      IMGTAG: dev
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     steps: 
       - attach_workspace:
           at: /tmp/workspace
-      - run: |
-          cat /tmp/workspace/env-vars >> $BASH_ENV
       - checkout 
-      - run: | 
-          docker load -i /tmp/workspace/image.tar
-          ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=release
+      - run: 
+          name: Setup buildx
+          command: |
+            mkdir -vp ~/.docker/cli-plugins/
+            curl --silent -L --output ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+            chmod a+x ~/.docker/cli-plugins/docker-buildx
+            docker buildx version
+            export DOCKER_CLI_EXPERIMENTAL=enabled
+            sudo apt-get update && sudo apt-get install qemu-user-static -y
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes i
+            docker buildx create --name multibuilder
+            docker buildx inspect multibuilder --bootstrap
+            docker buildx use multibuilder
+
+      - run:
+          name: release push
+          command: ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=release
+          environment:
+            REPONAME: litmuschaos
+            IMGNAME: chaos-operator
+            IMGTAG: dev      
 
 workflows:
   version: 2

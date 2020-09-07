@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Push CI images
-function push_ci_image(){
+# Push dev images
+function push_dev_image(){
 
   echo "Pushing ${REPONAME}/${IMGNAME}:${IMGTAG} ..."
   docker push ${REPONAME}/${IMGNAME}:${IMGTAG}
@@ -19,10 +19,10 @@ function push_release_image(){
     # set the release tag in env CIRCLE_TAG
     echo "Pushing ${REPONAME}/${IMGNAME}:${CIRCLE_TAG} ..."
     docker tag ${IMAGEID} ${REPONAME}/${IMGNAME}:${CIRCLE_TAG}
-    docker push ${REPONAME}/${IMGNAME}:${CIRCLE_TAG}
+    docker buildx build --file build/Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag ${REPONAME}/${IMGNAME}:${CIRCLE_TAG} .    
     echo "Pushing ${REPONAME}/${IMGNAME}:latest ..."
     docker tag ${IMAGEID} ${REPONAME}/${IMGNAME}:latest
-    docker push ${REPONAME}/${IMGNAME}:latest
+    docker buildx build --file build/Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag ${REPONAME}/${IMGNAME}:latest .    
   fi;
 
 }
@@ -42,8 +42,8 @@ if [ ! -z "${DNAME}" ] && [ ! -z "${DPASS}" ];
 then
   docker login -u "${DNAME}" -p "${DPASS}";
   build_type=$(echo $1 | cut -d "=" -f 2)
-  if [ "${build_type}" == "ci" ]; then
-    push_ci_image;
+  if [ "${build_type}" == "dev" ]; then
+    push_dev_image;
   elif [ "${build_type}" == "release" ]; then
     push_release_image; 
   else
