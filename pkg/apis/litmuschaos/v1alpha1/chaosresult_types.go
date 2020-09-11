@@ -44,6 +44,8 @@ type ChaosResultStatus struct {
 	ExperimentStatus TestStatus `json:"experimentstatus"`
 	// ProbeStatus contains the status of the probe
 	ProbeStatus []ProbeStatus `json:"probeStatus,omitempty"`
+	// Data contains the experiment specificc data
+	Data map[string]interface{} `json:"data,omitempty"`
 }
 
 // ProbeStatus defines information about the status and result of the probes
