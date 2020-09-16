@@ -5,7 +5,8 @@ set -e
 function push_dev_image(){
 
   echo "Pushing ${REPONAME}/${IMGNAME}:${IMGTAG} ..."
-  docker push ${REPONAME}/${IMGNAME}:${IMGTAG}
+  docker buildx build --file build/Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag ${REPONAME}/${IMGNAME}:${IMGTAG} .    
+
 
 }
 

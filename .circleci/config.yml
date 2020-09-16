@@ -89,7 +89,7 @@ jobs:
             docker buildx create --name multibuilder
             docker buildx inspect multibuilder --bootstrap
             docker buildx use multibuilder
-
+      - run: make build
       - run: 
           name: push
           command: ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=dev
@@ -137,7 +137,7 @@ jobs:
             docker buildx create --name multibuilder
             docker buildx inspect multibuilder --bootstrap
             docker buildx use multibuilder
-
+      - run: make build
       - run:
           name: release push
           command: ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=release
