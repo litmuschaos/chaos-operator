@@ -68,7 +68,7 @@ build:
 	@echo "------------------"
 	@echo "--> Build Chaos Operator"
 	@echo "------------------"
-	@go build -o ${GOPATH}/src/github.com/litmuschaos/chaos-operator/build/_output/bin/chaos-operator -gcflags all=-trimpath=${GOPATH} -asmflags all=-trimpath=${GOPATH} github.com/litmuschaos/chaos-operator/cmd/manager
+	@./build/go-multiarch-build.sh github.com/litmuschaos/chaos-operator/cmd/manager
 
 .PHONY: test
 test:
@@ -82,7 +82,7 @@ dockerops:
 	@echo "------------------"
 	@echo "--> Build & Push chaos-operator docker image"
 	@echo "------------------"
-	sudo docker build . -f build/Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+	sudo docker buildx build --file build/Dockerfile --progress plane --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 	REPONAME=$(DOCKER_REPO) IMGNAME=$(DOCKER_IMAGE) IMGTAG=$(DOCKER_TAG) ./buildscripts/push
 
 unused-package-check:
