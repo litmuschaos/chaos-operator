@@ -9,7 +9,7 @@ PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 # docker info
 DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-operator
-DOCKER_TAG ?= latest
+DOCKER_TAG ?= dev
 
 .PHONY: all
 all: deps format lint build test dockerops
