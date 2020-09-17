@@ -222,8 +222,10 @@ type K8sCommand struct {
 	Resource string `json:"resource,omitempty"`
 	// namespace of the resource
 	Namespace string `json:"namespace,omitempty"`
-	// fieldselector to get the details
+	// fieldselector to get the resource using fields selector
 	FieldSelector string `json:"fieldSelector,omitempty"`
+	// labelselector to get the resource using labels selector
+	LabelSelector string `json:"labelSelector,omitempty"`
 }
 
 //CmdProbeInputs contains all the inputs required for cmd probe
