@@ -115,6 +115,8 @@ spec:
                                       type: string
                                     fieldSelector:
                                       type: string
+                                    labelSelector:
+                                      type: string
                                 expectedResult:
                                   type: string
                             runProperties:
