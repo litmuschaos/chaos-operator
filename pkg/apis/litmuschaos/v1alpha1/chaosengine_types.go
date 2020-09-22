@@ -157,50 +157,27 @@ type ExperimentAttributes struct {
 	// It contains env, configmaps, secrets, experimentImage, node selector, custom experiment annotation
 	// which can be provided or overridden from the chaos engine
 	Components ExperimentComponents `json:"components,omitempty"`
-	// K8sProbe contains details of k8s probe, which can be applied on the experiments
-	K8sProbe []K8sProbeAttributes `json:"k8sProbe,omitempty"`
-	// CmdProbe contains details of cmd probe, which can be applied on the experiments
-	CmdProbe []CmdProbeAttributes `json:"cmdProbe,omitempty"`
-	// HTTPProbe contains details of http probe, which can be applied on the experiments
-	HTTPProbe []HTTPProbeAttributes `json:"httpProbe,omitempty"`
+	// Probe contains details of probe, which can be applied on the experiments
+	// Probe can be httpProbe, k8sProbe or cmdProbe
+	Probe []ProbeAttributes `json:"probe,omitempty"`
 }
 
-// K8sProbeAttributes contains details of k8s probe, which can be applied on the experiments
-type K8sProbeAttributes struct {
+// ProbeAttributes contains details of probe, which can be applied on the experiments
+type ProbeAttributes struct {
 	// Name of probe
 	Name string `json:"name,omitempty"`
+	// Type of probe
+	Type string `json:"type,omitempty"`
 	// inputs needed for the k8s probe
-	Inputs K8sProbeInputs `json:"inputs,omitempty"`
+	K8sProbeInputs K8sProbeInputs `json:"k8sProbe/inputs,omitempty"`
+	// inputs needed for the http probe
+	HTTPProbeInputs HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
+	// inputs needed for the cmd probe
+	CmdProbeInputs CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
 	// RunProperty contains timeout, retry and interval for the probe
 	RunProperties RunProperty `json:"runProperties,omitempty"`
 	// mode for k8s probe
 	// it can be SOT, EOT, Edge
-	Mode string `json:"mode,omitempty"`
-}
-
-// CmdProbeAttributes contains details of cmd probe, which can be applied on the experiments
-type CmdProbeAttributes struct {
-	// Name of probe
-	Name string `json:"name,omitempty"`
-	// inputs needed for the cmd probe
-	Inputs CmdProbeInputs `json:"inputs,omitempty"`
-	// RunProperty contains timeout, retry and interval for the probe
-	RunProperties RunProperty `json:"runProperties,omitempty"`
-	// mode for cmd probe
-	// it can be SOT, EOT, Edge, Continuous
-	Mode string `json:"mode,omitempty"`
-}
-
-// HTTPProbeAttributes contains details of k8s probe, which can be applied on the experiments
-type HTTPProbeAttributes struct {
-	// Name of probe
-	Name string `json:"name,omitempty"`
-	// inputs needed for the http probe
-	Inputs HTTPProbeInputs `json:"inputs,omitempty"`
-	// RunProperty contains timeout, retry and interval for the probe
-	RunProperties RunProperty `json:"runProperties,omitempty"`
-	// mode for http probe
-	// it can be SOT, EOT, Edge, Continuous
 	Mode string `json:"mode,omitempty"`
 }
 
