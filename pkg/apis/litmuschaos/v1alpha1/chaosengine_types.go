@@ -175,21 +175,9 @@ type K8sProbeAttributes struct {
 	RunProperties RunProperty `json:"runProperties,omitempty"`
 	// mode for k8s probe
 	// it can be SOT, EOT, Edge
-	Mode      string         `json:"mode,omitempty"`
-	Operation string         `json:"operation,omitempty"`
-	DataFrom  DataFromSource `json:"dataFrom,omitempty"`
-}
-
-// DataFromSource represents the source of a set of ConfigMaps
-type DataFromSource struct {
-	// The ConfigMap to select from
-	// +optional
-	ConfigMapRef ConfigMapEnvSource `json:"configMapRef,omitempty"`
-}
-
-// ConfigMapEnvSource contains configmap details
-type ConfigMapEnvSource struct {
-	Name string `json:"name,omitempty"`
+	Mode      string `json:"mode,omitempty"`
+	Operation string `json:"operation,omitempty"`
+	Data      string `json:"data,omitempty"`
 }
 
 // CmdProbeAttributes contains details of cmd probe, which can be applied on the experiments
@@ -236,8 +224,10 @@ type K8sCommand struct {
 	Resource string `json:"resource,omitempty"`
 	// namespace of the resource
 	Namespace string `json:"namespace,omitempty"`
-	// fieldselector to get the details
+	// fieldselector to get the resource using fields selector
 	FieldSelector string `json:"fieldSelector,omitempty"`
+	// labelselector to get the resource using labels selector
+	LabelSelector string `json:"labelSelector,omitempty"`
 }
 
 //CmdProbeInputs contains all the inputs required for cmd probe
@@ -267,6 +257,9 @@ type RunProperty struct {
 	Interval int `json:"interval,omitempty"`
 	// Retry contains the retry count for the probe
 	Retry int `json:"retry,omitempty"`
+	//ProbePollingInterval contains time interval, for which continuous probe should be sleep
+	// after each iteration
+	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
 }
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
