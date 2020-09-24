@@ -27,7 +27,7 @@ import (
 // to create a chaos profile
 type ChaosEngineSpec struct {
 	//Appinfo contains deployment details of AUT
-	Appinfo ApplicationParams `json:"appinfo"`
+	Appinfo ApplicationParams `json:"appinfo,omitempty"`
 	//AnnotationCheck defines whether annotation check is allowed or not. It can be true or false
 	AnnotationCheck string `json:"annotationCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
@@ -112,11 +112,11 @@ type ChaosEngineStatus struct {
 // Controller expects AUT to be annotated with litmuschaos.io/chaos: "true" to run chaos
 type ApplicationParams struct {
 	//Namespace of the AUT
-	Appns string `json:"appns"`
+	Appns string `json:"appns,omitempty"`
 	//Unique label of the AUT
-	Applabel string `json:"applabel"`
+	Applabel string `json:"applabel,omitempty"`
 	//kind of application
-	AppKind string `json:"appkind"`
+	AppKind string `json:"appkind,omitempty"`
 }
 
 // ComponentParams defines information about the runner
