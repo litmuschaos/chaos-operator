@@ -262,13 +262,14 @@ type RunProperty struct {
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
 type ExperimentComponents struct {
-	ENV                   []ExperimentENV    `json:"env,omitempty"`
-	ConfigMaps            []ConfigMap        `json:"configMaps,omitempty"`
-	Secrets               []Secret           `json:"secrets,omitempty"`
-	ExperimentAnnotations map[string]string  `json:"experimentannotation,omitempty"`
-	ExperimentImage       string             `json:"experimentImage,omitempty"`
-	NodeSelector          map[string]string  `json:"nodeSelector,omitempty"`
-	StatusCheckTimeouts   StatusCheckTimeout `json:"statusCheckTimeouts,omitempty"`
+	ENV                   []ExperimentENV             `json:"env,omitempty"`
+	ConfigMaps            []ConfigMap                 `json:"configMaps,omitempty"`
+	Secrets               []Secret                    `json:"secrets,omitempty"`
+	ExperimentAnnotations map[string]string           `json:"experimentannotation,omitempty"`
+	ExperimentImage       string                      `json:"experimentImage,omitempty"`
+	NodeSelector          map[string]string           `json:"nodeSelector,omitempty"`
+	StatusCheckTimeouts   StatusCheckTimeout          `json:"statusCheckTimeouts,omitempty"`
+	Resources             corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // StatusCheckTimeout contains Delay and timeouts for the status checks
