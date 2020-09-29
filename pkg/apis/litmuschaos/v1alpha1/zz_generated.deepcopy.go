@@ -486,6 +486,7 @@ func (in *ExperimentComponents) DeepCopyInto(out *ExperimentComponents) {
 		}
 	}
 	out.StatusCheckTimeouts = in.StatusCheckTimeouts
+	in.Resources.DeepCopyInto(&out.Resources)
 	return
 }
 
