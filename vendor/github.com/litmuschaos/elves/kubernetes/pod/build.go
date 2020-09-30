@@ -164,3 +164,19 @@ func (b *Builder) WithAnnotationsNew(annotations map[string]string) *Builder {
 	b.pod.object.Annotations = newannotations
 	return b
 }
+
+// WithImagePullSecrets sets the image pull secret for the container
+func (b *Builder) WithImagePullSecrets(secrets []corev1.LocalObjectReference) *Builder {
+    if len(secrets) == 0 {
+        b.errs = append(
+            b.errs,
+            errors.New(
+                "failed to build container object: missing imagepullsecrets",
+            ),
+        )
+        return b
+    }
+
+    b.pod.object.Spec.ImagePullSecrets = secrets
+    return b
+}

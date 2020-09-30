@@ -137,6 +137,8 @@ type RunnerInfo struct {
 	Command []string `json:"command,omitempty"`
 	//ImagePullPolicy for runner pod
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+	//ImagePullSecrets for runner pod
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// Runner Annotations that needs to be provided in the pod for pod that is getting created
 	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
 }
@@ -267,6 +269,7 @@ type ExperimentComponents struct {
 	Secrets               []Secret                    `json:"secrets,omitempty"`
 	ExperimentAnnotations map[string]string           `json:"experimentannotation,omitempty"`
 	ExperimentImage       string                      `json:"experimentImage,omitempty"`
+	ExperimentImagePullSecrets []corev1.LocalObjectReference `json:"experimentImagePullSecrets,omitempty"`
 	NodeSelector          map[string]string           `json:"nodeSelector,omitempty"`
 	StatusCheckTimeouts   StatusCheckTimeout          `json:"statusCheckTimeouts,omitempty"`
 	Resources             corev1.ResourceRequirements `json:"resources,omitempty"`

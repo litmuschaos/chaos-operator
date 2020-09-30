@@ -3,13 +3,12 @@ module github.com/litmuschaos/chaos-operator
 go 1.13
 
 require (
-	github.com/docker/docker v1.4.2-0.20181221150755-2cb26cfe9cbf
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
 	github.com/json-iterator/go v1.1.9 // indirect
-	github.com/litmuschaos/elves v0.0.0-20200502084504-13be0e6937ee
+	github.com/litmuschaos/elves v0.0.0-20200930100735-5efe29d0ad5b
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/operator-framework/operator-sdk v0.15.2
