@@ -93,7 +93,7 @@ github.com/imdario/mergo
 github.com/jpillora/go-ogle-analytics
 # github.com/json-iterator/go v1.1.9
 github.com/json-iterator/go
-# github.com/litmuschaos/elves v0.0.0-20200502084504-13be0e6937ee
+# github.com/litmuschaos/elves v0.0.0-20200930100735-5efe29d0ad5b
 github.com/litmuschaos/elves/kubernetes/container
 github.com/litmuschaos/elves/kubernetes/pod
 # github.com/mailru/easyjson v0.7.0
