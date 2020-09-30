@@ -237,14 +237,25 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
 	}
 
-	return pod.NewBuilder().
+    podForRunner := pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithNamespace(engine.Instance.Namespace).
 		WithAnnotations(engine.Instance.Spec.Components.Runner.RunnerAnnotation).
 		WithLabels(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
-		WithContainerBuilder(containerForRunner).Build()
+		WithContainerBuilder(containerForRunner)
+
+	if engine.Instance.Spec.Components.Runner.ImagePullSecrets != nil {
+		podForRunner.WithImagePullSecrets(engine.Instance.Spec.Components.Runner.ImagePullSecrets)
+	}
+
+	podObj, err := podForRunner.Build()
+	if err != nil {
+		return podObj, err
+	}
+
+	return podObj, nil
 }
 
 // initializeApplicationInfo to initialize application info

@@ -19,6 +19,7 @@ package container
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -208,5 +209,35 @@ func (b *Builder) WithVolumeMountsNew(volumeMounts []corev1.VolumeMount) *Builde
 	newvolumeMounts := []corev1.VolumeMount{}
 	newvolumeMounts = append(newvolumeMounts, volumeMounts...)
 	b.con.object.VolumeMounts = newvolumeMounts
+	return b
+}
+
+// WithSecurityContext sets the security context of the container
+func (b *Builder) WithSecurityContext(sc corev1.SecurityContext) *Builder {
+
+	if reflect.DeepEqual(sc, corev1.SecurityContext{}) {
+		b.errors = append(
+			b.errors,
+			errors.New("failed to build container object: empty security contexts"),
+		)
+		return b
+	}
+
+	b.con.object.SecurityContext = &sc
+	return b
+}
+
+// WithResourceRequirements sets the resource requirements of the container
+func (b *Builder) WithResourceRequirements(rr corev1.ResourceRequirements) *Builder {
+
+	if reflect.DeepEqual(rr, corev1.ResourceRequirements{}) {
+		b.errors = append(
+			b.errors,
+			errors.New("failed to build container object: empty resource requirements"),
+		)
+		return b
+	}
+
+	b.con.object.Resources = rr
 	return b
 }
