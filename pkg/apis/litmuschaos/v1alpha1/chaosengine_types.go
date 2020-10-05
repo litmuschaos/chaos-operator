@@ -178,6 +178,12 @@ type K8sProbeAttributes struct {
 	// mode for k8s probe
 	// it can be SOT, EOT, Edge
 	Mode string `json:"mode,omitempty"`
+	// Operation performed by the k8s probe
+	// it can be create, delete, present, absent
+	Operation string `json:"operation,omitempty"`
+	// Data contains the manifest/data for the resource, which need to be created
+	// it supported for create operation only
+	Data string `json:"data,omitempty"`
 }
 
 // CmdProbeAttributes contains details of cmd probe, which can be applied on the experiments
@@ -264,15 +270,15 @@ type RunProperty struct {
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
 type ExperimentComponents struct {
-	ENV                   []ExperimentENV             `json:"env,omitempty"`
-	ConfigMaps            []ConfigMap                 `json:"configMaps,omitempty"`
-	Secrets               []Secret                    `json:"secrets,omitempty"`
-	ExperimentAnnotations map[string]string           `json:"experimentannotation,omitempty"`
-	ExperimentImage       string                      `json:"experimentImage,omitempty"`
+	ENV                        []ExperimentENV               `json:"env,omitempty"`
+	ConfigMaps                 []ConfigMap                   `json:"configMaps,omitempty"`
+	Secrets                    []Secret                      `json:"secrets,omitempty"`
+	ExperimentAnnotations      map[string]string             `json:"experimentannotation,omitempty"`
+	ExperimentImage            string                        `json:"experimentImage,omitempty"`
 	ExperimentImagePullSecrets []corev1.LocalObjectReference `json:"experimentImagePullSecrets,omitempty"`
-	NodeSelector          map[string]string           `json:"nodeSelector,omitempty"`
-	StatusCheckTimeouts   StatusCheckTimeout          `json:"statusCheckTimeouts,omitempty"`
-	Resources             corev1.ResourceRequirements `json:"resources,omitempty"`
+	NodeSelector               map[string]string             `json:"nodeSelector,omitempty"`
+	StatusCheckTimeouts        StatusCheckTimeout            `json:"statusCheckTimeouts,omitempty"`
+	Resources                  corev1.ResourceRequirements   `json:"resources,omitempty"`
 }
 
 // StatusCheckTimeout contains Delay and timeouts for the status checks
