@@ -84,8 +84,12 @@ var _ = BeforeSuite(func() {
 	By("creating operator")
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/operator.yaml").Run()
 	Expect(err).To(BeNil())
-
 	klog.Infoln("chaos-operator created successfully")
+
+	//Creating pod delete service account
+	By("creating pod delete sa")
+	err = exec.Command("kubectl", "apply", "-f", "../manifest/pod_delete_rbac.yaml").Run()
+	Expect(err).To(BeNil())
 
 	//Wait for the creation of chaos-operator
 	time.Sleep(50 * time.Second)
@@ -225,7 +229,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Applabel: "app=nginx",
 						AppKind:  "deployment",
 					},
-					ChaosServiceAccount: "litmus",
+					ChaosServiceAccount: "pod-delete-sa",
 					Components: v1alpha1.ComponentParams{
 						Runner: v1alpha1.RunnerInfo{
 							Image: "litmuschaos/chaos-runner:ci",
@@ -342,7 +346,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Applabel: "app=nginx",
 						AppKind:  "deployment",
 					},
-					ChaosServiceAccount: "litmus",
+					ChaosServiceAccount: "pod-delete-sa",
 					Components: v1alpha1.ComponentParams{
 						Runner: v1alpha1.RunnerInfo{
 							Image: "litmuschaos/chaos-runner:ci",
@@ -443,9 +447,14 @@ var _ = Describe("BDD on chaos-operator", func() {
 //Deleting all unused resources
 var _ = AfterSuite(func() {
 
+	//Deleting Pod Delete sa
+	By("Deleting pod delete sa")
+	err := exec.Command("kubectl", "delete", "-f", "../manifest/pod_delete_rbac.yaml").Run()
+	Expect(err).To(BeNil())
+
 	//Deleting ChaosExperiments
 	By("Deleting ChaosExperiments")
-	err := exec.Command("kubectl", "delete", "chaosexperiments", "--all", "-n", "litmus").Run()
+	err = exec.Command("kubectl", "delete", "chaosexperiments", "--all", "-n", "litmus").Run()
 	Expect(err).To(BeNil())
 
 	//Deleting ChaosEngines

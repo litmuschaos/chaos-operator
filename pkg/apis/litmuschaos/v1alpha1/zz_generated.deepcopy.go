@@ -5,7 +5,8 @@
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/rbac/v1"
+	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -450,6 +451,11 @@ func (in *ExperimentComponents) DeepCopyInto(out *ExperimentComponents) {
 			(*out)[key] = val
 		}
 	}
+	if in.ExperimentImagePullSecrets != nil {
+		in, out := &in.ExperimentImagePullSecrets, &out.ExperimentImagePullSecrets
+		*out = make([]v1.LocalObjectReference, len(*in))
+		copy(*out, *in)
+	}
 	if in.NodeSelector != nil {
 		in, out := &in.NodeSelector, &out.NodeSelector
 		*out = make(map[string]string, len(*in))
@@ -458,6 +464,7 @@ func (in *ExperimentComponents) DeepCopyInto(out *ExperimentComponents) {
 		}
 	}
 	out.StatusCheckTimeouts = in.StatusCheckTimeouts
+	in.Resources.DeepCopyInto(&out.Resources)
 	return
 }
 
@@ -483,7 +490,7 @@ func (in *ExperimentDef) DeepCopyInto(out *ExperimentDef) {
 	}
 	if in.Permissions != nil {
 		in, out := &in.Permissions, &out.Permissions
-		*out = make([]v1.PolicyRule, len(*in))
+		*out = make([]rbacv1.PolicyRule, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -726,6 +733,11 @@ func (in *RunnerInfo) DeepCopyInto(out *RunnerInfo) {
 	if in.Command != nil {
 		in, out := &in.Command, &out.Command
 		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.ImagePullSecrets != nil {
+		in, out := &in.ImagePullSecrets, &out.ImagePullSecrets
+		*out = make([]v1.LocalObjectReference, len(*in))
 		copy(*out, *in)
 	}
 	if in.RunnerAnnotation != nil {
