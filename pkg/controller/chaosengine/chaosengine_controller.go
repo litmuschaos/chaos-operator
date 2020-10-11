@@ -220,13 +220,12 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 // getChaosRunnerLabels return the labels required for chaos-runner
 func getChaosRunnerLabels(cr *litmuschaosv1alpha1.ChaosEngine) map[string]string {
 	return map[string]string{
-		"app": cr.Name,
-        "chaosUID": string(cr.UID),
+		"app":                         cr.Name,
+		"chaosUID":                    string(cr.UID),
 		"app.kubernetes.io/component": "chaos-runner",
-        "app.kubernetes.io/part-of": "litmus",
+		"app.kubernetes.io/part-of":   "litmus",
 	}
 }
-
 
 // newGoRunnerPodForCR defines a new go-based Runner Pod
 func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
@@ -248,7 +247,7 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
 	}
 
-    podForRunner := pod.NewBuilder().
+	podForRunner := pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithNamespace(engine.Instance.Namespace).
 		WithAnnotations(engine.Instance.Spec.Components.Runner.RunnerAnnotation).
