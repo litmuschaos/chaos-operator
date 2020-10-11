@@ -3,16 +3,27 @@
 
 IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 
+OPERATOR_DOCKER_REPO ?= litmuschaos
+
+ADMISSION_CONTROLLERS_DOCKER_IMAGE?=admission-controllers
+
+# Specify the name for the binaries
+WEBHOOK=admission-controllers
+
+# Specify the date o build
+BUILD_DATE = $(shell date +'%Y%m%d%H%M%S')
+
 # list only our namespaced directories
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 # docker info
-DOCKER_REPO ?= litmuschaos
-DOCKER_IMAGE ?= chaos-operator
-DOCKER_TAG ?= latest
+
+OPERATOR_DOCKER_IMAGE ?= chaos-operator
+
+IMAGE_TAG ?= latest
 
 .PHONY: all
-all: deps format lint build test dockerops
+all: deps gotasks test dockerops admission-controllers-image
 
 .PHONY: help
 help:
@@ -82,7 +93,7 @@ dockerops:
 	@echo "------------------"
 	@echo "--> Build & Push chaos-operator docker image"
 	@echo "------------------"
-	sudo docker build . -f build/Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+	sudo docker build -f build/Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) --build-arg BUILD_DATE=${BUILD_DATE} .
 	REPONAME=$(DOCKER_REPO) IMGNAME=$(DOCKER_IMAGE) IMGTAG=$(DOCKER_TAG) ./buildscripts/push
 
 unused-package-check:
@@ -93,3 +104,14 @@ unused-package-check:
 	if [ -n "$${tidy}" ]; then \
 		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
 	fi
+
+.PHONY: admission-controllers-image
+admission-controllers-image:
+	@echo "----------------------------"
+	@echo -n "--> admission-controllers image: "
+	@echo "${OPERATOR_DOCKER_REPO}/${ADMISSION_CONTROLLERS_DOCKER_IMAGE}:${IMAGE_TAG}"
+	@echo "----------------------------"
+	@PNAME=${WEBHOOK} CTLNAME=${WEBHOOK} sh -c "'$(PWD)/buildscripts/build.sh'"
+	@cp bin/${WEBHOOK}/${WEBHOOK} buildscripts/admission-controllers/
+	@cd buildscripts/${WEBHOOK} && sudo docker build -t ${OPERATOR_DOCKER_REPO}/${ADMISSION_CONTROLLERS_DOCKER_IMAGE}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@rm buildscripts/${WEBHOOK}/${WEBHOOK}
