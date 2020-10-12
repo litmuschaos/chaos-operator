@@ -17,6 +17,7 @@ limitations under the License.
 package resource
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -45,7 +46,7 @@ func CheckDaemonSetAnnotation(clientset kubernetes.Interface, engine *chaosTypes
 
 // getDaemonSetLists will list the daemonSets which having the chaos label
 func getDaemonSetLists(clientset kubernetes.Interface, engine *chaosTypes.EngineInfo) (*appsV1.DaemonSetList, error) {
-	targetAppList, err := clientset.AppsV1().DaemonSets(engine.AppInfo.Namespace).List(metaV1.ListOptions{
+	targetAppList, err := clientset.AppsV1().DaemonSets(engine.AppInfo.Namespace).List(context.TODO(), metaV1.ListOptions{
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 		FieldSelector: ""})
 	if err != nil {
