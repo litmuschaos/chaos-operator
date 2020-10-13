@@ -27,7 +27,7 @@ import (
 // to create a chaos profile
 type ChaosEngineSpec struct {
 	//Appinfo contains deployment details of AUT
-	Appinfo ApplicationParams `json:"appinfo"`
+	Appinfo ApplicationParams `json:"appinfo,omitempty"`
 	//AnnotationCheck defines whether annotation check is allowed or not. It can be true or false
 	AnnotationCheck string `json:"annotationCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
@@ -112,11 +112,11 @@ type ChaosEngineStatus struct {
 // Controller expects AUT to be annotated with litmuschaos.io/chaos: "true" to run chaos
 type ApplicationParams struct {
 	//Namespace of the AUT
-	Appns string `json:"appns"`
+	Appns string `json:"appns,omitempty"`
 	//Unique label of the AUT
-	Applabel string `json:"applabel"`
+	Applabel string `json:"applabel,omitempty"`
 	//kind of application
-	AppKind string `json:"appkind"`
+	AppKind string `json:"appkind,omitempty"`
 }
 
 // ComponentParams defines information about the runner
@@ -137,6 +137,8 @@ type RunnerInfo struct {
 	Command []string `json:"command,omitempty"`
 	//ImagePullPolicy for runner pod
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+	//ImagePullSecrets for runner pod
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// Runner Annotations that needs to be provided in the pod for pod that is getting created
 	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
 }
@@ -157,51 +159,34 @@ type ExperimentAttributes struct {
 	// It contains env, configmaps, secrets, experimentImage, node selector, custom experiment annotation
 	// which can be provided or overridden from the chaos engine
 	Components ExperimentComponents `json:"components,omitempty"`
-	// K8sProbe contains details of k8s probe, which can be applied on the experiments
-	K8sProbe []K8sProbeAttributes `json:"k8sProbe,omitempty"`
-	// CmdProbe contains details of cmd probe, which can be applied on the experiments
-	CmdProbe []CmdProbeAttributes `json:"cmdProbe,omitempty"`
-	// HTTPProbe contains details of http probe, which can be applied on the experiments
-	HTTPProbe []HTTPProbeAttributes `json:"httpProbe,omitempty"`
+	// Probe contains details of probe, which can be applied on the experiments
+	// Probe can be httpProbe, k8sProbe or cmdProbe
+	Probe []ProbeAttributes `json:"probe,omitempty"`
 }
 
-// K8sProbeAttributes contains details of k8s probe, which can be applied on the experiments
-type K8sProbeAttributes struct {
+// ProbeAttributes contains details of probe, which can be applied on the experiments
+type ProbeAttributes struct {
 	// Name of probe
 	Name string `json:"name,omitempty"`
+	// Type of probe
+	Type string `json:"type,omitempty"`
 	// inputs needed for the k8s probe
-	Inputs K8sProbeInputs `json:"inputs,omitempty"`
+	K8sProbeInputs K8sProbeInputs `json:"k8sProbe/inputs,omitempty"`
+	// inputs needed for the http probe
+	HTTPProbeInputs HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
+	// inputs needed for the cmd probe
+	CmdProbeInputs CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
 	// RunProperty contains timeout, retry and interval for the probe
 	RunProperties RunProperty `json:"runProperties,omitempty"`
 	// mode for k8s probe
 	// it can be SOT, EOT, Edge
 	Mode string `json:"mode,omitempty"`
-}
-
-// CmdProbeAttributes contains details of cmd probe, which can be applied on the experiments
-type CmdProbeAttributes struct {
-	// Name of probe
-	Name string `json:"name,omitempty"`
-	// inputs needed for the cmd probe
-	Inputs CmdProbeInputs `json:"inputs,omitempty"`
-	// RunProperty contains timeout, retry and interval for the probe
-	RunProperties RunProperty `json:"runProperties,omitempty"`
-	// mode for cmd probe
-	// it can be SOT, EOT, Edge, Continuous
-	Mode string `json:"mode,omitempty"`
-}
-
-// HTTPProbeAttributes contains details of k8s probe, which can be applied on the experiments
-type HTTPProbeAttributes struct {
-	// Name of probe
-	Name string `json:"name,omitempty"`
-	// inputs needed for the http probe
-	Inputs HTTPProbeInputs `json:"inputs,omitempty"`
-	// RunProperty contains timeout, retry and interval for the probe
-	RunProperties RunProperty `json:"runProperties,omitempty"`
-	// mode for http probe
-	// it can be SOT, EOT, Edge, Continuous
-	Mode string `json:"mode,omitempty"`
+	// Operation performed by the k8s probe
+	// it can be create, delete, present, absent
+	Operation string `json:"operation,omitempty"`
+	// Data contains the manifest/data for the resource, which need to be created
+	// it supported for create operation only
+	Data string `json:"data,omitempty"`
 }
 
 // K8sProbeInputs contains all the inputs required for k8s probe
@@ -222,8 +207,10 @@ type K8sCommand struct {
 	Resource string `json:"resource,omitempty"`
 	// namespace of the resource
 	Namespace string `json:"namespace,omitempty"`
-	// fieldselector to get the details
+	// fieldselector to get the resource using fields selector
 	FieldSelector string `json:"fieldSelector,omitempty"`
+	// labelselector to get the resource using labels selector
+	LabelSelector string `json:"labelSelector,omitempty"`
 }
 
 //CmdProbeInputs contains all the inputs required for cmd probe
@@ -260,13 +247,15 @@ type RunProperty struct {
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
 type ExperimentComponents struct {
-	ENV                   []ExperimentENV    `json:"env,omitempty"`
-	ConfigMaps            []ConfigMap        `json:"configMaps,omitempty"`
-	Secrets               []Secret           `json:"secrets,omitempty"`
-	ExperimentAnnotations map[string]string  `json:"experimentannotation,omitempty"`
-	ExperimentImage       string             `json:"experimentImage,omitempty"`
-	NodeSelector          map[string]string  `json:"nodeSelector,omitempty"`
-	StatusCheckTimeouts   StatusCheckTimeout `json:"statusCheckTimeouts,omitempty"`
+	ENV                        []ExperimentENV               `json:"env,omitempty"`
+	ConfigMaps                 []ConfigMap                   `json:"configMaps,omitempty"`
+	Secrets                    []Secret                      `json:"secrets,omitempty"`
+	ExperimentAnnotations      map[string]string             `json:"experimentannotation,omitempty"`
+	ExperimentImage            string                        `json:"experimentImage,omitempty"`
+	ExperimentImagePullSecrets []corev1.LocalObjectReference `json:"experimentImagePullSecrets,omitempty"`
+	NodeSelector               map[string]string             `json:"nodeSelector,omitempty"`
+	StatusCheckTimeouts        StatusCheckTimeout            `json:"statusCheckTimeouts,omitempty"`
+	Resources                  corev1.ResourceRequirements   `json:"resources,omitempty"`
 }
 
 // StatusCheckTimeout contains Delay and timeouts for the status checks

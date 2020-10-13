@@ -176,10 +176,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 	var appNS string
 
 	if cr.Spec.Appinfo.Appns != "" {
-        appNS = cr.Spec.Appinfo.Appns
-    } else {
-        appNS = cr.Namespace
-    }
+		appNS = cr.Spec.Appinfo.Appns
+	} else {
+		appNS = cr.Namespace
+	}
 
 	return []corev1.EnvVar{
 		{
@@ -217,6 +217,17 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 	}
 }
 
+// getChaosRunnerLabels return the labels required for chaos-runner
+func getChaosRunnerLabels(cr *litmuschaosv1alpha1.ChaosEngine) map[string]string {
+	return map[string]string{
+		"app": cr.Name,
+        "chaosUID": string(cr.UID),
+		"app.kubernetes.io/component": "chaos-runner",
+        "app.kubernetes.io/part-of": "litmus",
+	}
+}
+
+
 // newGoRunnerPodForCR defines a new go-based Runner Pod
 func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	containerForRunner := container.NewBuilder().
@@ -237,14 +248,25 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
 	}
 
-	return pod.NewBuilder().
+    podForRunner := pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithNamespace(engine.Instance.Namespace).
 		WithAnnotations(engine.Instance.Spec.Components.Runner.RunnerAnnotation).
-		WithLabels(map[string]string{"app": engine.Instance.Name, "chaosUID": string(engine.Instance.UID)}).
+		WithLabels(getChaosRunnerLabels(engine.Instance)).
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
-		WithContainerBuilder(containerForRunner).Build()
+		WithContainerBuilder(containerForRunner)
+
+	if engine.Instance.Spec.Components.Runner.ImagePullSecrets != nil {
+		podForRunner.WithImagePullSecrets(engine.Instance.Spec.Components.Runner.ImagePullSecrets)
+	}
+
+	podObj, err := podForRunner.Build()
+	if err != nil {
+		return podObj, err
+	}
+
+	return podObj, nil
 }
 
 // initializeApplicationInfo to initialize application info
@@ -252,21 +274,25 @@ func initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine, appInf
 	if instance == nil {
 		return nil, errors.New("empty chaosengine")
 	}
-	appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
-	chaosTypes.AppLabelKey = appLabel[0]
-	chaosTypes.AppLabelValue = appLabel[1]
-	appInfo.Label = make(map[string]string)
-	appInfo.Label[chaosTypes.AppLabelKey] = chaosTypes.AppLabelValue
+
+	if instance.Spec.Appinfo.Applabel != "" {
+		appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
+		chaosTypes.AppLabelKey = appLabel[0]
+		chaosTypes.AppLabelValue = appLabel[1]
+		appInfo.Label = make(map[string]string)
+		appInfo.Label[chaosTypes.AppLabelKey] = chaosTypes.AppLabelValue
+	}
 
 	if instance.Spec.Appinfo.Appns != "" {
 		appInfo.Namespace = instance.Spec.Appinfo.Appns
 	} else {
 		appInfo.Namespace = instance.Namespace
 	}
+	appInfo.Kind = instance.Spec.Appinfo.AppKind
 
 	appInfo.ExperimentList = instance.Spec.Experiments
 	appInfo.ServiceAccountName = instance.Spec.ChaosServiceAccount
-	appInfo.Kind = instance.Spec.Appinfo.AppKind
+
 	return appInfo, nil
 }
 
@@ -400,7 +426,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 		return reconcile.Result{}, err
 	}
 
-	if len(chaosPodList.Items)!= 0 {
+	if len(chaosPodList.Items) != 0 {
 		chaosTypes.Log.Info("Performing a force delete of chaos resources", "chaosengine", engine.Instance.Name)
 		err := r.forceRemoveChaosResources(engine, request)
 		if err != nil {
@@ -412,9 +438,9 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 	if engine.Instance.ObjectMeta.Finalizers != nil {
 		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
 
-		//we are repeating this condition/check here as we want the events for 'ChaosEngineStopped' 
+		//we are repeating this condition/check here as we want the events for 'ChaosEngineStopped'
 		//generated only after successful finalizer removal
-		if len(chaosPodList.Items)!= 0 {
+		if len(chaosPodList.Items) != 0 {
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineStopped", "Chaos resources deleted successfully")
 		} else {
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosEngineStopped", "Chaos stopped due to failed app identification")
@@ -651,7 +677,7 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
 		if err != nil {
-			//using an event msg that indicates the app couldn't be identified. By this point in execution, 
+			//using an event msg that indicates the app couldn't be identified. By this point in execution,
 			//if the engine could not be found or accessed, it would already be caught in r.initEngine & getApplicationDetail
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to filter app by specified info")
 			chaosTypes.Log.Info("Annotation check failed with", "error:", err)

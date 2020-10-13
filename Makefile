@@ -93,3 +93,4 @@ unused-package-check:
 	if [ -n "$${tidy}" ]; then \
 		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
 	fi
+
