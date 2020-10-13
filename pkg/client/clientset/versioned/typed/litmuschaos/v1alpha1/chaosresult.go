@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
@@ -71,7 +72,7 @@ func (c *chaosResults) Get(name string, options v1.GetOptions) (result *v1alpha1
 		Resource("chaosresults").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -88,7 +89,7 @@ func (c *chaosResults) List(opts v1.ListOptions) (result *v1alpha1.ChaosResultLi
 		Resource("chaosresults").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -105,7 +106,7 @@ func (c *chaosResults) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("chaosresults").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(context.TODO())
 }
 
 // Create takes the representation of a chaosResult and creates it.  Returns the server's representation of the chaosResult, and an error, if there is any.
@@ -115,7 +116,7 @@ func (c *chaosResults) Create(chaosResult *v1alpha1.ChaosResult) (result *v1alph
 		Namespace(c.ns).
 		Resource("chaosresults").
 		Body(chaosResult).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -128,7 +129,7 @@ func (c *chaosResults) Update(chaosResult *v1alpha1.ChaosResult) (result *v1alph
 		Resource("chaosresults").
 		Name(chaosResult.Name).
 		Body(chaosResult).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -144,7 +145,7 @@ func (c *chaosResults) UpdateStatus(chaosResult *v1alpha1.ChaosResult) (result *
 		Name(chaosResult.Name).
 		SubResource("status").
 		Body(chaosResult).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -156,7 +157,7 @@ func (c *chaosResults) Delete(name string, options *v1.DeleteOptions) error {
 		Resource("chaosresults").
 		Name(name).
 		Body(options).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -172,7 +173,7 @@ func (c *chaosResults) DeleteCollection(options *v1.DeleteOptions, listOptions v
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(options).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -185,7 +186,7 @@ func (c *chaosResults) Patch(name string, pt types.PatchType, data []byte, subre
 		SubResource(subresources...).
 		Name(name).
 		Body(data).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }

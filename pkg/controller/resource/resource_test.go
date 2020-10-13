@@ -17,6 +17,7 @@ limitations under the License.
 package resource
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -291,7 +292,7 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 			f.SetFakeClient()
 			if mock.check == true {
 				for _, deploy := range mock.deployment {
-					_, err := f.k8sClient.AppsV1().Deployments(deploy.Namespace).Create(&deploy)
+					_, err := f.k8sClient.AppsV1().Deployments(deploy.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("deployment not created, err: %v", err)
 					}
@@ -560,7 +561,7 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 			f.SetFakeClient()
 			if mock.check == true {
 				for _, sts := range mock.statefulSet {
-					_, err := f.k8sClient.AppsV1().StatefulSets(sts.Namespace).Create(&sts)
+					_, err := f.k8sClient.AppsV1().StatefulSets(sts.Namespace).Create(context.TODO(), &sts, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("statefulset not created, err: %v", err)
 					}
@@ -829,7 +830,7 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 			f.SetFakeClient()
 			if mock.check == true {
 				for _, ds := range mock.daemonset {
-					_, err := f.k8sClient.AppsV1().DaemonSets(ds.Namespace).Create(&ds)
+					_, err := f.k8sClient.AppsV1().DaemonSets(ds.Namespace).Create(context.TODO(), &ds, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("daemonset not created, err: %v", err)
 					}
@@ -1114,7 +1115,7 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 
 			if mock.check == true {
 				for _, dc := range mock.deploymentconfig {
-					_, err := dynamic.Create(&dc, metav1.CreateOptions{})
+					_, err := dynamic.Create(context.TODO(), &dc, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("deploymentconfig not created, err: %v", err)
 					}

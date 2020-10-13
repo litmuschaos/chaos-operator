@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -44,7 +45,7 @@ func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.Eng
 
 	dynamicClient := clientSet.Resource(gvr)
 
-	deploymentConfigList, err := dynamicClient.List(metav1.ListOptions{})
+	deploymentConfigList, err := dynamicClient.List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error while listing deploymentconfigs with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
