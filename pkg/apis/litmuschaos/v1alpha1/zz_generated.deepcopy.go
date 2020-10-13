@@ -747,6 +747,18 @@ func (in *RunnerInfo) DeepCopyInto(out *RunnerInfo) {
 			(*out)[key] = val
 		}
 	}
+	if in.ConfigMaps != nil {
+		in, out := &in.ConfigMaps, &out.ConfigMaps
+		*out = make([]ConfigMap, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.Secrets != nil {
+		in, out := &in.Secrets, &out.Secrets
+		*out = make([]Secret, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
