@@ -141,6 +141,10 @@ type RunnerInfo struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// Runner Annotations that needs to be provided in the pod for pod that is getting created
 	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
+	// ConfigMaps for runner pod
+	ConfigMaps []ConfigMap `json:"configMaps,omitempty"`
+	// Secrets for runner pod
+	Secrets []Secret `json:"secrets,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine

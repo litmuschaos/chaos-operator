@@ -220,16 +220,17 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 // getChaosRunnerLabels return the labels required for chaos-runner
 func getChaosRunnerLabels(cr *litmuschaosv1alpha1.ChaosEngine) map[string]string {
 	return map[string]string{
-		"app": cr.Name,
-        "chaosUID": string(cr.UID),
+		"app":                         cr.Name,
+		"chaosUID":                    string(cr.UID),
 		"app.kubernetes.io/component": "chaos-runner",
-        "app.kubernetes.io/part-of": "litmus",
+		"app.kubernetes.io/part-of":   "litmus",
 	}
 }
 
-
 // newGoRunnerPodForCR defines a new go-based Runner Pod
 func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
+	engine.VolumeOpts.VolumeOperations(engine.Instance.Spec.Components.Runner.ConfigMaps, engine.Instance.Spec.Components.Runner.Secrets)
+
 	containerForRunner := container.NewBuilder().
 		WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID)).
 		WithName("chaos-runner").
@@ -244,11 +245,15 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		containerForRunner.WithArgumentsNew(engine.Instance.Spec.Components.Runner.Args)
 	}
 
+	if engine.VolumeOpts.VolumeMounts != nil {
+		containerForRunner.WithVolumeMountsNew(engine.VolumeOpts.VolumeMounts)
+	}
+
 	if engine.Instance.Spec.Components.Runner.Command != nil {
 		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
 	}
 
-    podForRunner := pod.NewBuilder().
+	podForRunner := pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithNamespace(engine.Instance.Namespace).
 		WithAnnotations(engine.Instance.Spec.Components.Runner.RunnerAnnotation).
@@ -256,6 +261,10 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(containerForRunner)
+
+	if engine.VolumeOpts.VolumeBuilders != nil {
+		podForRunner.WithVolumeBuilders(engine.VolumeOpts.VolumeBuilders)
+	}
 
 	if engine.Instance.Spec.Components.Runner.ImagePullSecrets != nil {
 		podForRunner.WithImagePullSecrets(engine.Instance.Spec.Components.Runner.ImagePullSecrets)
