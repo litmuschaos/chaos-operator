@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/litmuschaos/elves/kubernetes/container"
+	volume "github.com/litmuschaos/elves/kubernetes/volume/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -162,5 +163,49 @@ func (b *Builder) WithAnnotationsNew(annotations map[string]string) *Builder {
 
 	// override
 	b.pod.object.Annotations = newannotations
+	return b
+}
+
+// WithImagePullSecrets sets the image pull secret for the container
+func (b *Builder) WithImagePullSecrets(secrets []corev1.LocalObjectReference) *Builder {
+	if len(secrets) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build container object: missing imagepullsecrets",
+			),
+		)
+		return b
+	}
+
+	b.pod.object.Spec.ImagePullSecrets = secrets
+	return b
+}
+
+// WithVolumeBuilders builds the list of volumebuilders provided
+// and merges it to the volumes field of podtemplatespec.
+func (b *Builder) WithVolumeBuilders(volumeBuilderList []*volume.Builder) *Builder {
+	if volumeBuilderList == nil {
+		b.errs = append(
+			b.errs,
+			errors.New("failed to build pod: nil volumeBuilderList"),
+		)
+		return b
+	}
+	for _, volumeBuilder := range volumeBuilderList {
+		vol, err := volumeBuilder.Build()
+		if err != nil {
+			b.errs = append(
+				b.errs,
+				errors.New(err.Error()),
+			)
+			return b
+		}
+		newvol := *vol
+		b.pod.object.Spec.Volumes = append(
+			b.pod.object.Spec.Volumes,
+			newvol,
+		)
+	}
 	return b
 }

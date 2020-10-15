@@ -84,8 +84,12 @@ var _ = BeforeSuite(func() {
 	By("creating operator")
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/operator.yaml").Run()
 	Expect(err).To(BeNil())
-
 	klog.Infoln("chaos-operator created successfully")
+
+	//Creating pod delete service account
+	By("creating pod delete sa")
+	err = exec.Command("kubectl", "apply", "-f", "../manifest/pod_delete_rbac.yaml").Run()
+	Expect(err).To(BeNil())
 
 	//Wait for the creation of chaos-operator
 	time.Sleep(50 * time.Second)
@@ -168,23 +172,19 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 				Spec: v1alpha1.ChaosExperimentSpec{
 					Definition: v1alpha1.ExperimentDef{
-						Image: "litmuschaos/ansible-runner:latest",
+						Image: "litmuschaos/go-runner:ci",
 
 						Scope: "Namespaced",
 
 						Permissions: []rbacV1.PolicyRule{},
 
-						Args:    []string{"-c", "ansible-playbook ./experiments/generic/pod_delete/pod_delete_ansible_logic.yml -i /etc/ansible/hosts -vv; exit 0"},
+						Args:    []string{"-c", "./experiments -name pod-delete"},
 						Command: []string{"/bin/bash"},
 
 						ENVList: []v1alpha1.ENVPair{
 							{
-								Name:  "ANSIBLE_STDOUT_CALLBACK",
-								Value: "default",
-							},
-							{
 								Name:  "TOTAL_CHAOS_DURATION",
-								Value: "15",
+								Value: "30",
 							},
 							{
 								Name:  "CHAOS_INTERVAL",
@@ -195,13 +195,14 @@ var _ = Describe("BDD on chaos-operator", func() {
 								Value: "litmus",
 							},
 							{
-								Name:  "LIB_IMAGE",
-								Value: "litmuschaos/pod-delete-helper:latest",
+								Name:  "FORCE",
+								Value: "true",
 							},
 						},
 
 						Labels: map[string]string{
 							"name": "pod-delete",
+							"app.kubernetes.io/part-of": "litmus",
 						},
 					},
 				},
@@ -225,7 +226,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Applabel: "app=nginx",
 						AppKind:  "deployment",
 					},
-					ChaosServiceAccount: "litmus",
+					ChaosServiceAccount: "pod-delete-sa",
 					Components: v1alpha1.ComponentParams{
 						Runner: v1alpha1.RunnerInfo{
 							Image: "litmuschaos/chaos-runner:ci",
@@ -248,14 +249,26 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			klog.Infoln("Chaosengine created successfully...")
 
-			//Wait till the creation of runner pod
-			time.Sleep(50 * time.Second)
+			//Wait till the creation of runner pod resource
+			time.Sleep(5 * time.Second)
 
-			//Fetching engine-nginx-runner pod
-			//Check for the Availabilty and status of the runner pod
-			runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
-			Expect(err).To(BeNil())
-			Expect(string(runner.Status.Phase)).To(Or(Equal("Running"), Equal("Succeeded")))
+			var runnerStatus v1.PodPhase
+
+			//Wait for 90s for runner to start running, before failing the test
+			for i := 0; i < 90; i++ {
+				runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+				runnerStatus = runner.Status.Phase
+				Expect(err).To(BeNil())
+				klog.Infof("Runner state is: %s\n", string(runnerStatus))
+				if string(runnerStatus) != "Running" {
+					time.Sleep(1 * time.Second)
+				} else {
+					break
+				}
+			}
+
+
+			Expect(string(runnerStatus)).To(Or(Equal("Running"), Equal("Succeeded")))
 
 			// Check for EngineStatus
 			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
@@ -342,7 +355,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Applabel: "app=nginx",
 						AppKind:  "deployment",
 					},
-					ChaosServiceAccount: "litmus",
+					ChaosServiceAccount: "pod-delete-sa",
 					Components: v1alpha1.ComponentParams{
 						Runner: v1alpha1.RunnerInfo{
 							Image: "litmuschaos/chaos-runner:ci",
@@ -443,9 +456,14 @@ var _ = Describe("BDD on chaos-operator", func() {
 //Deleting all unused resources
 var _ = AfterSuite(func() {
 
+	//Deleting Pod Delete sa
+	By("Deleting pod delete sa")
+	err := exec.Command("kubectl", "delete", "-f", "../manifest/pod_delete_rbac.yaml").Run()
+	Expect(err).To(BeNil())
+
 	//Deleting ChaosExperiments
 	By("Deleting ChaosExperiments")
-	err := exec.Command("kubectl", "delete", "chaosexperiments", "--all", "-n", "litmus").Run()
+	err = exec.Command("kubectl", "delete", "chaosexperiments", "--all", "-n", "litmus").Run()
 	Expect(err).To(BeNil())
 
 	//Deleting ChaosEngines
