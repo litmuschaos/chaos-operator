@@ -191,6 +191,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 			Value: cr.Spec.Appinfo.Applabel,
 		},
 		{
+			Name:  "APP_KIND",
+			Value: cr.Spec.Appinfo.AppKind,
+		},
+		{
 			Name:  "APP_NAMESPACE",
 			Value: appNS,
 		},

@@ -86,6 +86,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
 	fakeNameSpace := "Fake NameSpace"
 	fakeServiceAcc := "Fake Service Account"
 	fakeAppLabel := "Fake Label"
+	fakeAppKind := "Fake Kind"
 	fakeAExList := []string{"fake string"}
 	fakeAuxilaryAppInfo := "ns1:name=percona,ns2:run=nginx"
 	fakeClientUUID := "12345678-9012-3456-7890-123456789012"
@@ -106,6 +107,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
 					Appinfo: litmuschaosv1alpha1.ApplicationParams{
 						Applabel: fakeAppLabel,
 						Appns:    fakeNameSpace,
+						AppKind:  fakeAppKind,
 					},
 					AuxiliaryAppInfo: fakeAuxilaryAppInfo,
 				},
@@ -119,6 +121,10 @@ func TestGetChaosRunnerENV(t *testing.T) {
 				{
 					Name:  "APP_LABEL",
 					Value: fakeAppLabel,
+				},
+				{
+					Name:  "APP_KIND",
+					Value: fakeAppKind,
 				},
 				{
 					Name:  "APP_NAMESPACE",
@@ -151,8 +157,8 @@ func TestGetChaosRunnerENV(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			actualResult := getChaosRunnerENV(mock.instance, mock.aExList, fakeClientUUID)
 			println(actualResult)
-			if len(actualResult) != 8 {
-				t.Fatalf("Test %q failed: expected array length to be 8", name)
+			if len(actualResult) != 9 {
+				t.Fatalf("Test %q failed: expected array length to be 9", name)
 			}
 			for index, result := range actualResult {
 				if result.Value != mock.expectedResult[index].Value {
