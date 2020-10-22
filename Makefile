@@ -63,6 +63,13 @@ lint:
 	@echo "------------------"
 	@go vet $(PACKAGES)
 
+.PHONY: ci-lint
+ci-lint:
+	@echo "------------------"
+	@echo "--> Running golangci-lint"
+	@echo "------------------"
+	golangci-lint run
+
 .PHONY: build
 build:
 	@echo "------------------"

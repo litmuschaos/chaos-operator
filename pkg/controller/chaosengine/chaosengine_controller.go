@@ -514,10 +514,13 @@ func (r *ReconcileChaosEngine) updateEngineState(engine *chaosTypes.EngineInfo, 
 }
 
 // checkRunnerContainerCompletedStatus check for the runner pod's container status for Completed
-func (r *ReconcileChaosEngine) checkRunnerContainerCompletedStatus(engine *chaosTypes.EngineInfo) bool {
+func (r *ReconcileChaosEngine) checkRunnerContainerCompletedStatus(engine *chaosTypes.EngineInfo) (bool, error) {
 	runnerPod := corev1.Pod{}
 	isCompleted := false
-	r.client.Get(context.TODO(), types.NamespacedName{Name: engine.Instance.Name + "-runner", Namespace: engine.Instance.Namespace}, &runnerPod)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: engine.Instance.Name + "-runner", Namespace: engine.Instance.Namespace}, &runnerPod)
+	if err != nil {
+		return false, err
+	}
 
 	if runnerPod.Status.Phase == corev1.PodRunning || runnerPod.Status.Phase == corev1.PodSucceeded {
 		for _, container := range runnerPod.Status.ContainerStatuses {
@@ -529,7 +532,7 @@ func (r *ReconcileChaosEngine) checkRunnerContainerCompletedStatus(engine *chaos
 			}
 		}
 	}
-	return isCompleted
+	return isCompleted, nil
 }
 
 // gracefullyRemoveDefaultChaosResources removes all chaos-resources gracefully
@@ -630,7 +633,11 @@ func (r *ReconcileChaosEngine) reconcileForCreationAndRunning(engine *chaosTypes
 		return reconcile.Result{}, err
 	}
 
-	isCompleted := r.checkRunnerContainerCompletedStatus(engine)
+	isCompleted, err := r.checkRunnerContainerCompletedStatus(engine)
+	if err != nil {
+		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "Unable to check runner container completed status")
+		return reconcile.Result{}, err
+	}
 	if isCompleted {
 		err := r.updateEngineForComplete(engine, isCompleted)
 		if err != nil {

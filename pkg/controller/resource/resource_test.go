@@ -41,10 +41,6 @@ var (
 	}
 )
 
-func print32(p int32) *int32 {
-	return &p
-}
-
 func TestCheckChaosAnnotationDeployment(t *testing.T) {
 
 	tests := map[string]struct {

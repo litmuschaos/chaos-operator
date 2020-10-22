@@ -1065,7 +1065,10 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
-			val := r.checkRunnerContainerCompletedStatus(&mock.engine)
+			val, err := r.checkRunnerContainerCompletedStatus(&mock.engine)
+			if err != nil {
+				fmt.Printf("Unable to check runner container status: %v", err)
+			}
 			if mock.isErr && val == false {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -1120,7 +1123,10 @@ func TestEngineRunnerPod(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 
 			if name == "Test Positive-2" {
-				mock.runner.r.client.Create(context.TODO(), mock.runner.engineRunner)
+				err := mock.runner.r.client.Create(context.TODO(), mock.runner.engineRunner)
+				if err != nil {
+					fmt.Printf("Unable to create mock runner client: %v", err)
+				}
 			}
 			err := engineRunnerPod(mock.runner)
 			if mock.isErr && err == nil {

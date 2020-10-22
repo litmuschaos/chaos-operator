@@ -75,6 +75,7 @@ var _ = BeforeSuite(func() {
 	//Creating crds
 	By("creating all crds")
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/chaos_crds.yaml").Run()
+	Expect(err).To(BeNil())
 
 	//Creating rbacs
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/rbac.yaml").Run()
