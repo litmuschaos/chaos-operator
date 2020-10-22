@@ -26,7 +26,7 @@ import (
 // UUIDGenerator creates a new UUID each time a new user triggers an event
 func UUIDGenerator() string {
 	uuid := ""
-	if strings.ToUpper(os.Getenv("ANALYTICS")) == "TRUE" {
+	if strings.ToUpper(os.Getenv("ANALYTICS")) != "FALSE" {
 		b := make([]byte, 16)
 		_, err := rand.Read(b)
 		if err != nil {
