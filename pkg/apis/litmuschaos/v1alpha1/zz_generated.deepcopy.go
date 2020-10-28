@@ -465,6 +465,13 @@ func (in *ExperimentComponents) DeepCopyInto(out *ExperimentComponents) {
 	}
 	out.StatusCheckTimeouts = in.StatusCheckTimeouts
 	in.Resources.DeepCopyInto(&out.Resources)
+	if in.Tolerations != nil {
+		in, out := &in.Tolerations, &out.Tolerations
+		*out = make([]v1.Toleration, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 
@@ -758,6 +765,13 @@ func (in *RunnerInfo) DeepCopyInto(out *RunnerInfo) {
 		in, out := &in.Secrets, &out.Secrets
 		*out = make([]Secret, len(*in))
 		copy(*out, *in)
+	}
+	if in.Tolerations != nil {
+		in, out := &in.Tolerations, &out.Tolerations
+		*out = make([]v1.Toleration, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 	return
 }

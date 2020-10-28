@@ -191,6 +191,10 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 			Value: cr.Spec.Appinfo.Applabel,
 		},
 		{
+			Name:  "APP_KIND",
+			Value: cr.Spec.Appinfo.AppKind,
+		},
+		{
 			Name:  "APP_NAMESPACE",
 			Value: appNS,
 		},
@@ -261,6 +265,10 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		WithServiceAccountName(engine.Instance.Spec.ChaosServiceAccount).
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(containerForRunner)
+
+	if engine.Instance.Spec.Components.Runner.Tolerations != nil {
+		podForRunner.WithTolerations(engine.Instance.Spec.Components.Runner.Tolerations...)
+	}
 
 	if engine.VolumeOpts.VolumeBuilders != nil {
 		podForRunner.WithVolumeBuilders(engine.VolumeOpts.VolumeBuilders)

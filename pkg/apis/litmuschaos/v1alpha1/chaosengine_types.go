@@ -145,6 +145,8 @@ type RunnerInfo struct {
 	ConfigMaps []ConfigMap `json:"configMaps,omitempty"`
 	// Secrets for runner pod
 	Secrets []Secret `json:"secrets,omitempty"`
+	// Tolerations for runner pod
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
@@ -260,6 +262,7 @@ type ExperimentComponents struct {
 	NodeSelector               map[string]string             `json:"nodeSelector,omitempty"`
 	StatusCheckTimeouts        StatusCheckTimeout            `json:"statusCheckTimeouts,omitempty"`
 	Resources                  corev1.ResourceRequirements   `json:"resources,omitempty"`
+	Tolerations                []corev1.Toleration           `json:"tolerations,omitempty"`
 }
 
 // StatusCheckTimeout contains Delay and timeouts for the status checks
