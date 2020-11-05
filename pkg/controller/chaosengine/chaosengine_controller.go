@@ -266,6 +266,10 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		WithRestartPolicy("OnFailure").
 		WithContainerBuilder(containerForRunner)
 
+	if engine.Instance.Spec.Components.Runner.Tolerations != nil {
+		podForRunner.WithTolerations(engine.Instance.Spec.Components.Runner.Tolerations...)
+	}
+
 	if engine.VolumeOpts.VolumeBuilders != nil {
 		podForRunner.WithVolumeBuilders(engine.VolumeOpts.VolumeBuilders)
 	}
