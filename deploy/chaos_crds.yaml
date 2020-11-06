@@ -78,11 +78,9 @@ spec:
                           key:
                             type: string
                             minLength: 1
-                            allowEmptyValue: false
                           value:
                             type: string
                             minLength: 1
-                            allowEmptyValue: false
             experiments:
               type: array
               items:
@@ -102,6 +100,8 @@ spec:
                               type: string
                             type:
                               type: string
+                              minLength: 1
+                              pattern: ^(k8sProbe|httpProbe|cmdProbe)$
                             k8sProbe/inputs:
                               type: object
                               properties:
@@ -120,24 +120,27 @@ spec:
                                       type: string
                                     labelSelector:
                                       type: string
-                                expectedResult:
-                                  type: string
                             cmdProbe/inputs:
                               type: object
                               properties:
                                 command:
                                   type: string
+                                  minLength: 1
                                 expectedResult:
                                   type: string
+                                  minLength: 1
                                 source:
                                   type: string
+                                  minLength: 1
                             httpProbe/inputs:
                               type: object
                               properties:
                                 url:
                                   type: string
+                                  minLength: 1
                                 expectedResponseCode:
                                   type: string
+                                  minLength: 1
                             runProperties:
                               type: object
                               properties:
@@ -147,8 +150,16 @@ spec:
                                   type: integer
                                 retry: 
                                   type: integer
+                                probePollingInterval:
+                                  type: integer
                             mode:
                               type: string
+                              pattern: ^(SOT|EOT|Edge|Continuous)$
+                              minLength: 1
+                            operation:
+                              type: string
+                              pattern: ^(present|absent|create|delete)$
+                              minLength: 1
                       components:
                         type: object
                         properties:
@@ -199,11 +210,9 @@ spec:
                                 key:
                                   type: string
                                   minLength: 1
-                                  allowEmptyValue: false
                                 value:
                                   type: string
                                   minLength: 1
-                                  allowEmptyValue: false
 
 
         status:
@@ -314,11 +323,9 @@ spec:
                     properties:
                       name:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                       mountPath:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                 secrets:
                   type: array
@@ -328,11 +335,9 @@ spec:
                     properties:
                       name:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                       mountPath:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                 hostFileVolumes:
                   type: array
@@ -342,15 +347,12 @@ spec:
                     properties:
                       name:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                       mountPath:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                       nodePath:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                 securityContext:
                   type: object

@@ -47,8 +47,8 @@ spec:
                   type: string
                   pattern: ^(^$|deployment|statefulset|daemonset|deploymentconfig)$
                 applabel:
-                  pattern: (([a-z0-9A-Z_\.-/]+)=([a-z0-9A-Z_\.-/_]+)|^$)
                   type: string
+                  pattern: (([a-z0-9A-Z_\.-/]+)=([a-z0-9A-Z_\.-/_]+)|^$)
                 appns:
                   type: string
             auxiliaryAppInfo:
@@ -77,11 +77,9 @@ spec:
                           key:
                             type: string
                             minLength: 1
-                            allowEmptyValue: false
                           value:
                             type: string
                             minLength: 1
-                            allowEmptyValue: false
             experiments:
               type: array
               items:
@@ -92,14 +90,18 @@ spec:
                   spec:
                     type: object
                     properties:
-                      k8sProbe:
+                      probe:
                         type: array
                         items:
                           type: object
                           properties:
                             name:
                               type: string
-                            inputs:
+                            type:
+                              type: string
+                              minLength: 1
+                              pattern: ^(k8sProbe|httpProbe|cmdProbe)$
+                            k8sProbe/inputs:
                               type: object
                               properties:
                                 command:
@@ -117,60 +119,27 @@ spec:
                                       type: string
                                     labelSelector:
                                       type: string
-                                expectedResult:
-                                  type: string
-                            runProperties:
-                              type: object
-                              properties:
-                                probeTimeout:
-                                  type: integer
-                                interval:
-                                  type: integer
-                                retry: 
-                                  type: integer
-                            mode:
-                              type: string
-                      cmdProbe:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            inputs:
+                            cmdProbe/inputs:
                               type: object
                               properties:
                                 command:
                                   type: string
+                                  minLength: 1
                                 expectedResult:
                                   type: string
+                                  minLength: 1
                                 source:
                                   type: string
-                            runProperties:
-                              type: object
-                              properties:
-                                probeTimeout:
-                                  type: integer
-                                interval:
-                                  type: integer
-                                retry: 
-                                  type: integer
-                            mode:
-                              type: string
-                      httpProbe:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            inputs:
+                                  minLength: 1
+                            httpProbe/inputs:
                               type: object
                               properties:
                                 url:
                                   type: string
+                                  minLength: 1
                                 expectedResponseCode:
                                   type: string
+                                  minLength: 1
                             runProperties:
                               type: object
                               properties:
@@ -180,8 +149,16 @@ spec:
                                   type: integer
                                 retry: 
                                   type: integer
+                                probePollingInterval:
+                                  type: integer
                             mode:
                               type: string
+                              pattern: ^(SOT|EOT|Edge|Continuous)$
+                              minLength: 1
+                            operation:
+                              type: string
+                              pattern: ^(present|absent|create|delete)$
+                              minLength: 1
                       components:
                         type: object
                         properties:
@@ -232,11 +209,9 @@ spec:
                                 key:
                                   type: string
                                   minLength: 1
-                                  allowEmptyValue: false
                                 value:
                                   type: string
                                   minLength: 1
-                                  allowEmptyValue: false
 
 
         status:

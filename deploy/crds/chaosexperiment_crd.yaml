@@ -98,11 +98,10 @@ spec:
                     properties:
                       name:
                         type: string
-                        allowEmptyValue: false
+
                         minLength: 1
                       mountPath:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                 secrets:
                   type: array
@@ -112,11 +111,9 @@ spec:
                     properties:
                       name:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                       mountPath:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                 hostFileVolumes:
                   type: array
@@ -126,15 +123,12 @@ spec:
                     properties:
                       name:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                       mountPath:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                       nodePath:
                         type: string
-                        allowEmptyValue: false
                         minLength: 1
                 securityContext:
                   type: object
