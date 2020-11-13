@@ -264,6 +264,8 @@ type RunProperty struct {
 	//ProbePollingInterval contains time interval, for which continuous probe should be sleep
 	// after each iteration
 	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
+	//InitialDelaySeconds time interval for which probe will wait before run
+	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
 }
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
