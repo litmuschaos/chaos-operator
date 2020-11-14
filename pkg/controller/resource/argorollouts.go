@@ -44,12 +44,13 @@ func getRolloutList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) 
 
 	dynamicClient := clientSet.Resource(gvrro)
 
-	rolloutList, err := dynamicClient.List(metav1.ListOptions{})
+	rolloutList, err := dynamicClient.Namespace(engine.AppInfo.Namespace).List(metav1.ListOptions{
+			LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing argo rollouts")
+		return nil, fmt.Errorf("error while listing argo rollouts with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(rolloutList.Items) == 0 {
-		return nil, fmt.Errorf("no argo rollouts found")
+		return nil, fmt.Errorf("no argo rollouts with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	return rolloutList, err
 }
