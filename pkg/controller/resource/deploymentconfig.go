@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	gvr = schema.GroupVersionResource{
+	gvrdc = schema.GroupVersionResource{
 		Group:    "apps.openshift.io",
 		Version:  "v1",
 		Resource: "deploymentconfigs",
@@ -42,14 +42,14 @@ func CheckDeploymentConfigAnnotation(clientSet dynamic.Interface, engine *chaosT
 
 func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*unstructured.UnstructuredList, error) {
 
-	dynamicClient := clientSet.Resource(gvr)
+	dynamicClient := clientSet.Resource(gvrdc)
 
 	deploymentConfigList, err := dynamicClient.List(metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing deploymentconfigs with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing deploymentconfigs")
 	}
 	if len(deploymentConfigList.Items) == 0 {
-		return nil, fmt.Errorf("no deploymentconfigs with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no deploymentconfigs found")
 	}
 	return deploymentConfigList, err
 }
