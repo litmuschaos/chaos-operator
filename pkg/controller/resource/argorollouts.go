@@ -40,6 +40,7 @@ func CheckRolloutAnnotation(clientSet dynamic.Interface, engine *chaosTypes.Engi
 	return engine, nil
 }
 
+// getRolloutList returns a list of argo rollout resources that are found in the app namespace with specified label
 func getRolloutList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*unstructured.UnstructuredList, error) {
 
 	dynamicClient := clientSet.Resource(gvrro)
@@ -55,7 +56,7 @@ func getRolloutList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) 
 	return rolloutList, err
 }
 
-// This will check and count the total chaos enabled application
+// checkForChaosEnabledRollout  will check and count the total chaos enabled application
 func checkForChaosEnabledRollout(rolloutList *unstructured.UnstructuredList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 
 	chaosEnabledRollout := 0

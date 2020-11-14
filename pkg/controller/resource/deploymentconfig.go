@@ -55,7 +55,7 @@ func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.Eng
 	return deploymentConfigList, err
 }
 
-// This will check and count the total chaos enabled application
+// checkForChaosEnabledDeploymentConfig will check and count the total chaos enabled application
 func checkForChaosEnabledDeploymentConfig(deploymentConfigList *unstructured.UnstructuredList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 
 	chaosEnabledDeploymentConfig := 0
