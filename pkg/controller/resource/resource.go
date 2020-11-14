@@ -72,6 +72,11 @@ func CheckChaosAnnotation(engine *chaosTypes.EngineInfo, clientset kubernetes.In
 		if err != nil {
 			return engine, fmt.Errorf("resource type 'deploymentconfig', err: %+v", err)
 		}
+	case "rollout", "rollouts":
+		engine, err := CheckRolloutAnnotation(dynamicClientSet, engine)
+		if err != nil {
+			return engine, fmt.Errorf("resource type 'rollout', err: %+v", err)
+		}
 	default:
 		return engine, fmt.Errorf("resource type '%s' not supported for induce chaos", engine.AppInfo.Kind)
 	}
