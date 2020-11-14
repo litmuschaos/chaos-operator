@@ -151,7 +151,7 @@ func (b *Builder) WithAnnotations(annotations map[string]string) *Builder {
 	return b
 }
 
-// WithAnnotationsNew resets the annotation field of podtemplatespec
+// WithAnnotationsNew resets the annotation field of pod obj 
 // with provided arguments
 func (b *Builder) WithAnnotationsNew(annotations map[string]string) *Builder {
 
@@ -183,7 +183,7 @@ func (b *Builder) WithImagePullSecrets(secrets []corev1.LocalObjectReference) *B
 }
 
 // WithVolumeBuilders builds the list of volumebuilders provided
-// and merges it to the volumes field of podtemplatespec.
+// and merges it to the volumes field of pod spec.
 func (b *Builder) WithVolumeBuilders(volumeBuilderList []*volume.Builder) *Builder {
 	if volumeBuilderList == nil {
 		b.errs = append(
@@ -209,3 +209,116 @@ func (b *Builder) WithVolumeBuilders(volumeBuilderList []*volume.Builder) *Build
 	}
 	return b
 }
+
+// WithNodeSelector merges the nodeselectors if present
+// with the provided arguments
+func (b *Builder) WithNodeSelector(nodeselectors map[string]string) *Builder {
+	if len(nodeselectors) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build pod object: missing nodeselectors",
+			),
+		)
+		return b
+	}
+
+	if b.pod.object.Spec.NodeSelector == nil {
+		return b.WithNodeSelectorNew(nodeselectors)
+	}
+
+	for key, value := range nodeselectors {
+		b.pod.object.Spec.NodeSelector[key] = value
+	}
+	return b
+}
+
+// WithNodeSelectorNew resets the nodeselector field of pod
+// with provided arguments
+func (b *Builder) WithNodeSelectorNew(nodeselectors map[string]string) *Builder {
+	if len(nodeselectors) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build pod object: missing nodeselectors",
+			),
+		)
+		return b
+	}
+
+	// copy of original map
+	newnodeselectors := map[string]string{}
+	for key, value := range nodeselectors {
+		newnodeselectors[key] = value
+	}
+
+	// override
+	b.pod.object.Spec.NodeSelector = newnodeselectors
+	return b
+}
+
+// WithTolerations merges the existing tolerations
+// with the provided arguments
+func (b *Builder) WithTolerations(tolerations ...corev1.Toleration) *Builder {
+	if tolerations == nil {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build pod object: nil tolerations",
+			),
+		)
+		return b
+	}
+	if len(tolerations) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build pod object: missing tolerations",
+			),
+		)
+		return b
+	}
+
+	if len(b.pod.object.Spec.Tolerations) == 0 {
+		return b.WithTolerationsNew(tolerations...)
+	}
+
+	b.pod.object.Spec.Tolerations = append(
+		b.pod.object.Spec.Tolerations,
+		tolerations...,
+	)
+
+	return b
+}
+
+// WithTolerationsNew sets the tolerations field of pod spec
+func (b *Builder) WithTolerationsNew(tolerations ...corev1.Toleration) *Builder {
+	if tolerations == nil {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build pod object: nil tolerations",
+			),
+		)
+		return b
+	}
+	if len(tolerations) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build pod object: missing tolerations",
+			),
+		)
+		return b
+	}
+
+	// copy of original slice
+	newtolerations := []corev1.Toleration{}
+	newtolerations = append(newtolerations, tolerations...)
+
+	b.pod.object.Spec.Tolerations = newtolerations
+
+	return b
+}
+
+

@@ -49,8 +49,8 @@ func TriggerAnalytics() error {
 		return fmt.Errorf("new client generation failed, error : %s", err)
 	}
 
-	if !(ClientUUID != "") {
-		return fmt.Errorf("uuid generation failed, error: %s", err)
+	if ClientUUID == "" {
+		return fmt.Errorf("uuid generation failed")
 	}
 	client.ClientID(ClientUUID)
 	err = client.Send(ga.NewEvent(category, action).Label(label))

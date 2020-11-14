@@ -141,6 +141,14 @@ type RunnerInfo struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// Runner Annotations that needs to be provided in the pod for pod that is getting created
 	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
+	// NodeSelector for runner pod
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// ConfigMaps for runner pod
+	ConfigMaps []ConfigMap `json:"configMaps,omitempty"`
+	// Secrets for runner pod
+	Secrets []Secret `json:"secrets,omitempty"`
+	// Tolerations for runner pod
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
@@ -217,11 +225,24 @@ type K8sCommand struct {
 type CmdProbeInputs struct {
 	// Command need to be executed for the probe
 	Command string `json:"command,omitempty"`
-	// Expected output or result of the command
-	ExpectedResult string `json:"expectedResult,omitempty"`
+	// Comparator check for the correctness of the probe output
+	Comparator ComparatorInfo `json:"comparator,omitempty"`
 	// The source where we have to run the command
 	// It can be a image or inline(inside experiment itself)
 	Source string `json:"source,omitempty"`
+}
+
+// ComparatorInfo contains the comparator details
+type ComparatorInfo struct {
+	// Type of data
+	// it can be int, float, string
+	Type string `json:"type,omitempty"`
+	// Criteria for matching data
+	// it supports >=, <=, ==, >, <, != for int and float
+	// it supports equal, notEqual, contains for string
+	Criteria string `json:"criteria,omitempty"`
+	// Value contains relative value for criteria
+	Value string `json:"value,omitempty"`
 }
 
 //HTTPProbeInputs contains all the inputs required for http probe
@@ -243,6 +264,8 @@ type RunProperty struct {
 	//ProbePollingInterval contains time interval, for which continuous probe should be sleep
 	// after each iteration
 	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
+	//InitialDelaySeconds time interval for which probe will wait before run
+	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
 }
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
@@ -256,6 +279,7 @@ type ExperimentComponents struct {
 	NodeSelector               map[string]string             `json:"nodeSelector,omitempty"`
 	StatusCheckTimeouts        StatusCheckTimeout            `json:"statusCheckTimeouts,omitempty"`
 	Resources                  corev1.ResourceRequirements   `json:"resources,omitempty"`
+	Tolerations                []corev1.Toleration           `json:"tolerations,omitempty"`
 }
 
 // StatusCheckTimeout contains Delay and timeouts for the status checks

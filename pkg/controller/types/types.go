@@ -35,7 +35,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
+	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/pkg/controller/utils"
 )
 
 var (
@@ -68,6 +70,9 @@ type ApplicationInfo struct {
 type EngineInfo struct {
 	Instance       *litmuschaosv1alpha1.ChaosEngine
 	AppInfo        *ApplicationInfo
+	ConfigMaps     []v1alpha1.ConfigMap
+	Secrets        []v1alpha1.Secret
+	VolumeOpts     utils.VolumeOpts
 	AppExperiments []string
 	AppName        string
 	AppUUID        types.UID
