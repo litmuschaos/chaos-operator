@@ -58,7 +58,7 @@ func getStatefulSetLists(clientset kubernetes.Interface, engine *chaosTypes.Engi
 	return targetAppList, err
 }
 
-// This will check and count the total chaos enabled application
+// checkForChaosEnabledStatefulSet will check and count the total chaos enabled application
 func checkForChaosEnabledStatefulSet(targetAppList *appsV1.StatefulSetList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledStatefulSet := 0
 	for _, statefulSet := range targetAppList.Items {

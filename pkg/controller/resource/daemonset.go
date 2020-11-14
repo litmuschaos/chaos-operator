@@ -57,7 +57,7 @@ func getDaemonSetLists(clientset kubernetes.Interface, engine *chaosTypes.Engine
 	return targetAppList, err
 }
 
-// This will check and count the total chaos enabled application
+// checkForChaosEnabledDaemonSet will check and count the total chaos enabled application
 func checkForChaosEnabledDaemonSet(targetAppList *appsV1.DaemonSetList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDaemonSet := 0
 	for _, daemonSet := range targetAppList.Items {

@@ -58,7 +58,7 @@ func getDeploymentLists(clientset kubernetes.Interface, engine *chaosTypes.Engin
 	return targetAppList, err
 }
 
-// This will check and count the total chaos enabled application
+// checkForChaosEnabledDeployment will check and count the total chaos enabled application
 func checkForChaosEnabledDeployment(targetAppList *v1.DeploymentList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDeployment := 0
 	for _, deployment := range targetAppList.Items {
