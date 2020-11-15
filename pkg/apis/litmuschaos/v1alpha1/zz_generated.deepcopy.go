@@ -771,6 +771,13 @@ func (in *RunnerInfo) DeepCopyInto(out *RunnerInfo) {
 			(*out)[key] = val
 		}
 	}
+	if in.NodeSelector != nil {
+		in, out := &in.NodeSelector, &out.NodeSelector
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.ConfigMaps != nil {
 		in, out := &in.ConfigMaps, &out.ConfigMaps
 		*out = make([]ConfigMap, len(*in))

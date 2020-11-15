@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	gvr = schema.GroupVersionResource{
+	gvrdc = schema.GroupVersionResource{
 		Group:    "apps.openshift.io",
 		Version:  "v1",
 		Resource: "deploymentconfigs",
@@ -42,9 +42,10 @@ func CheckDeploymentConfigAnnotation(clientSet dynamic.Interface, engine *chaosT
 
 func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*unstructured.UnstructuredList, error) {
 
-	dynamicClient := clientSet.Resource(gvr)
+	dynamicClient := clientSet.Resource(gvrdc)
 
-	deploymentConfigList, err := dynamicClient.List(metav1.ListOptions{})
+	deploymentConfigList, err := dynamicClient.Namespace(engine.AppInfo.Namespace).List(metav1.ListOptions{
+			LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
 	if err != nil {
 		return nil, fmt.Errorf("error while listing deploymentconfigs with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
@@ -54,7 +55,7 @@ func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.Eng
 	return deploymentConfigList, err
 }
 
-// This will check and count the total chaos enabled application
+// checkForChaosEnabledDeploymentConfig will check and count the total chaos enabled application
 func checkForChaosEnabledDeploymentConfig(deploymentConfigList *unstructured.UnstructuredList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 
 	chaosEnabledDeploymentConfig := 0

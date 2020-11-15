@@ -270,6 +270,10 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 		podForRunner.WithTolerations(engine.Instance.Spec.Components.Runner.Tolerations...)
 	}
 
+	if len(engine.Instance.Spec.Components.Runner.NodeSelector) != 0 {
+		podForRunner.WithNodeSelector(engine.Instance.Spec.Components.Runner.NodeSelector)
+	}
+
 	if engine.VolumeOpts.VolumeBuilders != nil {
 		podForRunner.WithVolumeBuilders(engine.VolumeOpts.VolumeBuilders)
 	}

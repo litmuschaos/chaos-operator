@@ -210,6 +210,53 @@ func (b *Builder) WithVolumeBuilders(volumeBuilderList []*volume.Builder) *Build
 	return b
 }
 
+// WithNodeSelector merges the nodeselectors if present
+// with the provided arguments
+func (b *Builder) WithNodeSelector(nodeselectors map[string]string) *Builder {
+	if len(nodeselectors) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build pod object: missing nodeselectors",
+			),
+		)
+		return b
+	}
+
+	if b.pod.object.Spec.NodeSelector == nil {
+		return b.WithNodeSelectorNew(nodeselectors)
+	}
+
+	for key, value := range nodeselectors {
+		b.pod.object.Spec.NodeSelector[key] = value
+	}
+	return b
+}
+
+// WithNodeSelectorNew resets the nodeselector field of pod
+// with provided arguments
+func (b *Builder) WithNodeSelectorNew(nodeselectors map[string]string) *Builder {
+	if len(nodeselectors) == 0 {
+		b.errs = append(
+			b.errs,
+			errors.New(
+				"failed to build pod object: missing nodeselectors",
+			),
+		)
+		return b
+	}
+
+	// copy of original map
+	newnodeselectors := map[string]string{}
+	for key, value := range nodeselectors {
+		newnodeselectors[key] = value
+	}
+
+	// override
+	b.pod.object.Spec.NodeSelector = newnodeselectors
+	return b
+}
+
 // WithTolerations merges the existing tolerations
 // with the provided arguments
 func (b *Builder) WithTolerations(tolerations ...corev1.Toleration) *Builder {

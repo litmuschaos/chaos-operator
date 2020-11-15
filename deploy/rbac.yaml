@@ -32,8 +32,8 @@ metadata:
     app.kubernetes.io/managed-by: kubectl
     name: litmus
 rules:
-- apiGroups: ["","apps","batch","apps.openshift.io"]
-  resources: ["jobs","deployments","replicationcontrollers","daemonsets","replicasets","statefulsets","deploymentconfigs","secrets"]
+- apiGroups: ["","apps","batch","apps.openshift.io","argoproj.io"]
+  resources: ["jobs","deployments","replicationcontrollers","daemonsets","replicasets","statefulsets","deploymentconfigs","rollouts","secrets"]
   verbs: ["get","list","watch","deletecollection"]
 - apiGroups: ["","litmuschaos.io"]
   resources: ["pods","configmaps","events","services","chaosengines","chaosexperiments","chaosresults"]

@@ -141,6 +141,8 @@ type RunnerInfo struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// Runner Annotations that needs to be provided in the pod for pod that is getting created
 	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
+	// NodeSelector for runner pod
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// ConfigMaps for runner pod
 	ConfigMaps []ConfigMap `json:"configMaps,omitempty"`
 	// Secrets for runner pod
@@ -262,6 +264,8 @@ type RunProperty struct {
 	//ProbePollingInterval contains time interval, for which continuous probe should be sleep
 	// after each iteration
 	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
+	//InitialDelaySeconds time interval for which probe will wait before run
+	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
 }
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
