@@ -12,7 +12,7 @@ DOCKER_IMAGE ?= chaos-operator
 DOCKER_TAG ?= latest
 
 .PHONY: all
-all: deps format lint build test dockerops
+all: deps format lint build test dockerops dockerops-amd64
 
 .PHONY: help
 help:
@@ -68,7 +68,7 @@ build:
 	@echo "------------------"
 	@echo "--> Build Chaos Operator"
 	@echo "------------------"
-	@go build -o ${GOPATH}/src/github.com/litmuschaos/chaos-operator/build/_output/bin/chaos-operator -gcflags all=-trimpath=${GOPATH} -asmflags all=-trimpath=${GOPATH} github.com/litmuschaos/chaos-operator/cmd/manager
+	@./build/go-multiarch-build.sh github.com/litmuschaos/chaos-operator/cmd/manager
 
 .PHONY: test
 test:
@@ -82,8 +82,19 @@ dockerops:
 	@echo "------------------"
 	@echo "--> Build & Push chaos-operator docker image"
 	@echo "------------------"
-	sudo docker build . -f build/Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+	sudo docker buildx build --file build/Dockerfile --progress plane --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 	REPONAME=$(DOCKER_REPO) IMGNAME=$(DOCKER_IMAGE) IMGTAG=$(DOCKER_TAG) ./buildscripts/push
+
+.PHONY: dockerops-amd64
+dockerops-amd64:
+	@echo "--------------------------------------------"
+	@echo "--> Build chaos-operator amd-64 docker image"
+	@echo "--------------------------------------------"
+	sudo docker build --file build/Dockerfile --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) . --build-arg TARGETARCH=amd64
+	@echo "--------------------------------------------"
+	@echo "--> Push chaos-operator amd-64 docker image"
+	@echo "--------------------------------------------"	
+	sudo docker push $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 
 unused-package-check:
 	@echo "------------------"
@@ -93,3 +104,4 @@ unused-package-check:
 	if [ -n "$${tidy}" ]; then \
 		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
 	fi
+
