@@ -157,8 +157,8 @@ func TestGetChaosRunnerENV(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			actualResult := getChaosRunnerENV(mock.instance, mock.aExList, fakeClientUUID)
 			println(actualResult)
-			if len(actualResult) != 9 {
-				t.Fatalf("Test %q failed: expected array length to be 9", name)
+			if len(actualResult) != 11 {
+				t.Fatalf("Test %q failed: expected array length to be 11", name)
 			}
 			for index, result := range actualResult {
 				if result.Value != mock.expectedResult[index].Value {

@@ -218,6 +218,14 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 			Name:  "CHAOS_NAMESPACE",
 			Value: cr.Namespace,
 		},
+		{
+			Name:  "ANNOTATION_CHECK",
+			Value: cr.Spec.AnnotationCheck,
+		},
+		{
+			Name:  "ANNOTATION_KEY",
+			Value: resource.GetAnnotationKey(),
+		},
 	}
 }
 
