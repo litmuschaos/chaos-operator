@@ -222,7 +222,8 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 			Name:  "ANNOTATION_CHECK",
 			Value: cr.Spec.AnnotationCheck,
 		},
-		{
+		{	
+			// we pass only the annotation key as we only support a boolean value
 			Name:  "ANNOTATION_KEY",
 			Value: resource.GetAnnotationKey(),
 		},
