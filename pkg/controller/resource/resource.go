@@ -34,11 +34,11 @@ const (
 
 var (
 	// ChaosAnnotationKey is global variable used as the Key for annotation check.
-	ChaosAnnotationKey = getAnnotationKey()
+	ChaosAnnotationKey = GetAnnotationKey()
 )
 
-// getAnnotationKey returns the annotation to be used while validating applications.
-func getAnnotationKey() string {
+// GetAnnotationKey returns the annotation to be used while validating applications.
+func GetAnnotationKey() string {
 
 	annotationKey := os.Getenv("CUSTOM_ANNOTATION")
 	if len(annotationKey) != 0 {
