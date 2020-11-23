@@ -1,4 +1,4 @@
-FROM golang:1.14.2
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
 
 ARG TARGETARCH
 
@@ -15,3 +15,4 @@ RUN  /usr/local/bin/user_setup
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
 USER ${USER_UID}
+

@@ -87,6 +87,8 @@ func TestGetChaosRunnerENV(t *testing.T) {
 	fakeServiceAcc := "Fake Service Account"
 	fakeAppLabel := "Fake Label"
 	fakeAppKind := "Fake Kind"
+	fakeAnnotationCheck := "Fake Annotation Check"
+	fakeAnnotationKey := "litmuschaos.io/chaos"
 	fakeAExList := []string{"fake string"}
 	fakeAuxilaryAppInfo := "ns1:name=percona,ns2:run=nginx"
 	fakeClientUUID := "12345678-9012-3456-7890-123456789012"
@@ -104,6 +106,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
 				},
 				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: fakeServiceAcc,
+					AnnotationCheck:     fakeAnnotationCheck,
 					Appinfo: litmuschaosv1alpha1.ApplicationParams{
 						Applabel: fakeAppLabel,
 						Appns:    fakeNameSpace,
@@ -149,6 +152,14 @@ func TestGetChaosRunnerENV(t *testing.T) {
 				{
 					Name:  "CHAOS_NAMESPACE",
 					Value: fakeNameSpace,
+				},
+				{
+					Name:  "ANNOTATION_CHECK",
+					Value: fakeAnnotationCheck,
+				},
+				{
+					Name:  "ANNOTATION_KEY",
+					Value: fakeAnnotationKey,
 				},
 			},
 		},
