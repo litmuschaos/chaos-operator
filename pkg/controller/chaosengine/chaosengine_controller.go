@@ -26,7 +26,6 @@ import (
 	"github.com/litmuschaos/elves/kubernetes/container"
 	"github.com/litmuschaos/elves/kubernetes/pod"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -222,7 +221,7 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 			Name:  "ANNOTATION_CHECK",
 			Value: cr.Spec.AnnotationCheck,
 		},
-		{	
+		{
 			// we pass the key alone as we only support a boolean value for the annotation
 			Name:  "ANNOTATION_KEY",
 			Value: resource.GetAnnotationKey(),
@@ -494,15 +493,15 @@ func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.Engine
 	var deleteEvent []string
 	var err []error
 
-	if errDeployment := r.client.DeleteAllOf(context.TODO(), &appsv1.Deployment{}, optsDelete...); errDeployment != nil {
-		err = append(err, errDeployment)
-		deleteEvent = append(deleteEvent, "Deployments, ")
-	}
+	// if errDeployment := r.client.DeleteAllOf(context.TODO(), &appsv1.Deployment{}, optsDelete...); errDeployment != nil {
+	// 	err = append(err, errDeployment)
+	// 	deleteEvent = append(deleteEvent, "Deployments, ")
+	// }
 
-	if errDaemonSet := r.client.DeleteAllOf(context.TODO(), &appsv1.DaemonSet{}, optsDelete...); errDaemonSet != nil {
-		err = append(err, errDaemonSet)
-		deleteEvent = append(deleteEvent, "DaemonSets, ")
-	}
+	// if errDaemonSet := r.client.DeleteAllOf(context.TODO(), &appsv1.DaemonSet{}, optsDelete...); errDaemonSet != nil {
+	// 	err = append(err, errDaemonSet)
+	// 	deleteEvent = append(deleteEvent, "DaemonSets, ")
+	// }
 
 	if errJob := r.client.DeleteAllOf(context.TODO(), &batchv1.Job{}, optsDelete...); errJob != nil {
 		err = append(err, errJob)
