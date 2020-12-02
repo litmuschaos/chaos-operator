@@ -184,6 +184,8 @@ type ProbeAttributes struct {
 	HTTPProbeInputs HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
 	// inputs needed for the cmd probe
 	CmdProbeInputs CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
+	// inputs needed for the prometheus probe
+	PromProbeInputs PromProbeInputs `json:"promProbe/inputs,omitempty"`
 	// RunProperty contains timeout, retry and interval for the probe
 	RunProperties RunProperty `json:"runProperties,omitempty"`
 	// mode for k8s probe
@@ -230,6 +232,16 @@ type CmdProbeInputs struct {
 	// The source where we have to run the command
 	// It can be a image or inline(inside experiment itself)
 	Source string `json:"source,omitempty"`
+}
+
+//PromProbeInputs contains all the inputs required for prometheus probe
+type PromProbeInputs struct {
+	// Endpoint for the prometheus probe
+	Endpoint string `json:"endpoint,omitempty"`
+	// Query to get promethus metrices
+	Query string `json:"query,omitempty"`
+	// Comparator check for the correctness of the probe output
+	Comparator ComparatorInfo `json:"comparator,omitempty"`
 }
 
 // ComparatorInfo contains the comparator details
