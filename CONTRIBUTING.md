@@ -17,6 +17,17 @@ There are several areas of Litmus that could use your help. For starters, you co
 -   Create a branch from where you want to base your work (usually master).
 -   Make your changes.
 -   Relevant coding style guidelines are the [Go Code Review Comments](https://code.google.com/p/go-wiki/wiki/CodeReviewComments) and the _Formatting and style_ section of Peter Bourgon's [Go: Best Practices for Production Environments](http://peter.bourgon.org/go-in-production/#formatting-and-style).
+-   If there is any schema changes then you need to generate the auto-generated file using below steps.
+    - Since we have used operator-sdk framework to bootstrap this repo/controller, we are using a utility provided by them to generate deepcopy functions. First, download the operator-sdk binary into your workspace. Ref: https://v0-18-x.sdk.operatorframework.io/docs/install-operator-sdk/#install-from-github-release
+    - Once it is placed in your $GOBIN, you can execute the following command while at the root of the chaos-operator repo.
+      ```bash 
+      operator-sdk generate k8s
+      ```
+    - An additional step we have been doing of late is using the code-gen utility to check for any generated code needs with schema changes.
+      ```bash
+      ./hack/update-codegen.sh
+      ```
+
 -   Commit your changes by making sure the commit messages convey the need and notes about the commit.
 -   Push your changes to the branch in your fork of the repository.
 -   Submit a pull request to the original repository. See [Pull Request checklist](#pull-request-checklist)
