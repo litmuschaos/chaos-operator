@@ -181,7 +181,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						Args:    []string{"-c", "./experiments -name pod-delete"},
 						Command: []string{"/bin/bash"},
 
-						ENVList: []v1alpha1.ENVPair{
+						ENVList: []v1.EnvVar{
 							{
 								Name:  "TOTAL_CHAOS_DURATION",
 								Value: "30",
@@ -201,7 +201,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 						},
 
 						Labels: map[string]string{
-							"name": "pod-delete",
+							"name":                      "pod-delete",
 							"app.kubernetes.io/part-of": "litmus",
 						},
 					},
@@ -266,7 +266,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 					break
 				}
 			}
-
 
 			Expect(string(runnerStatus)).To(Or(Equal("Running"), Equal("Succeeded")))
 

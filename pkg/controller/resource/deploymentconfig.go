@@ -45,7 +45,7 @@ func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.Eng
 	dynamicClient := clientSet.Resource(gvrdc)
 
 	deploymentConfigList, err := dynamicClient.Namespace(engine.AppInfo.Namespace).List(metav1.ListOptions{
-			LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
+		LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
 	if err != nil {
 		return nil, fmt.Errorf("error while listing deploymentconfigs with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
