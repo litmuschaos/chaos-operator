@@ -1,10 +1,10 @@
-name: ChaosOperator-CI
+name: ChaosOperator-E2E
 on:
   issue_comment:
     types: [created]
  
 jobs:
-  tests:
+  Tests:
     if: contains(github.event.comment.html_url, '/pull/') && startsWith(github.event.comment.body, '/run-e2e')
     runs-on: ubuntu-latest
     steps:
@@ -24,6 +24,8 @@ jobs:
       - name: Setting up GOPATH 
         run: |
           echo ::set-env name=GOPATH::${GITHUB_WORKSPACE}/go
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true          
 
       #Using the last commit id of pull request
       - uses: octokit/request-action@v2.x
@@ -53,11 +55,11 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/chaos-operator 
           make build
-          sudo docker build -f build/Dockerfile -t litmuschaos/chaos-operator:ci .
+          sudo docker build --file build/Dockerfile --tag litmuschaos/chaos-operator:ci . --build-arg TARGETARCH=amd64
 
       #Install and configure a kind cluster
       - name: Installing Prerequisites (KinD Cluster)
-        uses: engineerd/setup-kind@v0.4.0
+        uses: engineerd/setup-kind@v0.5.0
         with:
             version: "v0.7.0"
  
@@ -105,6 +107,8 @@ jobs:
          startsWith(github.event.comment.body, '/run-e2e-all')
         run: |
           echo ::set-env name=TEST_RUN::true
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true          
 
       - name: Check for all the jobs are succeeded
         if: ${{ success() && env.TEST_RUN == 'true' }}
@@ -113,7 +117,7 @@ jobs:
           comment-id: "${{ github.event.comment.id }}"
           body: |  
             **Test Result:** All tests are passed
-            **Run ID:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})                        
+            **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})                        
            
           reactions: hooray         
         env: 
@@ -126,7 +130,7 @@ jobs:
           comment-id: "${{ github.event.comment.id }}"
           body: |
             **Test Failed:** Some tests are failed please check
-            **Run ID:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})            
+            **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})            
           reactions: confused
         env: 
           RUN_ID: ${{ github.run_id }}
@@ -142,17 +146,7 @@ jobs:
           comment-id: "${{ github.event.comment.id }}"
           body: |
             **Test Result:** No test found
-            **Run ID:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})
+            **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})
           reactions: eyes
         env: 
           RUN_ID: ${{ github.run_id }}
- 
-  merge:
-    if: contains(github.event.comment.html_url, '/pull/') && startsWith(github.event.comment.body, '/merge')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Add a merge label when all jobs are passed
-        uses: actions-ecosystem/action-add-labels@v1
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          labels: merge
