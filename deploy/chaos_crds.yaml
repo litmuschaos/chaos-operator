@@ -365,7 +365,7 @@ spec:
                     type: string
                 env:
                   type: array
-                  description: List of ENV vars passed to executor pod
+                  description: List of ENV vars passed to chaosexperiment pod
                   items:
                     description: EnvVar represents an environment variable present
                       in a Container.
