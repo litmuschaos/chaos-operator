@@ -46,7 +46,6 @@ var (
 		Version:  "v1alpha1",
 		Resource: "rollouts",
 	}
-
 )
 
 func print32(p int32) *int32 {
@@ -1146,14 +1145,13 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 	}
 }
 
-
 func TestCheckChaosAnnotationRollouts(t *testing.T) {
 
 	tests := map[string]struct {
-		engine           chaosTypes.EngineInfo
-		isErr            bool
+		engine  chaosTypes.EngineInfo
+		isErr   bool
 		rollout []unstructured.Unstructured
-		check            bool
+		check   bool
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
@@ -1441,7 +1439,6 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 		})
 	}
 }
-
 
 type fixture struct {
 	t *testing.T

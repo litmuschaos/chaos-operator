@@ -73,7 +73,7 @@ type ExperimentDef struct {
 	// List of Permission needed for a service account to execute experiment
 	Permissions []rbacV1.PolicyRule `json:"permissions"`
 	// List of ENV vars passed to executor pod
-	ENVList []ENVPair `json:"env"`
+	ENVList []corev1.EnvVar `json:"env"`
 	// Defines command to invoke experiment
 	Command []string `json:"command"`
 	// Defines arguments to runner's entrypoint command
@@ -98,12 +98,6 @@ type SecurityContext struct {
 	PodSecurityContext corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
 	// ContainerSecurityContext holds security configuration that will be applied to a container
 	ContainerSecurityContext corev1.SecurityContext `json:"containerSecurityContext,omitempty"`
-}
-
-// ENVPair defines env var list to hold chaos params
-type ENVPair struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
 }
 
 // +genclient

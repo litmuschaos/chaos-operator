@@ -20,7 +20,7 @@ var (
 	}
 )
 
-// CheckRolloutAnnotation will check the annotation of argo rollout 
+// CheckRolloutAnnotation will check the annotation of argo rollout
 func CheckRolloutAnnotation(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
 
 	rolloutList, err := getRolloutList(clientSet, engine)
@@ -46,7 +46,7 @@ func getRolloutList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) 
 	dynamicClient := clientSet.Resource(gvrro)
 
 	rolloutList, err := dynamicClient.Namespace(engine.AppInfo.Namespace).List(metav1.ListOptions{
-			LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
+		LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
 	if err != nil {
 		return nil, fmt.Errorf("error while listing argo rollouts with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
