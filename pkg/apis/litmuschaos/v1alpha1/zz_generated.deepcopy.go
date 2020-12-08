@@ -787,6 +787,7 @@ func (in *RunnerInfo) DeepCopyInto(out *RunnerInfo) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	in.Resources.DeepCopyInto(&out.Resources)
 	return
 }
 
