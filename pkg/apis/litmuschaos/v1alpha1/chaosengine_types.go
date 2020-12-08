@@ -149,6 +149,8 @@ type RunnerInfo struct {
 	Secrets []Secret `json:"secrets,omitempty"`
 	// Tolerations for runner pod
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+	// Resource requirements for the runner pod
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine

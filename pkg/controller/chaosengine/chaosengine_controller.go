@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -263,6 +264,10 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 
 	if engine.Instance.Spec.Components.Runner.Command != nil {
 		containerForRunner.WithCommandNew(engine.Instance.Spec.Components.Runner.Command)
+	}
+
+	if !reflect.DeepEqual(engine.Instance.Spec.Components.Runner.Resources, corev1.ResourceRequirements{}) {
+		containerForRunner.WithResourceRequirements(engine.Instance.Spec.Components.Runner.Resources)
 	}
 
 	podForRunner := pod.NewBuilder().
