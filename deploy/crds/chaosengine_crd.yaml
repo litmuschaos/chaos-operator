@@ -48,7 +48,6 @@ spec:
                   pattern: ^(^$|deployment|statefulset|daemonset|deploymentconfig|rollout)$
                 applabel:
                   type: string
-                  pattern: (([a-z0-9A-Z_\.-/]+)=([a-z0-9A-Z_\.-/_]+)|^$)
                 appns:
                   type: string
             auxiliaryAppInfo:
@@ -77,11 +76,9 @@ spec:
                           key:
                             type: string
                             minLength: 1
-                            allowEmptyValue: false
                           value:
                             type: string
                             minLength: 1
-                            allowEmptyValue: false
             experiments:
               type: array
               items:
@@ -101,6 +98,8 @@ spec:
                               type: string
                             type:
                               type: string
+                              minLength: 1
+                              pattern: ^(k8sProbe|httpProbe|cmdProbe|promeProbe)$
                             k8sProbe/inputs:
                               type: object
                               properties:
@@ -119,24 +118,49 @@ spec:
                                       type: string
                                     labelSelector:
                                       type: string
-                                expectedResult:
-                                  type: string
                             cmdProbe/inputs:
                               type: object
                               properties:
                                 command:
                                   type: string
-                                expectedResult:
-                                  type: string
+                                  minLength: 1
+                                comparator:
+                                  type: object
+                                  properties:
+                                    type:
+                                      type: string
+                                      minLength: 1
+                                      pattern: ^(int|float|string)$
+                                    criteria:
+                                      type: string
+                                    value:
+                                      type: string
                                 source:
                                   type: string
+                                  minLength: 1
                             httpProbe/inputs:
                               type: object
                               properties:
                                 url:
                                   type: string
+                                  minLength: 1
                                 expectedResponseCode:
                                   type: string
+                                  minLength: 1
+                            promeProbe/inputs:
+                              type: object
+                              properties:
+                                endpoint:
+                                  type: string
+                                query:
+                                  type: string
+                                comparator:
+                                  type: object
+                                  properties:
+                                    criteria:
+                                      type: string
+                                    value:
+                                      type: string
                             runProperties:
                               type: object
                               properties:
@@ -146,7 +170,19 @@ spec:
                                   type: integer
                                 retry: 
                                   type: integer
+                                probePollingInterval:
+                                  type: integer
+                                initialDelaySeconds:
+                                  type: integer
                             mode:
+                              type: string
+                              pattern: ^(SOT|EOT|Edge|Continuous|OnChaos)$
+                              minLength: 1
+                            operation:
+                              type: string
+                              pattern: ^(present|absent|create|delete)$
+                              minLength: 1
+                            data:
                               type: string
                       components:
                         type: object
