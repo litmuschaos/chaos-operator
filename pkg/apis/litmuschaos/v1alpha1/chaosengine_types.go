@@ -242,6 +242,8 @@ type PromProbeInputs struct {
 	Endpoint string `json:"endpoint,omitempty"`
 	// Query to get promethus metrices
 	Query string `json:"query,omitempty"`
+	// QueryPath contains filePath, which contains prometheus query
+	QueryPath string `json:"queryPath,omitempty"`
 	// Comparator check for the correctness of the probe output
 	Comparator ComparatorInfo `json:"comparator,omitempty"`
 }
