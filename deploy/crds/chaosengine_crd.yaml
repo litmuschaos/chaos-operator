@@ -99,7 +99,7 @@ spec:
                             type:
                               type: string
                               minLength: 1
-                              pattern: ^(k8sProbe|httpProbe|cmdProbe|promeProbe)$
+                              pattern: ^(k8sProbe|httpProbe|cmdProbe|promProbe)$
                             k8sProbe/inputs:
                               type: object
                               properties:
@@ -147,12 +147,14 @@ spec:
                                 expectedResponseCode:
                                   type: string
                                   minLength: 1
-                            promeProbe/inputs:
+                            promProbe/inputs:
                               type: object
                               properties:
                                 endpoint:
                                   type: string
                                 query:
+                                  type: string
+                                queryPath:
                                   type: string
                                 comparator:
                                   type: object
