@@ -265,6 +265,8 @@ type ComparatorInfo struct {
 type HTTPProbeInputs struct {
 	// URL which needs to curl, to check the status
 	URL string `json:"url,omitempty"`
+	// InsecureSkipVerify flag to skip certificate checks
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// Expected response code from the given url
 	ExpectedResponseCode string `json:"expectedResponseCode,omitempty"`
 }
