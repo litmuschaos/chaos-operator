@@ -144,6 +144,9 @@ spec:
                                 url:
                                   type: string
                                   minLength: 1
+                                insecureSkipVerify:
+                                  type: boolean
+                                  minLength: 1
                                 expectedResponseCode:
                                   type: string
                                   minLength: 1
