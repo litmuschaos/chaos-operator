@@ -44,6 +44,15 @@ type ChaosResultStatus struct {
 	ExperimentStatus TestStatus `json:"experimentstatus"`
 	// ProbeStatus contains the status of the probe
 	ProbeStatus []ProbeStatus `json:"probeStatus,omitempty"`
+	// History contains cumulative values of verdicts
+	History HistoryDetails `json:"history,omitempty"`
+}
+
+// HistoryDetails contains cumulative values of verdicts
+type HistoryDetails struct {
+	PassedRuns  int `json:"passedRuns"`
+	FailedRuns  int `json:"failedRuns"`
+	StoppedRuns int `json:"stoppedRuns"`
 }
 
 // ProbeStatus defines information about the status and result of the probes
