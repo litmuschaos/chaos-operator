@@ -93,6 +93,8 @@ spec:
                         type: array
                         items:
                           type: object
+                          required:
+                            - runProperties
                           properties:
                             name:
                               type: string
@@ -168,6 +170,11 @@ spec:
                                       type: string
                             runProperties:
                               type: object
+                              minProperties: 3
+                              required:
+                                - probeTimeout
+                                - interval
+                                - retry
                               properties:
                                 probeTimeout:
                                   type: integer
