@@ -57,6 +57,7 @@ type HostFile struct {
 	Name      string `json:"name"`
 	MountPath string `json:"mountPath"`
 	NodePath  string `json:"nodePath"`
+	Type      corev1.HostPathType `json:"type,omitempty"`
 }
 
 // ExperimentDef defines information about nature of chaos & components subjected to it
