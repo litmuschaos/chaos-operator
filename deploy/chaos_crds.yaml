@@ -594,6 +594,8 @@ spec:
                       nodePath:
                         type: string
                         minLength: 1
+                      type:
+                        type: string
                 securityContext:
                   type: object
                 hostPID:
