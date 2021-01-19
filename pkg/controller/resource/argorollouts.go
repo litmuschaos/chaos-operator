@@ -35,7 +35,6 @@ func CheckRolloutAnnotation(clientSet dynamic.Interface, engine *chaosTypes.Engi
 	if chaosEnabledRollout == 0 {
 		return engine, errors.New("no argo rollout chaos-candidate found")
 	}
-	chaosTypes.Log.Info("argo rollout chaos candidate:", "appName: ", engine.AppName, " appUUID: ", engine.AppUUID)
 
 	return engine, nil
 }
@@ -61,12 +60,10 @@ func checkForChaosEnabledRollout(rolloutList *unstructured.UnstructuredList, eng
 
 	chaosEnabledRollout := 0
 	for _, rollout := range rolloutList.Items {
-		engine.AppName = rollout.GetName()
-		engine.AppUUID = rollout.GetUID()
 		annotationValue := rollout.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledRollout = CountTotalChaosEnabled(annotationValue, chaosEnabledRollout)
-		if chaosEnabledRollout > 1 {
-			return engine, chaosEnabledRollout, errors.New("too many argo rollouts with specified label are annotated for chaos, either provide unique labels or annotate only desired rollout for chaos")
+		if IsChaosEnabled(annotationValue) {
+			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.AppInfo.Kind, "appName: ", rollout.GetName(), "appUUID: ", rollout.GetUID())
+			chaosEnabledRollout++
 		}
 	}
 	return engine, chaosEnabledRollout, nil
