@@ -35,7 +35,6 @@ func CheckDeploymentConfigAnnotation(clientSet dynamic.Interface, engine *chaosT
 	if chaosEnabledDeploymentConfig == 0 {
 		return engine, errors.New("no DeploymentConfig chaos-candidate found")
 	}
-	chaosTypes.Log.Info("DeploymentConfig chaos candidate:", "appName: ", engine.AppName, " appUUID: ", engine.AppUUID)
 
 	return engine, nil
 }
@@ -60,12 +59,10 @@ func checkForChaosEnabledDeploymentConfig(deploymentConfigList *unstructured.Uns
 
 	chaosEnabledDeploymentConfig := 0
 	for _, deploymentconfig := range deploymentConfigList.Items {
-		engine.AppName = deploymentconfig.GetName()
-		engine.AppUUID = deploymentconfig.GetUID()
 		annotationValue := deploymentconfig.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledDeploymentConfig = CountTotalChaosEnabled(annotationValue, chaosEnabledDeploymentConfig)
-		if chaosEnabledDeploymentConfig > 1 {
-			return engine, chaosEnabledDeploymentConfig, errors.New("too many deploymentconfig with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
+		if IsChaosEnabled(annotationValue) {
+			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.AppInfo.Kind, "appName: ", deploymentconfig.GetName(), "appUUID: ", deploymentconfig.GetUID())
+			chaosEnabledDeploymentConfig++
 		}
 	}
 	return engine, chaosEnabledDeploymentConfig, nil

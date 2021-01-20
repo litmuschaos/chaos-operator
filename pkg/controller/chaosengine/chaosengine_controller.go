@@ -393,8 +393,8 @@ func getApplicationDetail(engine *chaosTypes.EngineInfo) error {
 
 // Check if the engineRunner pod already exists, else create
 func (r *ReconcileChaosEngine) checkEngineRunnerPod(engine *chaosTypes.EngineInfo, reqLogger logr.Logger) error {
-	if (len(engine.AppExperiments) == 0 || engine.AppUUID == "") && engine.Instance.Spec.AnnotationCheck == "true" {
-		return errors.New("application experiment list or UUID is empty")
+	if len(engine.AppExperiments) == 0 {
+		return errors.New("application experiment list is empty")
 	}
 	var engineRunner *corev1.Pod
 	engineRunner, err := newGoRunnerPodForCR(engine)
@@ -622,14 +622,14 @@ func (r *ReconcileChaosEngine) reconcileForRestartAfterComplete(engine *chaosTyp
 	engine.Instance.Status.Experiments = nil
 
 	// finalizers have been retained in a completed chaosengine till this point (as chaos pods may be "retained")
-	// as per the jobCleanUpPolicy. Stale finalizer is removed so that initEngine() generates the 
+	// as per the jobCleanUpPolicy. Stale finalizer is removed so that initEngine() generates the
 	// ChaosEngineInitialized event and re-adds the finalizer before starting chaos.
 
 	if engine.Instance.ObjectMeta.Finalizers != nil {
-        engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
+		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
 	}
 
-	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil{
+	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos restart) Unable to update chaosengine")
 		return reconcile.Result{}, fmt.Errorf("Unable to patch state & remove stale finalizer in chaosEngine Resource, due to error: %v", err)
 	}
@@ -651,7 +651,7 @@ func (r *ReconcileChaosEngine) initEngine(engine *chaosTypes.EngineInfo) error {
 			if err := r.client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
 				return fmt.Errorf("Unable to initialize ChaosEngine, because of Update Error: %v", err)
 			}
-			// generate the ChaosEngineInitialized event once finalizer has been added 
+			// generate the ChaosEngineInitialized event once finalizer has been added
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineInitialized", "Identifying app under test & launching %s", engine.Instance.Name+"-runner")
 		}
 	}

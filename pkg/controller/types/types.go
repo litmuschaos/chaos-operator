@@ -32,7 +32,6 @@ limitations under the License.
 package types
 
 import (
-	"k8s.io/apimachinery/pkg/types"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
 	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
@@ -74,6 +73,4 @@ type EngineInfo struct {
 	Secrets        []v1alpha1.Secret
 	VolumeOpts     utils.VolumeOpts
 	AppExperiments []string
-	AppName        string
-	AppUUID        types.UID
 }
