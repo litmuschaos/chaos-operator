@@ -6,11 +6,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var (
-	// hostpathTypeFile represents the hostpath type
-	hostpathTypeFile = corev1.HostPathFile
-)
-
 // CreateVolumeBuilders build Volume needed in execution of experiments
 func CreateVolumeBuilders(configMaps []v1alpha1.ConfigMap, secrets []v1alpha1.Secret) []*volume.Builder {
 	volumeBuilderList := []*volume.Builder{}
