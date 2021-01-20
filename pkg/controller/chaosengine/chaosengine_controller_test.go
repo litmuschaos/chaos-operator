@@ -248,7 +248,7 @@ func TestGetAnnotationCheck(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: false,
@@ -274,7 +274,7 @@ func TestGetAnnotationCheck(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -302,7 +302,6 @@ func TestGetAnnotationCheck(t *testing.T) {
 					},
 				},
 
-				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
@@ -354,7 +353,7 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -416,8 +415,7 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
-				AppName:        "fake_app",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
@@ -662,7 +660,7 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: false,
@@ -689,7 +687,7 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -718,7 +716,7 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -747,7 +745,7 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -758,7 +756,6 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
 				},
-				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
@@ -774,7 +771,7 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
-				AppUUID:        "",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
@@ -790,7 +787,7 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{},
 			},
 			isErr: true,
@@ -811,7 +808,7 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{},
 			},
 			isErr: true,
@@ -1296,7 +1293,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: false,
@@ -1318,7 +1315,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -1342,7 +1339,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -1366,7 +1363,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -1377,7 +1374,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 				Instance: &litmuschaosv1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
@@ -1393,7 +1390,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
-				AppUUID:        "",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
@@ -1409,7 +1406,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{},
 			},
 			isErr: true,
@@ -1430,7 +1427,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{},
 			},
 			isErr: true,
@@ -1769,7 +1766,7 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: false,
@@ -1796,7 +1793,6 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 					},
 				},
 
-				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,
@@ -1822,7 +1818,7 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 						},
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			isErr: true,

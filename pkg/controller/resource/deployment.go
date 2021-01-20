@@ -40,7 +40,6 @@ func CheckDeploymentAnnotation(clientset kubernetes.Interface, engine *chaosType
 	if chaosEnabledDeployment == 0 {
 		return engine, errors.New("no chaos-candidate found")
 	}
-	chaosTypes.Log.Info("Deployment chaos candidate:", "appName: ", engine.AppName, " appUUID: ", engine.AppUUID)
 	return engine, nil
 }
 
@@ -62,12 +61,10 @@ func getDeploymentLists(clientset kubernetes.Interface, engine *chaosTypes.Engin
 func checkForChaosEnabledDeployment(targetAppList *v1.DeploymentList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDeployment := 0
 	for _, deployment := range targetAppList.Items {
-		engine.AppName = deployment.ObjectMeta.Name
-		engine.AppUUID = deployment.ObjectMeta.UID
 		annotationValue := deployment.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledDeployment = CountTotalChaosEnabled(annotationValue, chaosEnabledDeployment)
-		if chaosEnabledDeployment > 1 {
-			return engine, chaosEnabledDeployment, errors.New("too many deployments with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
+		if IsChaosEnabled(annotationValue) {
+			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.AppInfo.Kind, "appName: ", deployment.ObjectMeta.Name, "appUUID: ", deployment.ObjectMeta.UID)
+			chaosEnabledDeployment++
 		}
 	}
 	return engine, chaosEnabledDeployment, nil

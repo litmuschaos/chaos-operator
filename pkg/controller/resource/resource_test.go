@@ -93,7 +93,7 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 						"app": "nginx1",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			deployment: []appv1.Deployment{
@@ -154,7 +154,6 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 						"app": "nginx2",
 					},
 				},
-				AppUUID:        "fake_id",
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -362,7 +361,7 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 						"app": "nginx1",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			statefulSet: []appv1.StatefulSet{
@@ -423,7 +422,7 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 						"app": "nginx2",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -631,7 +630,7 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 						"app": "nginx1",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			daemonset: []appv1.DaemonSet{
@@ -692,7 +691,7 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 						"app": "nginx2",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -900,7 +899,7 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 						"app": "nginx1",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			deploymentconfig: []unstructured.Unstructured{
@@ -962,7 +961,7 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 						"app": "nginx2",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
@@ -1186,7 +1185,7 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 						"app": "nginx1",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 			rollout: []unstructured.Unstructured{
@@ -1250,7 +1249,7 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 						"app": "nginx2",
 					},
 				},
-				AppUUID:        "fake_id",
+
 				AppExperiments: []string{"exp-1"},
 			},
 
