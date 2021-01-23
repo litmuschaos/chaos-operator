@@ -55,7 +55,7 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/chaos-operator 
           make build
-          sudo docker build --file build/Dockerfile --tag litmuschaos/chaos-operator:ci . --build-arg TARGETARCH=amd64
+          sudo docker build --file build/Dockerfile --tag litmuschaos/chaos-operator:1.12.0-revert . --build-arg TARGETARCH=amd64
 
       #Install and configure a kind cluster
       - name: Installing Prerequisites (KinD Cluster)
@@ -71,7 +71,7 @@ jobs:
 
       - name: Load image on the nodes of the cluster
         run: |
-          kind load docker-image --name=kind litmuschaos/chaos-operator:ci
+          kind load docker-image --name=kind litmuschaos/chaos-operator:1.12.0-revert
 
       - name: Getting litmus-e2e repository
         run: |
@@ -84,7 +84,7 @@ jobs:
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
           go test tests/install-litmus_test.go -v -count=1
         env:
-          OPERATOR_IMAGE: litmuschaos/chaos-operator:ci
+          OPERATOR_IMAGE: litmuschaos/chaos-operator:1.12.0-revert
           IMAGE_PULL_POLICY: IfNotPresent
  
       - name: Run Admin mode test
