@@ -17,7 +17,7 @@ jobs:
       CHANGE_MINIKUBE_NONE_USER: true
       REPONAME: litmuschaos
       IMGNAME: chaos-operator
-      IMGTAG: ci
+      IMGTAG: 1.12.0-revert
     steps:
       - checkout
       
@@ -56,7 +56,7 @@ jobs:
             echo 'export PATH="$GOPATH/bin:$PATH"' >> workspace/env-vars
             echo 'export REPONAME="litmuschaos"' >> workspace/env-vars
             echo 'export IMGNAME="chaos-operator"' >> workspace/env-vars
-            echo 'export IMGTAG="ci"' >> workspace/env-vars
+            echo 'export IMGTAG="1.12.0-revert"' >> workspace/env-vars
             cat workspace/env-vars >> $BASH_ENV
             source $BASH_ENV
       - run: make deps
@@ -92,11 +92,11 @@ jobs:
       - run: make build
       - run: 
           name: push
-          command: ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=ci
+          command: ~/go/src/github.com/litmuschaos/chaos-operator/buildscripts/push --type=1.12.0-revert
           environment:
             REPONAME: litmuschaos
             IMGNAME: chaos-operator
-            IMGTAG: ci
+            IMGTAG: 1.12.0-revert
 
   trivy-check:
     machine: true

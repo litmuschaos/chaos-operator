@@ -22,6 +22,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/litmuschaos/elves/kubernetes/container"
@@ -474,6 +475,11 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 		}
 	}
 
+	// update the chaos status in result for abort cases
+	if err := r.updateChaosStatus(engine, request); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if engine.Instance.ObjectMeta.Finalizers != nil {
 		engine.Instance.ObjectMeta.Finalizers = utils.RemoveString(engine.Instance.ObjectMeta.Finalizers, "chaosengine.litmuschaos.io/finalizer")
 	}
@@ -775,6 +781,51 @@ func (r *ReconcileChaosEngine) forceRemoveChaosResources(engine *chaosTypes.Engi
 	err := r.forceRemoveAllChaosPods(engine, request)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// updateChaosStatus update the chaos status inside the chaosresult
+func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
+
+	chaosresultList := &litmuschaosv1alpha1.ChaosResultList{}
+	opts := []client.ListOption{
+		client.InNamespace(request.NamespacedName.Namespace),
+		client.MatchingLabels{},
+	}
+
+	time.Sleep(5 * time.Second)
+
+	err := r.client.List(context.TODO(), chaosresultList, opts...)
+	if err != nil {
+		return err
+	}
+
+	for _, result := range chaosresultList.Items {
+
+		if result.Spec.EngineName == engine.Instance.Name {
+
+			annotations := result.ObjectMeta.Annotations
+			chaosStatusList := []litmuschaosv1alpha1.ChaosStatusDetails{}
+			for k, v := range annotations {
+				switch strings.ToLower(v) {
+				case "injected", "recovered":
+					podName := strings.TrimSpace(strings.Split(k, "/")[1])
+					chaosStatus := litmuschaosv1alpha1.ChaosStatusDetails{
+						TargetPodName: podName,
+						ChaosStatus:   v,
+					}
+					chaosStatusList = append(chaosStatusList, chaosStatus)
+					delete(annotations, k)
+				}
+			}
+			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
+
+			result.Status.History.ChaosStatus = chaosStatusList
+			result.ObjectMeta.Annotations = annotations
+			err := r.client.Update(context.TODO(), &result, &client.UpdateOptions{})
+			return err
+		}
 	}
 	return nil
 }
