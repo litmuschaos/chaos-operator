@@ -61,12 +61,10 @@ func getDaemonSetLists(clientset kubernetes.Interface, engine *chaosTypes.Engine
 func checkForChaosEnabledDaemonSet(targetAppList *appsV1.DaemonSetList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
 	chaosEnabledDaemonSet := 0
 	for _, daemonSet := range targetAppList.Items {
-		engine.AppName = daemonSet.ObjectMeta.Name
-		engine.AppUUID = daemonSet.ObjectMeta.UID
 		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
-		chaosEnabledDaemonSet = CountTotalChaosEnabled(annotationValue, chaosEnabledDaemonSet)
-		if chaosEnabledDaemonSet > 1 {
-			return engine, chaosEnabledDaemonSet, errors.New("too many daemonsets with specified label are annotated for chaos, either provide unique labels or annotate only desired app for chaos")
+		if IsChaosEnabled(annotationValue) {
+			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.AppInfo.Kind, "appName: ", daemonSet.ObjectMeta.Name, "appUUID: ", daemonSet.ObjectMeta.UID)
+			chaosEnabledDaemonSet++
 		}
 	}
 	return engine, chaosEnabledDaemonSet, nil

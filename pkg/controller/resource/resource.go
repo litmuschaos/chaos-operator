@@ -80,14 +80,10 @@ func CheckChaosAnnotation(engine *chaosTypes.EngineInfo, clientset kubernetes.In
 	default:
 		return engine, fmt.Errorf("resource type '%s' not supported for induce chaos", engine.AppInfo.Kind)
 	}
-	chaosTypes.Log.Info("chaos candidate of", "kind:", engine.AppInfo.Kind, "appName: ", engine.AppName, "appUUID: ", engine.AppUUID)
 	return engine, nil
 }
 
-// CountTotalChaosEnabled will count the number of chaos enabled applications
-func CountTotalChaosEnabled(annotationValue string, chaosCandidates int) int {
-	if annotationValue == ChaosAnnotationValue {
-		chaosCandidates++
-	}
-	return chaosCandidates
+// IsChaosEnabled check for the given annotation value
+func IsChaosEnabled(annotationValue string) bool {
+	return annotationValue == ChaosAnnotationValue
 }
