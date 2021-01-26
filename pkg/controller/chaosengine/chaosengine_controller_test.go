@@ -1764,6 +1764,11 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 								Image: "fake-runner-image",
 							},
 						},
+						Experiments: []litmuschaosv1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
 					},
 				},
 
