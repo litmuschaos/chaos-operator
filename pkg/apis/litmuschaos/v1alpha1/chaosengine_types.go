@@ -267,8 +267,38 @@ type HTTPProbeInputs struct {
 	URL string `json:"url,omitempty"`
 	// InsecureSkipVerify flag to skip certificate checks
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
-	// Expected response code from the given url
-	ExpectedResponseCode string `json:"expectedResponseCode,omitempty"`
+	// Method define the http method, it can be get or post
+	Method HTTPMethod `json:"method,omitempty"`
+}
+
+// HTTPMethod define the http method details
+type HTTPMethod struct {
+	Get  GetMethod  `json:"get,omitempty"`
+	Post PostMethod `json:"post,omitempty"`
+}
+
+// GetMethod define the http Get method
+type GetMethod struct {
+	// Criteria for matching data
+	// it supports  == != operations
+	Criteria string `json:"criteria,omitempty"`
+	// Value contains relative value for criteria
+	ResponseCode string `json:"responseCode,omitempty"`
+}
+
+// PostMethod define the http Post method
+type PostMethod struct {
+	// ContentType contains content type for http body data
+	ContentType string `json:"contentType,omitempty"`
+	// Body contains http body for post request
+	Body string `json:"body,omitempty"`
+	// BodyPath contains filePath, which contains http body
+	BodyPath string `json:"bodyPath,omitempty"`
+	// Criteria for matching data
+	// it supports  == != operations
+	Criteria string `json:"criteria,omitempty"`
+	// Value contains relative value for criteria
+	ResponseCode string `json:"responseCode,omitempty"`
 }
 
 //RunProperty contains timeout, retry and interval for the probe
