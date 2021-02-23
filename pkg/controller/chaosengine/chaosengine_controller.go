@@ -27,6 +27,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/litmuschaos/elves/kubernetes/container"
 	"github.com/litmuschaos/elves/kubernetes/pod"
+	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -788,16 +789,36 @@ func (r *ReconcileChaosEngine) forceRemoveChaosResources(engine *chaosTypes.Engi
 // updateChaosStatus update the chaos status inside the chaosresult
 func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
 
-	chaosresultList := &litmuschaosv1alpha1.ChaosResultList{}
 	opts := []client.ListOption{
+		client.InNamespace(request.NamespacedName.Namespace),
+		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
+	}
+
+	err := retry.
+		Times(uint(180)).
+		Wait(1 * time.Second).
+		Try(func(attempt uint) error {
+			chaosPodList := &corev1.PodList{}
+			if err := r.client.List(context.TODO(), chaosPodList, opts...); err != nil {
+				return err
+			}
+			if len(chaosPodList.Items) != 0 {
+				return errors.Errorf("Chaos Pods are not deleted yet")
+			}
+			return nil
+		})
+
+	if err != nil {
+		return err
+	}
+
+	chaosresultList := &litmuschaosv1alpha1.ChaosResultList{}
+	opts = []client.ListOption{
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{},
 	}
 
-	time.Sleep(5 * time.Second)
-
-	err := r.client.List(context.TODO(), chaosresultList, opts...)
-	if err != nil {
+	if err = r.client.List(context.TODO(), chaosresultList, opts...); err != nil {
 		return err
 	}
 
@@ -806,6 +827,7 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 		if result.Spec.EngineName == engine.Instance.Name {
 
 			annotations := result.ObjectMeta.Annotations
+
 			chaosStatusList := []litmuschaosv1alpha1.ChaosStatusDetails{}
 			for k, v := range annotations {
 				switch strings.ToLower(v) {
