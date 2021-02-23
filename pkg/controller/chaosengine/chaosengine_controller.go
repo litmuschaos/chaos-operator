@@ -789,12 +789,41 @@ func (r *ReconcileChaosEngine) forceRemoveChaosResources(engine *chaosTypes.Engi
 // updateChaosStatus update the chaos status inside the chaosresult
 func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
 
+	if err := r.waitForChaosPodTermination(engine, request); err != nil {
+		return err
+	}
+
+	chaosresultList := &litmuschaosv1alpha1.ChaosResultList{}
+	opts := []client.ListOption{
+		client.InNamespace(request.NamespacedName.Namespace),
+		client.MatchingLabels{},
+	}
+
+	if err := r.client.List(context.TODO(), chaosresultList, opts...); err != nil {
+		return err
+	}
+
+	for _, result := range chaosresultList.Items {
+		if result.Spec.EngineName == engine.Instance.Name {
+			chaosStatusList, annotations := getChaosStatus(result)
+			result.Status.History.ChaosStatus = chaosStatusList
+			result.ObjectMeta.Annotations = annotations
+
+			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
+			err := r.client.Update(context.TODO(), &result, &client.UpdateOptions{})
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ReconcileChaosEngine) waitForChaosPodTermination(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
 	opts := []client.ListOption{
 		client.InNamespace(request.NamespacedName.Namespace),
 		client.MatchingLabels{"chaosUID": string(engine.Instance.UID)},
 	}
 
-	err := retry.
+	return retry.
 		Times(uint(180)).
 		Wait(1 * time.Second).
 		Try(func(attempt uint) error {
@@ -807,47 +836,23 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 			}
 			return nil
 		})
+}
 
-	if err != nil {
-		return err
-	}
+func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alpha1.ChaosStatusDetails, map[string]string) {
+	annotations := result.ObjectMeta.Annotations
 
-	chaosresultList := &litmuschaosv1alpha1.ChaosResultList{}
-	opts = []client.ListOption{
-		client.InNamespace(request.NamespacedName.Namespace),
-		client.MatchingLabels{},
-	}
-
-	if err = r.client.List(context.TODO(), chaosresultList, opts...); err != nil {
-		return err
-	}
-
-	for _, result := range chaosresultList.Items {
-
-		if result.Spec.EngineName == engine.Instance.Name {
-
-			annotations := result.ObjectMeta.Annotations
-
-			chaosStatusList := []litmuschaosv1alpha1.ChaosStatusDetails{}
-			for k, v := range annotations {
-				switch strings.ToLower(v) {
-				case "injected", "recovered":
-					podName := strings.TrimSpace(strings.Split(k, "/")[1])
-					chaosStatus := litmuschaosv1alpha1.ChaosStatusDetails{
-						TargetPodName: podName,
-						ChaosStatus:   v,
-					}
-					chaosStatusList = append(chaosStatusList, chaosStatus)
-					delete(annotations, k)
-				}
+	chaosStatusList := []litmuschaosv1alpha1.ChaosStatusDetails{}
+	for k, v := range annotations {
+		switch strings.ToLower(v) {
+		case "injected", "recovered":
+			podName := strings.TrimSpace(strings.Split(k, "/")[1])
+			chaosStatus := litmuschaosv1alpha1.ChaosStatusDetails{
+				TargetPodName: podName,
+				ChaosStatus:   v,
 			}
-			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
-
-			result.Status.History.ChaosStatus = chaosStatusList
-			result.ObjectMeta.Annotations = annotations
-			err := r.client.Update(context.TODO(), &result, &client.UpdateOptions{})
-			return err
+			chaosStatusList = append(chaosStatusList, chaosStatus)
+			delete(annotations, k)
 		}
 	}
-	return nil
+	return chaosStatusList, annotations
 }
