@@ -38,7 +38,7 @@ if [ ! -z "${DNAME}" ] && [ ! -z "${DPASS}" ];
 then
   docker login -u "${DNAME}" -p "${DPASS}";
   build_type=$(echo $1 | cut -d "=" -f 2)
-  if [ "${build_type}" == "1.12.0-revert" ]; then
+  if [ "${build_type}" == "1.13.1-revert" ]; then
     push_ci_image;
   elif [ "${build_type}" == "release" ]; then
     push_release_image; 
