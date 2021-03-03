@@ -805,8 +805,8 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 
 	for _, result := range chaosresultList.Items {
 		if result.Spec.EngineName == engine.Instance.Name {
-			chaosStatusList, annotations := getChaosStatus(result)
-			result.Status.History.ChaosStatus = chaosStatusList
+			targetsList, annotations := getChaosStatus(result)
+			result.Status.History.Targets = targetsList
 			result.ObjectMeta.Annotations = annotations
 
 			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
@@ -838,21 +838,21 @@ func (r *ReconcileChaosEngine) waitForChaosPodTermination(engine *chaosTypes.Eng
 		})
 }
 
-func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alpha1.ChaosStatusDetails, map[string]string) {
+func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alpha1.Target, map[string]string) {
 	annotations := result.ObjectMeta.Annotations
 
-	chaosStatusList := []litmuschaosv1alpha1.ChaosStatusDetails{}
+	targetsList := []litmuschaosv1alpha1.Target{}
 	for k, v := range annotations {
 		switch strings.ToLower(v) {
 		case "injected", "recovered":
 			podName := strings.TrimSpace(strings.Split(k, "/")[1])
-			chaosStatus := litmuschaosv1alpha1.ChaosStatusDetails{
-				TargetPodName: podName,
-				ChaosStatus:   v,
+			target := litmuschaosv1alpha1.Target{
+				PodName:     podName,
+				ChaosStatus: v,
 			}
-			chaosStatusList = append(chaosStatusList, chaosStatus)
+			targetsList = append(targetsList, target)
 			delete(annotations, k)
 		}
 	}
-	return chaosStatusList, annotations
+	return targetsList, annotations
 }

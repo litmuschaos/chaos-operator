@@ -50,17 +50,17 @@ type ChaosResultStatus struct {
 
 // HistoryDetails contains cumulative values of verdicts
 type HistoryDetails struct {
-	PassedRuns  int                  `json:"passedRuns"`
-	FailedRuns  int                  `json:"failedRuns"`
-	StoppedRuns int                  `json:"stoppedRuns"`
-	ChaosStatus []ChaosStatusDetails `json:"ChaosStatus"`
+	PassedRuns  int      `json:"passedRuns"`
+	FailedRuns  int      `json:"failedRuns"`
+	StoppedRuns int      `json:"stoppedRuns"`
+	Targets     []Target `json:"targets,omitempty"`
 }
 
-// ChaosStatusDetails contains target pod name and chaos status for that pod
+// Target contains target pod name and chaos status for the pod
 // ChaosStatus can be injected or recovered
-type ChaosStatusDetails struct {
-	TargetPodName string `json:"targetPodName,omitempty"`
-	ChaosStatus   string `json:"chaosStatus,omitempty"`
+type Target struct {
+	PodName     string `json:"podName,omitempty"`
+	ChaosStatus string `json:"chaosStatus,omitempty"`
 }
 
 // ProbeStatus defines information about the status and result of the probes
