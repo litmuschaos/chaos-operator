@@ -21,8 +21,6 @@ function push_release_image(){
     docker buildx build --file build/Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag ${REPONAME}/${IMGNAME}:${CIRCLE_TAG} .    
     echo "Pushing ${REPONAME}/${IMGNAME}:latest ..."
     docker buildx build --file build/Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag ${REPONAME}/${IMGNAME}:latest .    
-    echo "Pushing ${REPONAME}/${IMGNAME}:ci ..."
-    docker buildx build --file build/Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag ${REPONAME}/${IMGNAME}:ci .    
   fi;
 }
 

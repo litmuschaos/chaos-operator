@@ -55,7 +55,7 @@ spec:
               type: string
             engineState:
               type: string
-              pattern: ^(active|stop|initialized|stopped)$
+              pattern: ^(active|stop)$
             chaosServiceAccount:
               type: string
             components:
@@ -94,6 +94,8 @@ spec:
                         type: array
                         items:
                           type: object
+                          required:
+                            - runProperties
                           properties:
                             name:
                               type: string
@@ -145,9 +147,39 @@ spec:
                                 url:
                                   type: string
                                   minLength: 1
-                                expectedResponseCode:
-                                  type: string
-                                  minLength: 1
+                                insecureSkipVerify:
+                                  type: boolean
+                                responseTimeout: 
+                                  type: integer
+                                method:
+                                  type: object
+                                  minProperties: 1
+                                  properties:
+                                    get:
+                                      type: object
+                                      properties:
+                                        criteria:
+                                          type: string
+                                          minLength: 1
+                                        responseCode:
+                                          type: string
+                                          minLength: 1
+                                    post:
+                                      type: object
+                                      properties:
+                                        contentType:
+                                          type: string
+                                          minLength: 1
+                                        body:
+                                          type: string
+                                        bodyPath: 
+                                          type: string
+                                        criteria:
+                                          type: string
+                                          minLength: 1
+                                        responseCode:
+                                          type: string
+                                          minLength: 1    
                             promProbe/inputs:
                               type: object
                               properties:
@@ -166,6 +198,11 @@ spec:
                                       type: string
                             runProperties:
                               type: object
+                              minProperties: 3
+                              required:
+                                - probeTimeout
+                                - interval
+                                - retry
                               properties:
                                 probeTimeout:
                                   type: integer
@@ -584,6 +621,8 @@ spec:
                       nodePath:
                         type: string
                         minLength: 1
+                      type:
+                        type: string
                 securityContext:
                   type: object
                 hostPID:
