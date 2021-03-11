@@ -86,6 +86,7 @@ jobs:
         env:
           OPERATOR_IMAGE: litmuschaos/chaos-operator:ci
           IMAGE_PULL_POLICY: IfNotPresent
+          KUBECONFIG: /home/runner/.kube/config 
  
       - name: Run Admin mode test
         if: startsWith(github.event.comment.body, '/run-e2e-admin-mode') || startsWith(github.event.comment.body, '/run-e2e-all')
@@ -93,6 +94,8 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
           go test operator/admin-mode_test.go -v -count=1
+        env:
+          KUBECONFIG: /home/runner/.kube/config           
 
       - name: Run Reconcile Resiliency test
         if: startsWith(github.event.comment.body, '/run-e2e-reconcile-resiliency') || startsWith(github.event.comment.body, '/run-e2e-all')
@@ -100,6 +103,8 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
           go test operator/reconcile-resiliency_test.go -v -count=1
+        env:
+          KUBECONFIG: /home/runner/.kube/config           
 
       - name: Check the test run
         if: |
