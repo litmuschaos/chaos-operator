@@ -88,10 +88,8 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "deployment",
-					Label: map[string]string{
-						"app": "nginx1",
-					},
+					Kind:  "deployment",
+					Label: "app=nginx1",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -149,10 +147,8 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "deployment",
-					Label: map[string]string{
-						"app": "nginx2",
-					},
+					Kind:  "deployment",
+					Label: "app=nginx2",
 				},
 				AppExperiments: []string{"exp-1"},
 			},
@@ -209,10 +205,8 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "deployment",
-					Label: map[string]string{
-						"app": "nginx3",
-					},
+					Kind:  "deployment",
+					Label: "app=nginx3",
 				},
 			},
 			isErr: true,
@@ -245,10 +239,8 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "deployment",
-					Label: map[string]string{
-						"app": "nginx4",
-					},
+					Kind:  "deployment",
+					Label: "app=nginx4",
 				},
 			},
 			deployment: []appv1.Deployment{
@@ -356,10 +348,8 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "statefulset",
-					Label: map[string]string{
-						"app": "nginx1",
-					},
+					Kind:  "statefulset",
+					Label: "app=nginx1",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -417,10 +407,8 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "statefulset",
-					Label: map[string]string{
-						"app": "nginx2",
-					},
+					Kind:  "statefulset",
+					Label: "app=nginx2",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -478,10 +466,8 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "statefulset",
-					Label: map[string]string{
-						"app": "nginx3",
-					},
+					Kind:  "statefulset",
+					Label: "app=nginx3",
 				},
 			},
 			isErr: true,
@@ -514,10 +500,8 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "statefulset",
-					Label: map[string]string{
-						"app": "nginx4",
-					},
+					Kind:  "statefulset",
+					Label: "app=nginx4",
 				},
 			},
 			statefulSet: []appv1.StatefulSet{
@@ -625,10 +609,8 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "daemonset",
-					Label: map[string]string{
-						"app": "nginx1",
-					},
+					Kind:  "daemonset",
+					Label: "app=nginx1",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -686,10 +668,8 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "daemonset",
-					Label: map[string]string{
-						"app": "nginx2",
-					},
+					Kind:  "daemonset",
+					Label: "app=nginx2",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -747,10 +727,8 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "daemonset",
-					Label: map[string]string{
-						"app": "nginx3",
-					},
+					Kind:  "daemonset",
+					Label: "app=nginx3",
 				},
 			},
 			isErr: true,
@@ -783,10 +761,8 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "daemonset",
-					Label: map[string]string{
-						"app": "nginx4",
-					},
+					Kind:  "daemonset",
+					Label: "app=nginx4",
 				},
 			},
 			daemonset: []appv1.DaemonSet{
@@ -894,10 +870,8 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "deploymentconfig",
-					Label: map[string]string{
-						"app": "nginx1",
-					},
+					Kind:  "deploymentconfig",
+					Label: "app=nginx1",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -956,10 +930,8 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "deploymentconfig",
-					Label: map[string]string{
-						"app": "nginx2",
-					},
+					Kind:  "deploymentconfig",
+					Label: "app=nginx2",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -1019,10 +991,8 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "deploymentconfig",
-					Label: map[string]string{
-						"app": "nginx4",
-					},
+					Kind:  "deploymentconfig",
+					Label: "app=nginx4",
 				},
 			},
 			deploymentconfig: []unstructured.Unstructured{
@@ -1100,10 +1070,8 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "deploymentconfig",
-					Label: map[string]string{
-						"app": "nginx3",
-					},
+					Kind:  "deploymentconfig",
+					Label: "app=nginx3",
 				},
 			},
 			isErr: true,
@@ -1180,10 +1148,8 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "rollout",
-					Label: map[string]string{
-						"app": "nginx1",
-					},
+					Kind:  "rollout",
+					Label: "app=nginx1",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -1244,10 +1210,8 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "rollout",
-					Label: map[string]string{
-						"app": "nginx2",
-					},
+					Kind:  "rollout",
+					Label: "app=nginx2",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -1309,10 +1273,8 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "rollout",
-					Label: map[string]string{
-						"app": "nginx4",
-					},
+					Kind:  "rollout",
+					Label: "app=nginx4",
 				},
 			},
 			rollout: []unstructured.Unstructured{
@@ -1394,10 +1356,8 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 					},
 				},
 				AppInfo: &chaosTypes.ApplicationInfo{
-					Kind: "rollout",
-					Label: map[string]string{
-						"app": "nginx3",
-					},
+					Kind:  "rollout",
+					Label: "app=nginx3",
 				},
 			},
 			isErr: true,
