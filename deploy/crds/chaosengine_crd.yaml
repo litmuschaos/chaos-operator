@@ -149,7 +149,8 @@ spec:
                                   minLength: 1
                                 insecureSkipVerify:
                                   type: boolean
-                                  minLength: 1
+                                responseTimeout: 
+                                  type: integer
                                 method:
                                   type: object
                                   minProperties: 1

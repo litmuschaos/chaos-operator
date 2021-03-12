@@ -315,11 +315,7 @@ func initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine, appInf
 	}
 
 	if instance.Spec.Appinfo.Applabel != "" {
-		appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
-		chaosTypes.AppLabelKey = appLabel[0]
-		chaosTypes.AppLabelValue = appLabel[1]
-		appInfo.Label = make(map[string]string)
-		appInfo.Label[chaosTypes.AppLabelKey] = chaosTypes.AppLabelValue
+		appInfo.Label = instance.Spec.Appinfo.Applabel
 	}
 
 	if instance.Spec.Appinfo.Appns != "" {
@@ -735,6 +731,10 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 	}
 
 	if engine.Instance.Spec.AnnotationCheck == "true" {
+
+		if engine.AppInfo.Label == "" || engine.AppInfo.Namespace == "" || engine.AppInfo.Kind == "" {
+			return errors.Errorf("Incomplete AppInfo inside chaosengine")
+		}
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
 		if err != nil {
