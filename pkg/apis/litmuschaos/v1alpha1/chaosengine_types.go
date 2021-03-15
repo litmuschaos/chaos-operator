@@ -193,9 +193,6 @@ type ProbeAttributes struct {
 	// mode for k8s probe
 	// it can be SOT, EOT, Edge
 	Mode string `json:"mode,omitempty"`
-	// Operation performed by the k8s probe
-	// it can be create, delete, present, absent
-	Operation string `json:"operation,omitempty"`
 	// Data contains the manifest/data for the resource, which need to be created
 	// it supported for create operation only
 	Data string `json:"data,omitempty"`
@@ -203,14 +200,6 @@ type ProbeAttributes struct {
 
 // K8sProbeInputs contains all the inputs required for k8s probe
 type K8sProbeInputs struct {
-	// Command need to be executed for the probe
-	Command K8sCommand `json:"command,omitempty"`
-	// Expected output or result of the command
-	ExpectedResult string `json:"expectedResult,omitempty"`
-}
-
-// K8sCommand contains all the commands need for the k8sprobe
-type K8sCommand struct {
 	// group of the resource
 	Group string `json:"group,omitempty"`
 	// apiversion of the resource
@@ -223,6 +212,9 @@ type K8sCommand struct {
 	FieldSelector string `json:"fieldSelector,omitempty"`
 	// labelselector to get the resource using labels selector
 	LabelSelector string `json:"labelSelector,omitempty"`
+	// Operation performed by the k8s probe
+	// it can be create, delete, present, absent
+	Operation string `json:"operation,omitempty"`
 }
 
 //CmdProbeInputs contains all the inputs required for cmd probe
@@ -269,6 +261,8 @@ type HTTPProbeInputs struct {
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// Method define the http method, it can be get or post
 	Method HTTPMethod `json:"method,omitempty"`
+	// ResponseTimeout contains the http response timeout
+	ResponseTimeout int `json:"responseTimeout,omitempty"`
 }
 
 // HTTPMethod define the http method details

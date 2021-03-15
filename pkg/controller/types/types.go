@@ -59,7 +59,7 @@ var (
 // ApplicationInfo contains the chaos details for target application
 type ApplicationInfo struct {
 	Namespace          string
-	Label              map[string]string
+	Label              string
 	ExperimentList     []litmuschaosv1alpha1.ExperimentList
 	ServiceAccountName string
 	Kind               string

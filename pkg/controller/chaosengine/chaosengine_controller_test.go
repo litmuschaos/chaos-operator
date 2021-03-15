@@ -62,7 +62,7 @@ func TestInitializeApplicationInfo(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			appInfo := &chaosTypes.ApplicationInfo{
 				Namespace: "namespace",
-				Label:     map[string]string{"fake_id": "aa"},
+				Label:     "fake_id=aa",
 				ExperimentList: []litmuschaosv1alpha1.ExperimentList{
 					{
 						Name: "fake_name",

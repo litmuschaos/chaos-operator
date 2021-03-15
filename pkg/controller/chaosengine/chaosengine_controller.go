@@ -315,11 +315,7 @@ func initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine, appInf
 	}
 
 	if instance.Spec.Appinfo.Applabel != "" {
-		appLabel := strings.Split(instance.Spec.Appinfo.Applabel, "=")
-		chaosTypes.AppLabelKey = appLabel[0]
-		chaosTypes.AppLabelValue = appLabel[1]
-		appInfo.Label = make(map[string]string)
-		appInfo.Label[chaosTypes.AppLabelKey] = chaosTypes.AppLabelValue
+		appInfo.Label = instance.Spec.Appinfo.Applabel
 	}
 
 	if instance.Spec.Appinfo.Appns != "" {
@@ -501,7 +497,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 
 // forceRemoveAllChaosPods force removes all chaos-related pods
 func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
-	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(metav1.DeletePropagationBackground), client.GracePeriodSeconds(int64(0))}
+	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(metav1.DeletePropagationBackground)}
 	var deleteEvent []string
 	var err []error
 
@@ -735,6 +731,10 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 	}
 
 	if engine.Instance.Spec.AnnotationCheck == "true" {
+
+		if engine.AppInfo.Label == "" || engine.AppInfo.Namespace == "" || engine.AppInfo.Kind == "" {
+			return errors.Errorf("Incomplete AppInfo inside chaosengine")
+		}
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
 		if err != nil {
