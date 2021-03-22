@@ -23,10 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	apis "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -34,53 +32,6 @@ import (
 	litmusFakeClientset "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestInitializeApplicationInfo(t *testing.T) {
-	tests := map[string]struct {
-		instance *litmuschaosv1alpha1.ChaosEngine
-		isErr    bool
-	}{
-		"Test Positive-1": {
-			instance: &litmuschaosv1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-monitor",
-					Namespace: "test",
-				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-					Appinfo: litmuschaosv1alpha1.ApplicationParams{
-						Applabel: "key=value",
-					},
-				},
-			},
-			isErr: false,
-		},
-		"Test Negative-1": {
-			instance: nil,
-			isErr:    true,
-		},
-	}
-	for name, mock := range tests {
-		t.Run(name, func(t *testing.T) {
-			appInfo := &chaosTypes.ApplicationInfo{
-				Namespace: "namespace",
-				Label:     "fake_id=aa",
-				ExperimentList: []litmuschaosv1alpha1.ExperimentList{
-					{
-						Name: "fake_name",
-					},
-				},
-				ServiceAccountName: "fake-service-account-name",
-			}
-			_, err := initializeApplicationInfo(mock.instance, appInfo)
-			if mock.isErr && err == nil {
-				t.Fatalf("Test %q failed: expected error not to be nil", name)
-			}
-			if !mock.isErr && err != nil {
-				fmt.Println(err)
-				t.Fatalf("Test %q failed: expected error to be nil", name)
-			}
-		})
-	}
-}
 func TestGetChaosRunnerENV(t *testing.T) {
 	fakeEngineName := "Fake Engine"
 	fakeNameSpace := "Fake NameSpace"
@@ -942,7 +893,7 @@ func TestUpdateEngineState(t *testing.T) {
 				},
 			},
 			isErr: false,
-			state: v1alpha1.EngineStateActive,
+			state: litmuschaosv1alpha1.EngineStateActive,
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
@@ -975,7 +926,7 @@ func TestUpdateEngineState(t *testing.T) {
 				},
 			},
 			isErr: false,
-			state: v1alpha1.EngineStateStop,
+			state: litmuschaosv1alpha1.EngineStateStop,
 		},
 	}
 	for name, mock := range tests {
@@ -1853,14 +1804,14 @@ func CreateFakeClient(t *testing.T) *ReconcileChaosEngine {
 
 	s := scheme.Scheme
 
-	engineR := &apis.ChaosEngine{
+	engineR := &litmuschaosv1alpha1.ChaosEngine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: make(map[string]string),
 			Name:   "dummyengine",
 		},
 	}
 
-	s.AddKnownTypes(apis.SchemeGroupVersion, engineR)
+	s.AddKnownTypes(litmuschaosv1alpha1.SchemeGroupVersion, engineR)
 
 	recorder := record.NewFakeRecorder(1024)
 

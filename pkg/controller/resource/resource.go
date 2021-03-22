@@ -41,17 +41,16 @@ var (
 func GetAnnotationKey() string {
 
 	annotationKey := os.Getenv("CUSTOM_ANNOTATION")
-	if len(annotationKey) != 0 {
+	if annotationKey != "" {
 		return annotationKey
 	}
 	return DefaultChaosAnnotationKey
-
 }
 
 // CheckChaosAnnotation will check for the annotation of required resources
 func CheckChaosAnnotation(engine *chaosTypes.EngineInfo, clientset kubernetes.Interface, dynamicClientSet dynamic.Interface) (*chaosTypes.EngineInfo, error) {
 
-	switch strings.ToLower(engine.AppInfo.Kind) {
+	switch strings.ToLower(engine.Instance.Spec.Appinfo.AppKind) {
 	case "deployment", "deployments":
 		engine, err := CheckDeploymentAnnotation(clientset, engine)
 		if err != nil {
@@ -78,7 +77,7 @@ func CheckChaosAnnotation(engine *chaosTypes.EngineInfo, clientset kubernetes.In
 			return engine, fmt.Errorf("resource type 'rollout', err: %+v", err)
 		}
 	default:
-		return engine, fmt.Errorf("resource type '%s' not supported for induce chaos", engine.AppInfo.Kind)
+		return engine, fmt.Errorf("resource type '%s' not supported for induce chaos", engine.Instance.Spec.Appinfo.AppKind)
 	}
 	return engine, nil
 }

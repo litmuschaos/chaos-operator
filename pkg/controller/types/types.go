@@ -40,14 +40,9 @@ import (
 )
 
 var (
-	// AppLabelKey contains the application label key
-	AppLabelKey string
 
 	// DefaultAnnotationCheck contains the default value (true) of the annotationCheck
 	DefaultAnnotationCheck = "true"
-
-	// AppLabelValue contains the application label value
-	AppLabelValue string
 
 	// Log with default name ie: controller_chaosengine
 	Log = logf.Log.WithName("controller_chaosengine")
@@ -56,19 +51,9 @@ var (
 	DefaultChaosRunnerImage = "litmuschaos/chaos-runner:latest"
 )
 
-// ApplicationInfo contains the chaos details for target application
-type ApplicationInfo struct {
-	Namespace          string
-	Label              string
-	ExperimentList     []litmuschaosv1alpha1.ExperimentList
-	ServiceAccountName string
-	Kind               string
-}
-
 //EngineInfo Related information
 type EngineInfo struct {
 	Instance       *litmuschaosv1alpha1.ChaosEngine
-	AppInfo        *ApplicationInfo
 	ConfigMaps     []v1alpha1.ConfigMap
 	Secrets        []v1alpha1.Secret
 	VolumeOpts     utils.VolumeOpts
