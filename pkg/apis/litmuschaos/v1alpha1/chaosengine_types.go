@@ -44,6 +44,8 @@ type ChaosEngineSpec struct {
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
 	//EngineStatus is a requirement for validation
 	EngineState EngineState `json:"engineState"`
+	// TerminationGracePeriodSeconds contains terminationGracePeriod for the chaos resources
+	TerminationGracePeriodSeconds int64 `json:"terminationGracePeriodSeconds,omitempty"`
 }
 
 // EngineState provides interface for all supported strings in spec.EngineState
@@ -140,7 +142,7 @@ type RunnerInfo struct {
 	//ImagePullSecrets for runner pod
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// Runner Annotations that needs to be provided in the pod for pod that is getting created
-	RunnerAnnotation map[string]string `json:"runnerannotation,omitempty"`
+	RunnerAnnotation map[string]string `json:"runnerAnnotations,omitempty"`
 	// NodeSelector for runner pod
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// ConfigMaps for runner pod
@@ -315,7 +317,7 @@ type ExperimentComponents struct {
 	ENV                        []corev1.EnvVar               `json:"env,omitempty"`
 	ConfigMaps                 []ConfigMap                   `json:"configMaps,omitempty"`
 	Secrets                    []Secret                      `json:"secrets,omitempty"`
-	ExperimentAnnotations      map[string]string             `json:"experimentannotation,omitempty"`
+	ExperimentAnnotations      map[string]string             `json:"experimentAnnotations,omitempty"`
 	ExperimentImage            string                        `json:"experimentImage,omitempty"`
 	ExperimentImagePullSecrets []corev1.LocalObjectReference `json:"experimentImagePullSecrets,omitempty"`
 	NodeSelector               map[string]string             `json:"nodeSelector,omitempty"`

@@ -54,9 +54,9 @@ type Secret struct {
 
 // HostFile is an simpler implementation of corev1.HostPath, needed for experiments
 type HostFile struct {
-	Name      string `json:"name"`
-	MountPath string `json:"mountPath"`
-	NodePath  string `json:"nodePath"`
+	Name      string              `json:"name"`
+	MountPath string              `json:"mountPath"`
+	NodePath  string              `json:"nodePath"`
 	Type      corev1.HostPathType `json:"type,omitempty"`
 }
 
@@ -80,13 +80,13 @@ type ExperimentDef struct {
 	// Defines arguments to runner's entrypoint command
 	Args []string `json:"args"`
 	// ConfigMaps contains a list of ConfigMaps
-	ConfigMaps []ConfigMap `json:"configmaps,omitempty"`
+	ConfigMaps []ConfigMap `json:"configMaps,omitempty"`
 	// Secrets contains a list of Secrets
 	Secrets []Secret `json:"secrets,omitempty"`
 	// HostFileVolume defines the host directory/file to be mounted
 	HostFileVolumes []HostFile `json:"hostFileVolumes,omitempty"`
 	// Annotations that needs to be provided in the pod for pod that is getting created
-	ExperimentAnnotations map[string]string `json:"experimentannotations,omitempty"`
+	ExperimentAnnotations map[string]string `json:"experimentAnnotations,omitempty"`
 	// SecurityContext holds security configuration that will be applied to a container
 	SecurityContext SecurityContext `json:"securityContext,omitempty"`
 	// HostPID is need to be provided in the chaospod
