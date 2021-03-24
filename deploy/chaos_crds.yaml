@@ -29,8 +29,6 @@ spec:
         spec:
           type: object
           properties:
-            monitoring:
-              type: boolean
             jobCleanUpPolicy:
               type: string
               pattern: ^(delete|retain)$
