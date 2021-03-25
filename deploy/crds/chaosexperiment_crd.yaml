@@ -188,7 +188,7 @@ spec:
                         type: array
                         items:
                           type: string
-                configmaps:
+                configMaps:
                   type: array
                   items:
                     type: object

@@ -58,6 +58,8 @@ spec:
               pattern: ^(active|stop)$
             chaosServiceAccount:
               type: string
+            terminationGracePeriodSeconds:
+              type: integer
             components:
               type: object
               properties:
@@ -69,7 +71,7 @@ spec:
                     type:
                       type: string
                       pattern: ^(go)$
-                    runnerannotation:
+                    runnerAnnotations:
                       type: object
                       additionalProperties:
                         type: string
@@ -368,7 +370,7 @@ spec:
                                   type: string
                                 mountPath:
                                   type: string
-                          experimentannotation:
+                          experimentAnnotations:
                             type: object
                             additionalProperties:
                               type: string
@@ -379,8 +381,6 @@ spec:
                                 value:
                                   type: string
                                   minLength: 1
-
-
         status:
           type: object
   version: v1alpha1
@@ -579,7 +579,7 @@ spec:
                         type: array
                         items:
                           type: string
-                configmaps:
+                configMaps:
                   type: array
                   items:
                     type: object
