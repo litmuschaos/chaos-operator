@@ -381,7 +381,6 @@ func getApplicationDetail(engine *chaosTypes.EngineInfo) error {
 	chaosTypes.Log.Info("App Label derived from Chaosengine is ", "appLabelValue", chaosTypes.AppLabelValue)
 	chaosTypes.Log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.Namespace)
 	chaosTypes.Log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
-	chaosTypes.Log.Info("Monitoring Status derived from chaosengine is", "monitoringStatus", engine.Instance.Spec.Monitoring)
 	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", engine.Instance.Spec.Components.Runner.Image)
 	chaosTypes.Log.Info("Annotation check is ", "annotationCheck", engine.Instance.Spec.AnnotationCheck)
 	return nil

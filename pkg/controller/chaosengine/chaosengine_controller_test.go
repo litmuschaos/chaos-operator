@@ -236,7 +236,6 @@ func TestGetAnnotationCheck(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          true,
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
@@ -262,7 +261,6 @@ func TestGetAnnotationCheck(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
@@ -289,7 +287,6 @@ func TestGetAnnotationCheck(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						AnnotationCheck:     "fakeCheck",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
@@ -334,7 +331,6 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						EngineState:         "active",
 						AnnotationCheck:     "false",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
@@ -396,7 +392,6 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      true,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
@@ -648,7 +643,6 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          true,
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -674,7 +668,6 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image:           "fake-runner-image",
@@ -702,7 +695,6 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						AnnotationCheck:     "false",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
@@ -731,7 +723,6 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						AnnotationCheck:     "true",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
@@ -1285,7 +1276,6 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          true,
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1307,7 +1297,6 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1330,7 +1319,6 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						AnnotationCheck:     "false",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
@@ -1354,7 +1342,6 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						AnnotationCheck:     "true",
 						Components: litmuschaosv1alpha1.ComponentParams{
 							Runner: litmuschaosv1alpha1.RunnerInfo{
@@ -1754,7 +1741,6 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          true,
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
@@ -1785,7 +1771,6 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          false,
 						AnnotationCheck:     "fakeCheck",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
@@ -1811,7 +1796,6 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Monitoring:          true,
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},

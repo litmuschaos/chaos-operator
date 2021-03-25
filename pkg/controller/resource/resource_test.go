@@ -68,7 +68,6 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      false,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
@@ -328,7 +327,6 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      false,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
@@ -589,7 +587,6 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      false,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
@@ -850,7 +847,6 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      false,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
@@ -1128,7 +1124,6 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Monitoring:      false,
 						AnnotationCheck: "true",
 						EngineState:     "active",
 						Appinfo: litmuschaosv1alpha1.ApplicationParams{
