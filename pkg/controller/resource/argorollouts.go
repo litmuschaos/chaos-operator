@@ -47,7 +47,7 @@ func getRolloutList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) 
 		return nil, fmt.Errorf("error while listing argo rollouts with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(rolloutList.Items) == 0 {
-		return nil, fmt.Errorf("no argo rollouts with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no argo rollouts with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	return rolloutList, err
 }
@@ -59,7 +59,7 @@ func checkForChaosEnabledRollout(rolloutList *unstructured.UnstructuredList, eng
 	for _, rollout := range rolloutList.Items {
 		annotationValue := rollout.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", rollout.GetName(), "appUUID: ", rollout.GetUID())
+			chaosTypes.Log.Info("chaos candidate for rollout", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", rollout.GetName(), "appUUID: ", rollout.GetUID())
 			chaosEnabledRollout++
 		}
 	}

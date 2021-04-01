@@ -49,7 +49,7 @@ func getDeploymentLists(clientset kubernetes.Interface, engine *chaosTypes.Engin
 		return nil, fmt.Errorf("error while listing deployments with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(targetAppList.Items) == 0 {
-		return nil, fmt.Errorf("no deployment found with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no deployment found with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	return targetAppList, err
 }
@@ -60,7 +60,7 @@ func checkForChaosEnabledDeployment(targetAppList *v1.DeploymentList, engine *ch
 	for _, deployment := range targetAppList.Items {
 		annotationValue := deployment.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", deployment.ObjectMeta.Name, "appUUID: ", deployment.ObjectMeta.UID)
+			chaosTypes.Log.Info("chaos candidate for deployment", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", deployment.ObjectMeta.Name, "appUUID: ", deployment.ObjectMeta.UID)
 			chaosEnabledDeployment++
 		}
 	}

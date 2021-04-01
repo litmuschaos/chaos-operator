@@ -35,7 +35,7 @@ func CheckStatefulSetAnnotation(clientset kubernetes.Interface, engine *chaosTyp
 	}
 	engine, chaosEnabledStatefulSet := checkForChaosEnabledStatefulSet(targetAppList, engine)
 	if chaosEnabledStatefulSet == 0 {
-		return engine, errors.New("no chaos-candidate found")
+		return engine, errors.New("no statefulsets chaos-candidate found")
 	}
 	return engine, nil
 }
@@ -49,7 +49,7 @@ func getStatefulSetLists(clientset kubernetes.Interface, engine *chaosTypes.Engi
 		return nil, fmt.Errorf("error while listing statefulsets with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(targetAppList.Items) == 0 {
-		return nil, fmt.Errorf("no statefulset found with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no statefulset found with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	return targetAppList, err
 }
@@ -60,7 +60,7 @@ func checkForChaosEnabledStatefulSet(targetAppList *appsV1.StatefulSetList, engi
 	for _, statefulSet := range targetAppList.Items {
 		annotationValue := statefulSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", statefulSet.ObjectMeta.Name, "appUUID: ", statefulSet.ObjectMeta.UID)
+			chaosTypes.Log.Info("chaos candidate for statefulset", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", statefulSet.ObjectMeta.Name, "appUUID: ", statefulSet.ObjectMeta.UID)
 			chaosEnabledStatefulSet++
 		}
 	}

@@ -46,7 +46,7 @@ func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.Eng
 		return nil, fmt.Errorf("error while listing deploymentconfigs with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(deploymentConfigList.Items) == 0 {
-		return nil, fmt.Errorf("no deploymentconfigs found with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no deploymentconfigs found with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	return deploymentConfigList, err
 }
@@ -58,7 +58,7 @@ func checkForChaosEnabledDeploymentConfig(deploymentConfigList *unstructured.Uns
 	for _, deploymentconfig := range deploymentConfigList.Items {
 		annotationValue := deploymentconfig.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", deploymentconfig.GetName(), "appUUID: ", deploymentconfig.GetUID())
+			chaosTypes.Log.Info("chaos candidate for deploymentconfig", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", deploymentconfig.GetName(), "appUUID: ", deploymentconfig.GetUID())
 			chaosEnabledDeploymentConfig++
 		}
 	}

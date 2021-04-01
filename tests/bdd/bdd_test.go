@@ -234,7 +234,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 						},
 					},
 					JobCleanUpPolicy: "retain",
-					Monitoring:       true,
 					EngineState:      "active",
 					Experiments: []v1alpha1.ExperimentList{
 						{
@@ -362,7 +361,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 						},
 					},
 					JobCleanUpPolicy: "delete",
-					Monitoring:       true,
 					EngineState:      "active",
 					Experiments: []v1alpha1.ExperimentList{
 						{

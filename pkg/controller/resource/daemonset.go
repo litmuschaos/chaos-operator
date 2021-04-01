@@ -35,7 +35,7 @@ func CheckDaemonSetAnnotation(clientset kubernetes.Interface, engine *chaosTypes
 	}
 	engine, chaosEnabledDaemonSet := checkForChaosEnabledDaemonSet(targetAppList, engine)
 	if chaosEnabledDaemonSet == 0 {
-		return engine, errors.New("no chaos-candidate found")
+		return engine, errors.New("no daemonsets chaos-candidate found")
 	}
 	return engine, nil
 }
@@ -46,10 +46,10 @@ func getDaemonSetLists(clientset kubernetes.Interface, engine *chaosTypes.Engine
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing daemonSets with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing daemonsets with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
 	}
 	if len(targetAppList.Items) == 0 {
-		return nil, fmt.Errorf("no daemonSets found with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no daemonsets found with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	return targetAppList, err
 }
@@ -60,7 +60,7 @@ func checkForChaosEnabledDaemonSet(targetAppList *appsV1.DaemonSetList, engine *
 	for _, daemonSet := range targetAppList.Items {
 		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", daemonSet.ObjectMeta.Name, "appUUID: ", daemonSet.ObjectMeta.UID)
+			chaosTypes.Log.Info("chaos candidate for daemonset", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", daemonSet.ObjectMeta.Name, "appUUID: ", daemonSet.ObjectMeta.UID)
 			chaosEnabledDaemonSet++
 		}
 	}

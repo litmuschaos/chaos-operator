@@ -183,7 +183,7 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 		appNS = cr.Namespace
 	}
 
-	ENVList := map[string]string{
+	envList := map[string]string{
 		"CHAOSENGINE":       cr.Name,
 		"APP_LABEL":         cr.Spec.Appinfo.Applabel,
 		"APP_KIND":          cr.Spec.Appinfo.AppKind,
@@ -197,14 +197,14 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 		"ANNOTATION_KEY":    resource.GetAnnotationKey(),
 	}
 
-	var ENV []corev1.EnvVar
-	for key, value := range ENVList {
-		ENV = append(ENV, corev1.EnvVar{
+	var env []corev1.EnvVar
+	for key, value := range envList {
+		env = append(env, corev1.EnvVar{
 			Name:  key,
 			Value: value,
 		})
 	}
-	return ENV
+	return env
 }
 
 // getChaosRunnerLabels return the labels required for chaos-runner
@@ -320,12 +320,11 @@ func getApplicationDetail(engine *chaosTypes.EngineInfo) error {
 	}
 	engine.AppExperiments = appExperiments
 
-	chaosTypes.Log.Info("App Label derived from Chaosengine is ", "appLabel", engine.Instance.Spec.Appinfo.Applabel)
-	chaosTypes.Log.Info("App NS derived from Chaosengine is ", "appNamespace", engine.Instance.Spec.Appinfo.Appns)
-	chaosTypes.Log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
-	chaosTypes.Log.Info("Monitoring Status derived from chaosengine is", "monitoringStatus", engine.Instance.Spec.Monitoring)
-	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", engine.Instance.Spec.Components.Runner.Image)
-	chaosTypes.Log.Info("Annotation check is ", "annotationCheck", engine.Instance.Spec.AnnotationCheck)
+	chaosTypes.Log.Info("App Label derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "appLabel", engine.Instance.Spec.Appinfo.Applabel)
+	chaosTypes.Log.Info("App NS derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "appNamespace", engine.Instance.Spec.Appinfo.Appns)
+	chaosTypes.Log.Info("Exp list derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "appExpirements", appExperiments)
+	chaosTypes.Log.Info("Runner image derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "runnerImage", engine.Instance.Spec.Components.Runner.Image)
+	chaosTypes.Log.Info("Annotation check derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "annotationCheck", engine.Instance.Spec.AnnotationCheck)
 	return nil
 }
 
@@ -422,7 +421,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 
 	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos stop) Unable to update chaosengine")
-		return reconcile.Result{}, fmt.Errorf("unable to remove finalizer from chaosEngine Resource, due to error: %v", err)
+		return reconcile.Result{}, fmt.Errorf("unable to remove finalizer from chaosEngine Resource, due to error: %w", err)
 	}
 
 	//we are repeating this condition/check here as we want the events for 'ChaosEngineStopped'
@@ -440,6 +439,10 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 // forceRemoveAllChaosPods force removes all chaos-related pods
 func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
 	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(metav1.DeletePropagationBackground)}
+	if engine.Instance.Spec.TerminationGracePeriodSeconds != 0 {
+		optsDelete = append(optsDelete, client.GracePeriodSeconds(engine.Instance.Spec.TerminationGracePeriodSeconds))
+	}
+
 	var deleteEvent []string
 	var err []error
 
@@ -464,7 +467,7 @@ func (r *ReconcileChaosEngine) updateEngineState(engine *chaosTypes.EngineInfo, 
 	patch := client.MergeFrom(engine.Instance.DeepCopy())
 	engine.Instance.Spec.EngineState = state
 	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil {
-		return fmt.Errorf("unable to patch state of chaosEngine Resource, due to error: %v", err)
+		return fmt.Errorf("unable to patch state of chaosEngine Resource, due to error: %w", err)
 	}
 	return nil
 }
@@ -528,7 +531,7 @@ func (r *ReconcileChaosEngine) reconcileForComplete(engine *chaosTypes.EngineInf
 	err = r.updateEngineState(engine, litmuschaosv1alpha1.EngineStateStop)
 	if err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos completion) Unable to update chaosengine")
-		return reconcile.Result{}, fmt.Errorf("unable to Update Engine State: %v", err)
+		return reconcile.Result{}, fmt.Errorf("unable to Update Engine State: %w", err)
 	}
 	return reconcile.Result{}, nil
 }
@@ -569,7 +572,7 @@ func (r *ReconcileChaosEngine) reconcileForRestartAfterComplete(engine *chaosTyp
 
 	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos restart) Unable to update chaosengine")
-		return reconcile.Result{}, fmt.Errorf("unable to patch state & remove stale finalizer in chaosEngine Resource, due to error: %v", err)
+		return reconcile.Result{}, fmt.Errorf("unable to patch state & remove stale finalizer in chaosEngine Resource, due to error: %w", err)
 	}
 	return reconcile.Result{}, nil
 
@@ -587,7 +590,7 @@ func (r *ReconcileChaosEngine) initEngine(engine *chaosTypes.EngineInfo) error {
 		if engine.Instance.ObjectMeta.Finalizers == nil {
 			engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
 			if err := r.client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-				return fmt.Errorf("unable to initialize ChaosEngine, because of Update Error: %v", err)
+				return fmt.Errorf("unable to initialize ChaosEngine, because of Update Error: %w", err)
 			}
 			// generate the ChaosEngineInitialized event once finalizer has been added
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineInitialized", "Identifying app under test & launching %s", engine.Instance.Name+"-runner")
@@ -604,7 +607,7 @@ func (r *ReconcileChaosEngine) reconcileForCreationAndRunning(engine *chaosTypes
 		stopEngineWithAnnotationErrorMessage := r.updateEngineState(engine, litmuschaosv1alpha1.EngineStateStop)
 		if stopEngineWithAnnotationErrorMessage != nil {
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos stop) Unable to update chaosengine")
-			return reconcile.Result{}, fmt.Errorf("unable to Update Engine State: %v", err)
+			return reconcile.Result{}, fmt.Errorf("unable to Update Engine State: %w", err)
 		}
 		return reconcile.Result{}, err
 	}
@@ -675,7 +678,7 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 	if engine.Instance.Spec.AnnotationCheck == "true" {
 
 		if engine.Instance.Spec.Appinfo.Applabel == "" || engine.Instance.Spec.Appinfo.Appns == "" || engine.Instance.Spec.Appinfo.AppKind == "" {
-			return errors.Errorf("Incomplete AppInfo inside chaosengine")
+			return fmt.Errorf("incomplete AppInfo inside chaosengine")
 		}
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
@@ -695,7 +698,7 @@ func (r *ReconcileChaosEngine) updateEngineForComplete(engine *chaosTypes.Engine
 		engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusCompleted
 		engine.Instance.Spec.EngineState = litmuschaosv1alpha1.EngineStateStop
 		if err := r.client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-			return fmt.Errorf("unable to update ChaosEngine Status, due to update error: %v", err)
+			return fmt.Errorf("unable to update ChaosEngine Status, due to update error: %w", err)
 		}
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineCompleted", "ChaosEngine completed, will delete or retain the resources according to jobCleanUpPolicy")
 	}
@@ -707,7 +710,7 @@ func (r *ReconcileChaosEngine) updateEngineForRestart(engine *chaosTypes.EngineI
 	engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusInitialized
 	engine.Instance.Status.Experiments = nil
 	if err := r.client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-		return fmt.Errorf("unable to restart ChaosEngine, due to update error: %v", err)
+		return fmt.Errorf("unable to restart ChaosEngine, due to update error: %w", err)
 	}
 	return nil
 }
