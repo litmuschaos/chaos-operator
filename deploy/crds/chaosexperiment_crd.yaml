@@ -150,6 +150,8 @@ spec:
                     type: object
                 image:
                   type: string
+                imagePullPolicy:
+                  type: string
                 labels:
                   type: object
                   properties:
