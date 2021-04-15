@@ -28,8 +28,6 @@ spec:
         spec:
           type: object
           properties:
-            monitoring:
-              type: boolean
             jobCleanUpPolicy:
               type: string
               pattern: ^(delete|retain)$
@@ -57,6 +55,8 @@ spec:
               pattern: ^(active|stop)$
             chaosServiceAccount:
               type: string
+            terminationGracePeriodSeconds:
+              type: integer
             components:
               type: object
               properties:
@@ -68,7 +68,7 @@ spec:
                     type:
                       type: string
                       pattern: ^(go)$
-                    runnerannotation:
+                    runnerAnnotations:
                       type: object
                       additionalProperties:
                         type: string
@@ -367,7 +367,7 @@ spec:
                                   type: string
                                 mountPath:
                                   type: string
-                          experimentannotation:
+                          experimentAnnotations:
                             type: object
                             additionalProperties:
                               type: string
@@ -380,8 +380,6 @@ spec:
                                   type: string
                                   minLength: 1
                                   allowEmptyValue: false
-
-
         status:
           type: object
   version: v1alpha1

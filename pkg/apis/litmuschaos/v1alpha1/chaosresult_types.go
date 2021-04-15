@@ -41,7 +41,7 @@ type ChaosResultStatus struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 
 	// ExperimentStatus contains the status,verdict of the experiment
-	ExperimentStatus TestStatus `json:"experimentstatus"`
+	ExperimentStatus TestStatus `json:"experimentStatus"`
 	// ProbeStatus contains the status of the probe
 	ProbeStatus []ProbeStatus `json:"probeStatus,omitempty"`
 	// History contains cumulative values of verdicts
