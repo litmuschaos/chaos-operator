@@ -1,4 +1,4 @@
-name: Push
+name: push-pipeline
 on:
   push:
     branches:

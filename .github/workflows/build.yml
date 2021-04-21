@@ -1,9 +1,11 @@
 name: build-pipeline
 on:
   pull_request:
-    branches: [master, remove-vend]
+    branches: [master]
     types: [opened, synchronize, reopened]
-
+  push:
+    branches:
+      - remove-vend
 jobs:
   pre-checks:
     runs-on: ubuntu-latest
