@@ -3,9 +3,7 @@ on:
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - remove-vend
+
 jobs:
   pre-checks:
     runs-on: ubuntu-latest

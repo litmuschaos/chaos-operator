@@ -53,7 +53,7 @@ unused-package-check:
 		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
 	fi
 
-.PHONY: build-chaos-exporter build-chaos-exporter-amd64 push-chaos-exporter
+.PHONY: build-chaos-operator build-chaos-operator-amd64 push-chaos-operator
 
 build-chaos-operator:
 	@docker buildx build --file build/Dockerfile --progress plane  --no-cache --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
