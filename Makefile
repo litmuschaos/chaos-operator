@@ -3,35 +3,23 @@
 
 IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 
-# list only our namespaced directories
-PACKAGES = $(shell go list ./... | grep -v '/vendor/')
-
 # docker info
 DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-operator
 DOCKER_TAG ?= latest
 
 .PHONY: all
-all: deps format lint build test dockerops dockerops-amd64
+all: deps unused-package-check build-chaos-operator test
 
 .PHONY: help
 help:
 	@echo ""
 	@echo "Usage:-"
 	@echo "\tmake deps      -- sets up dependencies for image build"
-	@echo "\tmake gotasks   -- builds the chaos operator binary"
-	@echo "\tmake dockerops -- builds & pushes the chaos operator image"
 	@echo ""
 
 .PHONY: deps
-deps: _build_check_docker godeps unused-package-check
-
-.PHONY: godeps
-godeps:
-	@echo ""
-	@echo "INFO:\tverifying dependencies for chaos operator build ..."
-	@go get -u -v golang.org/x/lint/golint
-	@go get -u -v golang.org/x/tools/cmd/goimports
+deps: _build_check_docker godeps
 
 .PHONY: _build_check_docker
 _build_check_docker:
@@ -42,33 +30,12 @@ _build_check_docker:
 		&& exit 1; \
 		fi;
 
-.PHONY: gotasks
-gotasks: format lint build
-
-.PHONY: format
-format:
-	@echo "------------------"
-	@echo "--> Running go fmt"
-	@echo "------------------"
-	@go fmt $(PACKAGES)
-
-.PHONY: lint
-lint:
-	@echo "------------------"
-	@echo "--> Running golint"
-	@echo "------------------"
-	@golint $(PACKAGES)
-	@echo "------------------"
-	@echo "--> Running go vet"
-	@echo "------------------"
-	@go vet $(PACKAGES)
-
-.PHONY: build
-build:
-	@echo "------------------"
-	@echo "--> Build Chaos Operator"
-	@echo "------------------"
-	@./build/go-multiarch-build.sh github.com/litmuschaos/chaos-operator/cmd/manager
+.PHONY: godeps
+godeps:
+	@echo ""
+	@echo "INFO:\tverifying dependencies for chaos operator build ..."
+	@go get -u -v golang.org/x/lint/golint
+	@go get -u -v golang.org/x/tools/cmd/goimports
 
 .PHONY: test
 test:
@@ -76,25 +43,6 @@ test:
 	@echo "--> Run Go Test"
 	@echo "------------------"
 	@go test ./... -coverprofile=coverage.txt -covermode=atomic -v
-
-.PHONY: dockerops
-dockerops:
-	@echo "------------------"
-	@echo "--> Build & Push chaos-operator docker image"
-	@echo "------------------"
-	sudo docker buildx build --file build/Dockerfile --progress plane --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
-	REPONAME=$(DOCKER_REPO) IMGNAME=$(DOCKER_IMAGE) IMGTAG=$(DOCKER_TAG) ./buildscripts/push
-
-.PHONY: dockerops-amd64
-dockerops-amd64:
-	@echo "--------------------------------------------"
-	@echo "--> Build chaos-operator amd-64 docker image"
-	@echo "--------------------------------------------"
-	sudo docker build --file build/Dockerfile --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) . --build-arg TARGETARCH=amd64
-	@echo "--------------------------------------------"
-	@echo "--> Push chaos-operator amd-64 docker image"
-	@echo "--------------------------------------------"	
-	sudo docker push $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 
 unused-package-check:
 	@echo "------------------"
@@ -105,3 +53,13 @@ unused-package-check:
 		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
 	fi
 
+.PHONY: build-chaos-exporter build-chaos-exporter-amd64 push-chaos-exporter
+
+build-chaos-operator:
+	@docker buildx build --file Dockerfile --progress plane  --no-cache --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+
+build-for-amd64:
+	@docker build -f Dockerfile  --no-cache -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .  --build-arg TARGETPLATFORM="linux/amd64"
+
+push-chaos-operator:
+	@docker buildx build --file Dockerfile --progress plane --no-cache --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
