@@ -21,11 +21,15 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
 
 LABEL maintainer="LitmusChaos"
 
-COPY --from=builder /output/chaos-operator /
+ENV OPERATOR=/usr/local/bin/chaos-operator \
+    USER_UID=1001 \
+    USER_NAME=chaos-operator
 
-RUN addgroup -S litmus && adduser -S -G litmus 1001
+COPY --from=builder /output/chaos-operator ${OPERATOR}
+COPY build/bin /usr/local/bin
 
-USER 1001
+RUN  /usr/local/bin/user_setup
 
-CMD ["./chaos-operator"]
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
+USER ${USER_UID}
