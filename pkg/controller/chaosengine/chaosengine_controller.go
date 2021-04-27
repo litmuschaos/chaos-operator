@@ -836,7 +836,7 @@ func (r *ReconcileChaosEngine) waitForChaosPodTermination(engine *chaosTypes.Eng
 				return err
 			}
 			if len(chaosPodList.Items) != 0 {
-				return errors.Errorf("Chaos Pods are not deleted yet")
+				return errors.Errorf("chaos pods are not deleted yet")
 			}
 			return nil
 		})
