@@ -743,7 +743,7 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 	if engine.Instance.Spec.AnnotationCheck == "true" {
 
 		if engine.AppInfo.Label == "" || engine.AppInfo.Namespace == "" || engine.AppInfo.Kind == "" {
-			return errors.Errorf("Incomplete AppInfo inside chaosengine")
+			return errors.Errorf("incomplete AppInfo inside chaosengine")
 		}
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
@@ -807,7 +807,7 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 	}
 
 	for _, result := range chaosresultList.Items {
-		if result.Spec.EngineName == engine.Instance.Name {
+		if result.Labels["chaosUID"] == string(engine.Instance.UID) {
 			targetsList, annotations := getChaosStatus(result)
 			result.Status.History.Targets = append(result.Status.History.Targets, targetsList...)
 			result.ObjectMeta.Annotations = annotations
@@ -849,7 +849,7 @@ func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alph
 	targetsList := []litmuschaosv1alpha1.TargetDetails{}
 	for k, v := range annotations {
 		switch strings.ToLower(v) {
-		case "injected", "recovered", "n/a":
+		case "injected", "reverted", "targeted":
 			kind := strings.TrimSpace(strings.Split(k, "/")[0])
 			name := strings.TrimSpace(strings.Split(k, "/")[1])
 			target := litmuschaosv1alpha1.TargetDetails{
