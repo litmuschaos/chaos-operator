@@ -809,7 +809,7 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 	for _, result := range chaosresultList.Items {
 		if result.Spec.EngineName == engine.Instance.Name {
 			targetsList, annotations := getChaosStatus(result)
-			result.Status.History.Targets = targetsList
+			result.Status.History.Targets = append(result.Status.History.Targets, targetsList...)
 			result.ObjectMeta.Annotations = annotations
 
 			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
