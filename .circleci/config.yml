@@ -10,7 +10,7 @@ jobs:
       image: ubuntu-1604:202007-01
     working_directory: ~/go/src/github.com/litmuschaos/chaos-operator
     environment:
-      K8S_VERSION: v1.12.0
+      K8S_VERSION: v1.17.0
       KUBECONFIG: /home/circleci/.kube/config
       MINIKUBE_VERSION: v1.3.1
       HOME: /home/circleci
