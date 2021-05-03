@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - test-remove-vend
     tags-ignore:
       - '**'
 
