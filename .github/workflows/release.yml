@@ -1,9 +1,7 @@
-name: push-pipeline
+name: release-pipeline
 on:
-  push:
-    branches:
-      - master
-    tags-ignore:
+  create:
+    tags:
       - '**'
 
 jobs:
@@ -52,11 +50,26 @@ jobs:
       - name: login to GitHub Container Registry
         run: echo ${{ secrets.DPASS }} | docker login -u ${{ secrets.DNAME }} --password-stdin
 
-      - name: Build & Push Docker Image
+      - name: Set Tag
+        run: |
+          TAG="${GITHUB_REF#refs/*/}"
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
+
+      - name: Build & Push Docker Image with version tag
         env:
           DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
           DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
-          DOCKER_TAG: ci
+          DOCKER_TAG: ${RELEASE_TAG}
+          DNAME: ${{ secrets.DNAME }}
+          DPASS: ${{ secrets.DPASS }}
+        run: make push-chaos-operator
+
+      - name: Build & Push Docker Image with latest
+        env:
+          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
+          DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
+          DOCKER_TAG: latest
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: make push-chaos-operator

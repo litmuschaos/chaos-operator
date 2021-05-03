@@ -19,20 +19,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: gofmt check
-        run: |
-          if [ "$(gofmt -s -l . | wc -l)" -ne 0 ]
-          then
-           echo "The following files were found to be not go formatted:"
-           gofmt -s -l .
-           exit 1
-          fi
+        run: make gofmt-check
 
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v1
 
       - name: unused-package check
-        run: |
-          make unused-package-check
+        run: make unused-package-check
 
   image-build:
     runs-on: ubuntu-latest
