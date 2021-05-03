@@ -57,11 +57,11 @@ gofmt-check:
 	@echo "------------------"
 	@echo "--> Check unused packages for the chaos-operator"
 	@echo "------------------"
-	if [ "$(gofmt -s -l . | wc -l)" -ne 0 ]
-	then
+	@gfmt=$$(gofmt -s -l . | wc -l); \
+	if [ "$${gfmt}" -ne 0 ]; then \
 		echo "The following files were found to be not go formatted:"; \
-   		gofmt -s -l . \
-   		exit 1 \
+   		gofmt -s -l .; \
+   		exit 1; \
   	fi
 
 .PHONY: build-chaos-operator build-chaos-operator-amd64 push-chaos-operator
