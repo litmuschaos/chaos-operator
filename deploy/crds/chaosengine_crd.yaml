@@ -73,7 +73,7 @@ spec:
                       type:
                         type: string
                         pattern: ^(go)$
-                      runnerAnnotation:
+                      runnerAnnotations:
                         type: object
                         additionalProperties:
                           type: string
@@ -226,6 +226,7 @@ spec:
                               data:
                                 type: string
                         components:
+                          x-kubernetes-preserve-unknown-fields: true 
                           type: object
                           properties:
                             statusCheckTimeouts:
@@ -237,7 +238,17 @@ spec:
                                   type: integer
                             nodeSelector:
                               type: object
-                              minLength: 1
+                              additionalProperties:
+                                type: string
+                                properties:
+                                  key:
+                                    type: string
+                                    minLength: 1
+                                    allowEmptyValue: false
+                                  value:
+                                    type: string
+                                    minLength: 1
+                                    allowEmptyValue: false
                             experimentImage:
                               type: string
                             env:
@@ -373,7 +384,7 @@ spec:
                                     type: string
                                   mountPath:
                                     type: string
-                            experimentAnnotation:
+                            experimentAnnotations:
                               type: object
                               additionalProperties:
                                 type: string
