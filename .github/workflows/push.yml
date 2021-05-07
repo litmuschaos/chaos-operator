@@ -94,17 +94,3 @@ jobs:
       - name: Running Go BDD Test
         run: |
           make test
-
-  security-scan:
-    needs: pre-checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'docker.io/litmuschaos/chaos-operator:ci'
-          format: 'table'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
