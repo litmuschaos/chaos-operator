@@ -44,7 +44,7 @@ var (
 	AppLabelKey string
 
 	// DefaultAnnotationCheck contains the default value (true) of the annotationCheck
-	DefaultAnnotationCheck = "true"
+	DefaultAnnotationCheck = "false"
 
 	// AppLabelValue contains the application label value
 	AppLabelValue string
