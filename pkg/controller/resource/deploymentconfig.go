@@ -29,7 +29,7 @@ func CheckDeploymentConfigAnnotation(clientSet dynamic.Interface, engine *chaosT
 	}
 	engine, chaosEnabledDeploymentConfig := checkForChaosEnabledDeploymentConfig(deploymentConfigList, engine)
 	if chaosEnabledDeploymentConfig == 0 {
-		return engine, errors.New("no DeploymentConfig chaos-candidate found")
+		return engine, errors.New("no deploymentconfig chaos-candidate found")
 	}
 
 	return engine, nil
@@ -43,7 +43,7 @@ func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.Eng
 	deploymentConfigList, err := dynamicClient.Namespace(engine.Instance.Spec.Appinfo.Appns).List(metav1.ListOptions{
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing deploymentconfigs with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing deploymentconfigs with matching labels %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	if len(deploymentConfigList.Items) == 0 {
 		return nil, fmt.Errorf("no deploymentconfigs found with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)

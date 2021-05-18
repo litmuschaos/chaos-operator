@@ -44,7 +44,7 @@ func getRolloutList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) 
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing argo rollouts with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing argo rollouts with matching labels %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	if len(rolloutList.Items) == 0 {
 		return nil, fmt.Errorf("no argo rollouts with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)

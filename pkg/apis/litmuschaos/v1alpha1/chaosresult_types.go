@@ -50,9 +50,17 @@ type ChaosResultStatus struct {
 
 // HistoryDetails contains cumulative values of verdicts
 type HistoryDetails struct {
-	PassedRuns  int `json:"passedRuns"`
-	FailedRuns  int `json:"failedRuns"`
-	StoppedRuns int `json:"stoppedRuns"`
+	PassedRuns  int             `json:"passedRuns"`
+	FailedRuns  int             `json:"failedRuns"`
+	StoppedRuns int             `json:"stoppedRuns"`
+	Targets     []TargetDetails `json:"targets,omitempty"`
+}
+
+// TargetDetails contains target details for the experiment and the chaos status
+type TargetDetails struct {
+	Target      string `json:"target,omitempty"`
+	Kind        string `json:"kind,omitempty"`
+	ChaosStatus string `json:"chaosStatus,omitempty"`
 }
 
 // ProbeStatus defines information about the status and result of the probes

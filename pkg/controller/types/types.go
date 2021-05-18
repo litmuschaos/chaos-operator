@@ -42,7 +42,7 @@ import (
 var (
 
 	// DefaultAnnotationCheck contains the default value (true) of the annotationCheck
-	DefaultAnnotationCheck = "true"
+	DefaultAnnotationCheck = "false"
 
 	// Log with default name ie: controller_chaosengine
 	Log = logf.Log.WithName("controller_chaosengine")

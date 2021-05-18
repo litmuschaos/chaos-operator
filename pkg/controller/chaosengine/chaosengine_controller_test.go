@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	apis "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -1795,7 +1796,11 @@ func CreateFakeClient(t *testing.T) *ReconcileChaosEngine {
 		},
 	}
 
-	s.AddKnownTypes(litmuschaosv1alpha1.SchemeGroupVersion, engineR)
+	chaosResultList := &apis.ChaosResultList{
+		Items: []litmuschaosv1alpha1.ChaosResult{},
+	}
+
+	s.AddKnownTypes(apis.SchemeGroupVersion, engineR, chaosResultList)
 
 	recorder := record.NewFakeRecorder(1024)
 

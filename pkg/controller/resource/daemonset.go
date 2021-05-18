@@ -46,7 +46,7 @@ func getDaemonSetLists(clientset kubernetes.Interface, engine *chaosTypes.Engine
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing daemonsets with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing daemonsets with matching labels %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	if len(targetAppList.Items) == 0 {
 		return nil, fmt.Errorf("no daemonsets found with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
