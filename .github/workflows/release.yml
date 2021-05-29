@@ -1,0 +1,109 @@
+name: release-pipeline
+on:
+  create:
+    tags:
+      - '**'
+
+jobs:
+  pre-checks:
+    runs-on: ubuntu-latest
+    steps:
+      # Install golang
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+
+      # Checkout to the latest commit
+      # On specific directory/path
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: gofmt check
+        run: make gofmt-check
+
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@v1
+
+      - name: unused-package check
+        run: make unused-package-check
+
+  image-build:
+    runs-on: ubuntu-latest
+    needs: pre-checks
+    steps:
+      # Checkout to the latest commit
+      # On specific directory/path
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+
+      - name: login to GitHub Container Registry
+        run: echo ${{ secrets.DPASS }} | docker login -u ${{ secrets.DNAME }} --password-stdin
+
+      - name: Set Tag
+        run: |
+          TAG="${GITHUB_REF#refs/*/}"
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
+
+      - name: Build & Push Docker Image with version tag
+        env:
+          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
+          DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
+          DOCKER_TAG: ${RELEASE_TAG}
+          DNAME: ${{ secrets.DNAME }}
+          DPASS: ${{ secrets.DPASS }}
+        run: make push-chaos-operator
+
+      - name: Build & Push Docker Image with latest
+        env:
+          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
+          DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
+          DOCKER_TAG: latest
+          DNAME: ${{ secrets.DNAME }}
+          DPASS: ${{ secrets.DPASS }}
+        run: make push-chaos-operator
+
+  tests:
+    needs: pre-checks
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout to the latest commit
+      # On specific directory/path
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Install golang
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+
+      #Install and configure a kind cluster
+      - name: Installing Prerequisites (KinD Cluster)
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: "v0.7.0"
+
+      - name: Configuring and testing the Installation
+        run: |
+          kubectl cluster-info --context kind-kind
+          kind get kubeconfig --internal >$HOME/.kube/config
+          kubectl get nodes
+
+      - name: Dependency checks
+        run: |
+          make deps
+
+      - name: Running Go BDD Test
+        run: |
+          make test
