@@ -308,6 +308,10 @@ type RunProperty struct {
 	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
 	//InitialDelaySeconds time interval for which probe will wait before run
 	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
+	// StopOnFailure contains flag to stop/continue experiment execution, if probe fails
+	// it will stop the experiment execution, if provided true
+	// it will continue the experiment execution, if provided false or not provided(default case)
+	StopOnFailure bool `json:"stopOnFailure,omitempty"`
 }
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
