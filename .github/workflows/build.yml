@@ -21,8 +21,8 @@ jobs:
       - name: gofmt check
         run: make gofmt-check
 
-      - name: golangci-lint
-        uses: reviewdog/action-golangci-lint@v1
+      # - name: golangci-lint
+      #   uses: reviewdog/action-golangci-lint@v1
 
       - name: unused-package check
         run: make unused-package-check
