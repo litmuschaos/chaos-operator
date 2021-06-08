@@ -68,10 +68,10 @@ const (
 	ExperimentStatusWaiting ExperimentStatus = "Waiting for Job Creation"
 	// ExperimentStatusNotFound is status of Experiment which is not found inside ChaosNamespace
 	ExperimentStatusNotFound ExperimentStatus = "ChaosExperiment Not Found"
-	// ExperimentStatusSuccessful is status of a Successful experiment execution
-	ExperimentStatusSuccessful ExperimentStatus = "Execution Successful"
 	// ExperimentStatusAborted is status of a Experiment is forcefully aborted
 	ExperimentStatusAborted ExperimentStatus = "Forcefully Aborted"
+	// ExperimentSkipped is status of Experiment which has been skipped
+	ExperimentSkipped ExperimentStatus = "Skipped"
 )
 
 // EngineStatus provides interface for all supported strings in status.EngineStatus
