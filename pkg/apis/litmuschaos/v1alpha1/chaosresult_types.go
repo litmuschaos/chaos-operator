@@ -50,11 +50,11 @@ type ResultVerdict string
 
 const (
 	// ResultVerdictPassed is verdict of chaosresult when experiment passed
-	ResultVerdictPassed ResultPhase = "Pass"
+	ResultVerdictPassed ResultVerdict = "Pass"
 	// ResultVerdictFailed is verdict of chaosresult when experiment failed
-	ResultVerdictFailed ResultPhase = "Fail"
+	ResultVerdictFailed ResultVerdict = "Fail"
 	// ResultVerdictFailed is verdict of chaosresult when experiment aborted
-	ResultVerdictStopped ResultPhase = "Stopped"
+	ResultVerdictStopped ResultVerdict = "Stopped"
 )
 
 // ChaosResultStatus defines the observed state of ChaosResult
