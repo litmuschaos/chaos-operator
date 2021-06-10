@@ -82,7 +82,7 @@ type HistoryDetails struct {
 
 // TargetDetails contains target details for the experiment and the chaos status
 type TargetDetails struct {
-	Target      string `json:"target,omitempty"`
+	Name        string `json:"name,omitempty"`
 	Kind        string `json:"kind,omitempty"`
 	ChaosStatus string `json:"chaosStatus,omitempty"`
 }
