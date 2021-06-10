@@ -853,7 +853,7 @@ func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alph
 			kind := strings.TrimSpace(strings.Split(k, "/")[0])
 			name := strings.TrimSpace(strings.Split(k, "/")[1])
 			target := litmuschaosv1alpha1.TargetDetails{
-				Target:      name,
+				Name:        name,
 				Kind:        kind,
 				ChaosStatus: v,
 			}
