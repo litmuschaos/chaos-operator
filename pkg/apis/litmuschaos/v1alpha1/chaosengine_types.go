@@ -68,10 +68,10 @@ const (
 	ExperimentStatusWaiting ExperimentStatus = "Waiting for Job Creation"
 	// ExperimentStatusNotFound is status of Experiment which is not found inside ChaosNamespace
 	ExperimentStatusNotFound ExperimentStatus = "ChaosExperiment Not Found"
-	// ExperimentStatusSuccessful is status of a Successful experiment execution
-	ExperimentStatusSuccessful ExperimentStatus = "Execution Successful"
 	// ExperimentStatusAborted is status of a Experiment is forcefully aborted
 	ExperimentStatusAborted ExperimentStatus = "Forcefully Aborted"
+	// ExperimentSkipped is status of Experiment which has been skipped
+	ExperimentSkipped ExperimentStatus = "Skipped"
 )
 
 // EngineStatus provides interface for all supported strings in status.EngineStatus
@@ -308,6 +308,10 @@ type RunProperty struct {
 	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
 	//InitialDelaySeconds time interval for which probe will wait before run
 	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
+	// StopOnFailure contains flag to stop/continue experiment execution, if probe fails
+	// it will stop the experiment execution, if provided true
+	// it will continue the experiment execution, if provided false or not provided(default case)
+	StopOnFailure bool `json:"stopOnFailure,omitempty"`
 }
 
 // ExperimentComponents contains ENV, Configmaps and Secrets
