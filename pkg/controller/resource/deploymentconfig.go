@@ -58,7 +58,7 @@ func checkForChaosEnabledDeploymentConfig(deploymentConfigList *unstructured.Uns
 	for _, deploymentconfig := range deploymentConfigList.Items {
 		annotationValue := deploymentconfig.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate for deploymentconfig", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", deploymentconfig.GetName(), "appUUID: ", deploymentconfig.GetUID())
+			chaosTypes.Log.Info("chaos candidate for deploymentconfig", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", deploymentconfig.GetName())
 			chaosEnabledDeploymentConfig++
 		}
 	}

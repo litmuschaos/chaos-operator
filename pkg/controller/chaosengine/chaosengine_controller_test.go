@@ -25,8 +25,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	apis "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
@@ -46,20 +45,20 @@ func TestGetChaosRunnerENV(t *testing.T) {
 	fakeClientUUID := "12345678-9012-3456-7890-123456789012"
 
 	tests := map[string]struct {
-		instance       *litmuschaosv1alpha1.ChaosEngine
+		instance       *v1alpha1.ChaosEngine
 		aExList        []string
 		expectedResult []corev1.EnvVar
 	}{
 		"Test Positive-1": {
-			instance: &litmuschaosv1alpha1.ChaosEngine{
+			instance: &v1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fakeEngineName,
 					Namespace: fakeNameSpace,
 				},
-				Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+				Spec: v1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: fakeServiceAcc,
 					AnnotationCheck:     fakeAnnotationCheck,
-					Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Appinfo: v1alpha1.ApplicationParams{
 						Applabel: fakeAppLabel,
 						Appns:    fakeNameSpace,
 						AppKind:  fakeAppKind,
@@ -139,13 +138,13 @@ func TestGetApplicationDetail(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-monitor",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "key=value",
 						},
 					},
@@ -181,19 +180,19 @@ func TestGetAnnotationCheck(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
 						AnnotationCheck: "true",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -206,19 +205,19 @@ func TestGetAnnotationCheck(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -232,19 +231,19 @@ func TestGetAnnotationCheck(t *testing.T) {
 		},
 		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						AnnotationCheck:     "fakeCheck",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -276,25 +275,25 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "validate-annotation-p2",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						EngineState:         "active",
 						AnnotationCheck:     "false",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
@@ -309,24 +308,24 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 		},
 		"Test Negetive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "validate-annotation-n1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
 						EngineState:     "active",
 						AnnotationCheck: "dummy",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
@@ -338,24 +337,24 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 		},
 		"Test Negetive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "validate-annotation-n2",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						AnnotationCheck: "true",
 						EngineState:     "active",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
@@ -393,31 +392,31 @@ func TestUpdateEngineForComplete(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-complete-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -425,26 +424,26 @@ func TestUpdateEngineForComplete(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-complete-p2",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusInitialized,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusInitialized,
 					},
 				},
 			},
@@ -452,26 +451,26 @@ func TestUpdateEngineForComplete(t *testing.T) {
 		},
 		"Test Positive-3": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-complete-p3",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusStopped,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusStopped,
 					},
 				},
 			},
@@ -504,31 +503,31 @@ func TestUpdateEngineForRestart(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-restart-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -536,26 +535,26 @@ func TestUpdateEngineForRestart(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-restart-p2",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusInitialized,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusInitialized,
 					},
 				},
 			},
@@ -588,15 +587,15 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 								Command: []string{
 									"cmd1",
@@ -613,15 +612,15 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image:           "fake-runner-image",
 								ImagePullPolicy: "Always",
 								Args: []string{
@@ -640,16 +639,16 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 		},
 		"Test Positive-3": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						AnnotationCheck:     "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image:           "fake-runner-image",
 								ImagePullPolicy: "IfNotPresent",
 								Command: []string{
@@ -668,16 +667,16 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 		},
 		"Test Positive-4": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						AnnotationCheck:     "true",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image:           "fake-runner-image",
 								ImagePullPolicy: "Never",
 								Args: []string{
@@ -696,7 +695,7 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 		},
 		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
 				},
 				AppExperiments: []string{"exp-1"},
@@ -705,12 +704,12 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 		},
 		"Test Negative-2 ": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
@@ -721,12 +720,12 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 		},
 		"Test Negative-3 ": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
@@ -737,15 +736,15 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 		},
 		"Test Negative-4 ": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "",
 							},
 						},
@@ -777,30 +776,30 @@ func TestInitEngine(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-init-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -808,26 +807,26 @@ func TestInitEngine(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-init-p2",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
 						EngineState:     "active",
 						AnnotationCheck: "false",
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusStopped,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusStopped,
 					},
 				},
 			},
@@ -852,73 +851,73 @@ func TestUpdateEngineState(t *testing.T) {
 	tests := map[string]struct {
 		isErr  bool
 		engine chaosTypes.EngineInfo
-		state  litmuschaosv1alpha1.EngineState
+		state  v1alpha1.EngineState
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-update-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
 			isErr: false,
-			state: litmuschaosv1alpha1.EngineStateActive,
+			state: v1alpha1.EngineStateActive,
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-update-p2",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
 			isErr: false,
-			state: litmuschaosv1alpha1.EngineStateStop,
+			state: v1alpha1.EngineStateStop,
 		},
 	}
 	for name, mock := range tests {
@@ -946,31 +945,31 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-runner-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -978,31 +977,31 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-runner-p2",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -1119,31 +1118,31 @@ func TestGetChaosEngineInstance(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-instance-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -1157,31 +1156,31 @@ func TestGetChaosEngineInstance(t *testing.T) {
 		},
 		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-instance-n1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -1221,15 +1220,15 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -1242,15 +1241,15 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -1264,16 +1263,16 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 		},
 		"Test Positive-3": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						AnnotationCheck:     "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -1287,16 +1286,16 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 		},
 		"Test Positive-4": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						AnnotationCheck:     "true",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -1310,7 +1309,7 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 		},
 		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
 				},
 
@@ -1320,12 +1319,12 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 		},
 		"Test Negative-2 ": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
@@ -1336,12 +1335,12 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 		},
 		"Test Negative-3 ": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 					},
 				},
@@ -1352,15 +1351,15 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 		},
 		"Test Negative-4 ": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-runner",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "",
 							},
 						},
@@ -1395,31 +1394,31 @@ func TestReconcileForDelete(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-instance-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -1433,31 +1432,31 @@ func TestReconcileForDelete(t *testing.T) {
 		},
 		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-instance-n1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -1498,31 +1497,31 @@ func TestForceRemoveAllChaosPods(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-instance-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -1536,17 +1535,17 @@ func TestForceRemoveAllChaosPods(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-instance-n1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
 					},
 				},
@@ -1586,31 +1585,31 @@ func TestGracefullyRemoveDefaultChaosResources(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-instance-p1",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -1624,31 +1623,31 @@ func TestGracefullyRemoveDefaultChaosResources(t *testing.T) {
 		},
 		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "engine-instance-p2",
 						Namespace: "default",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+					Spec: v1alpha1.ChaosEngineSpec{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     litmuschaosv1alpha1.EngineStateActive,
+						EngineState:     v1alpha1.EngineStateActive,
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
 						},
 					},
-					Status: litmuschaosv1alpha1.ChaosEngineStatus{
-						EngineStatus: litmuschaosv1alpha1.EngineStatusCompleted,
+					Status: v1alpha1.ChaosEngineStatus{
+						EngineStatus: v1alpha1.EngineStatusCompleted,
 					},
 				},
 			},
@@ -1686,23 +1685,23 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 	}{
 		"Test Positive-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "reconcile-1",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
 						AnnotationCheck: "false",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
-						Experiments: []litmuschaosv1alpha1.ExperimentList{
+						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
 							},
@@ -1716,19 +1715,19 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 		},
 		"Test Negative-1": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "reconcile-2",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						AnnotationCheck:     "fakeCheck",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -1741,19 +1740,19 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 		},
 		"Test Negative-2": {
 			engine: chaosTypes.EngineInfo{
-				Instance: &litmuschaosv1alpha1.ChaosEngine{
+				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "reconcile-3",
 						Namespace: "test",
 					},
-					Spec: litmuschaosv1alpha1.ChaosEngineSpec{
+					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						Appinfo: litmuschaosv1alpha1.ApplicationParams{
+						Appinfo: v1alpha1.ApplicationParams{
 							Applabel: "run=nginx",
 						},
 						AnnotationCheck: "true",
-						Components: litmuschaosv1alpha1.ComponentParams{
-							Runner: litmuschaosv1alpha1.RunnerInfo{
+						Components: v1alpha1.ComponentParams{
+							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
@@ -1789,18 +1788,18 @@ func CreateFakeClient(t *testing.T) *ReconcileChaosEngine {
 
 	s := scheme.Scheme
 
-	engineR := &litmuschaosv1alpha1.ChaosEngine{
+	engineR := &v1alpha1.ChaosEngine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: make(map[string]string),
 			Name:   "dummyengine",
 		},
 	}
 
-	chaosResultList := &apis.ChaosResultList{
-		Items: []litmuschaosv1alpha1.ChaosResult{},
+	chaosResultList := &v1alpha1.ChaosResultList{
+		Items: []v1alpha1.ChaosResult{},
 	}
 
-	s.AddKnownTypes(apis.SchemeGroupVersion, engineR, chaosResultList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, engineR, chaosResultList)
 
 	recorder := record.NewFakeRecorder(1024)
 

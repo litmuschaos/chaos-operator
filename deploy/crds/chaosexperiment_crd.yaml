@@ -147,6 +147,7 @@ spec:
                           allowEmptyValue: false
                           minLength: 1
                   securityContext:
+                    x-kubernetes-preserve-unknown-fields: true
                     type: object
                   hostPID:
                     type: boolean

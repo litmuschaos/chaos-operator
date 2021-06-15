@@ -60,7 +60,7 @@ func checkForChaosEnabledDaemonSet(targetAppList *appsV1.DaemonSetList, engine *
 	for _, daemonSet := range targetAppList.Items {
 		annotationValue := daemonSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate for daemonset", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", daemonSet.ObjectMeta.Name, "appUUID: ", daemonSet.ObjectMeta.UID)
+			chaosTypes.Log.Info("chaos candidate for daemonset", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", daemonSet.ObjectMeta.Name)
 			chaosEnabledDaemonSet++
 		}
 	}

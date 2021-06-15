@@ -60,7 +60,7 @@ func checkForChaosEnabledStatefulSet(targetAppList *appsV1.StatefulSetList, engi
 	for _, statefulSet := range targetAppList.Items {
 		annotationValue := statefulSet.ObjectMeta.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate for statefulset", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", statefulSet.ObjectMeta.Name, "appUUID: ", statefulSet.ObjectMeta.UID)
+			chaosTypes.Log.Info("chaos candidate for statefulset", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", statefulSet.ObjectMeta.Name)
 			chaosEnabledStatefulSet++
 		}
 	}

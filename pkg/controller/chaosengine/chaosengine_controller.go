@@ -308,6 +308,10 @@ func (r *ReconcileChaosEngine) getChaosEngineInstance(engine *chaosTypes.EngineI
 // Get application details
 func getApplicationDetail(engine *chaosTypes.EngineInfo) error {
 
+	if engine.Instance == nil {
+		return fmt.Errorf("chaosengine instance is nil")
+	}
+
 	var appExperiments []string
 	for _, exp := range engine.Instance.Spec.Experiments {
 		appExperiments = append(appExperiments, exp.Name)
@@ -778,7 +782,7 @@ func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alph
 			kind := strings.TrimSpace(strings.Split(k, "/")[0])
 			name := strings.TrimSpace(strings.Split(k, "/")[1])
 			target := litmuschaosv1alpha1.TargetDetails{
-				Target:      name,
+				Name:        name,
 				Kind:        kind,
 				ChaosStatus: v,
 			}

@@ -59,7 +59,7 @@ func checkForChaosEnabledRollout(rolloutList *unstructured.UnstructuredList, eng
 	for _, rollout := range rolloutList.Items {
 		annotationValue := rollout.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate for rollout", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", rollout.GetName(), "appUUID: ", rollout.GetUID())
+			chaosTypes.Log.Info("chaos candidate for rollout", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", rollout.GetName())
 			chaosEnabledRollout++
 		}
 	}
