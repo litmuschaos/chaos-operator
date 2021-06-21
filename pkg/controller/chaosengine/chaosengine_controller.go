@@ -32,8 +32,9 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -484,7 +485,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 	updateExperimentStatusesForStop(engine)
 	engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusStopped
 
-	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil {
+	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil && !k8serrors.IsNotFound(err) {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos stop) Unable to update chaosengine")
 		return reconcile.Result{}, fmt.Errorf("unable to remove finalizer from chaosEngine Resource, due to error: %v", err)
 	}
@@ -503,7 +504,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 
 // forceRemoveAllChaosPods force removes all chaos-related pods
 func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
-	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(metav1.DeletePropagationBackground)}
+	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(v1.DeletePropagationBackground)}
 	if engine.Instance.Spec.TerminationGracePeriodSeconds != 0 {
 		optsDelete = append(optsDelete, client.GracePeriodSeconds(engine.Instance.Spec.TerminationGracePeriodSeconds))
 	}
@@ -701,7 +702,7 @@ func updateExperimentStatusesForStop(engine *chaosTypes.EngineInfo) {
 		if engine.Instance.Status.Experiments[i].Status == litmuschaosv1alpha1.ExperimentStatusRunning || engine.Instance.Status.Experiments[i].Status == litmuschaosv1alpha1.ExperimentStatusWaiting {
 			engine.Instance.Status.Experiments[i].Status = litmuschaosv1alpha1.ExperimentStatusAborted
 			engine.Instance.Status.Experiments[i].Verdict = "Stopped"
-			engine.Instance.Status.Experiments[i].LastUpdateTime = metav1.Now()
+			engine.Instance.Status.Experiments[i].LastUpdateTime = v1.Now()
 		}
 	}
 }
@@ -796,6 +797,19 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 		return err
 	}
 
+	found, err := isResultCRDAvailable()
+	if err != nil {
+		return err
+	}
+	if !found {
+		return nil
+	}
+	return r.updatChaosResult(engine, request)
+}
+
+// updatChaosResult update the chaosstatus and annotation inside the chaosresult
+func (r *ReconcileChaosEngine) updatChaosResult(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
+
 	chaosresultList := &litmuschaosv1alpha1.ChaosResultList{}
 	opts := []client.ListOption{
 		client.InNamespace(request.NamespacedName.Namespace),
@@ -813,8 +827,7 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 			result.ObjectMeta.Annotations = annotations
 
 			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
-			err := r.client.Update(context.TODO(), &result, &client.UpdateOptions{})
-			return err
+			return r.client.Update(context.TODO(), &result, &client.UpdateOptions{})
 		}
 	}
 	return nil
@@ -862,4 +875,33 @@ func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alph
 		}
 	}
 	return targetsList, annotations
+}
+
+// isResultCRDAvailable check the existance of chaosresult CRD inside cluster
+func isResultCRDAvailable() (bool, error) {
+
+	dynamicClient, err := dynamicclientset.CreateClientSet()
+	if err != nil {
+		return false, err
+	}
+
+	//defining the gvr for the requested resource
+	gvr := schema.GroupVersionResource{
+		Group:    "apiextensions.k8s.io",
+		Version:  "v1",
+		Resource: "customresourcedefinitions",
+	}
+
+	resultList, err := (*dynamicClient).Resource(gvr).List(v1.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	// it will check the presence of chaosresult CRD inside cluster
+	for _, crd := range resultList.Items {
+		if crd.GetName() == chaosTypes.ResultCRDName {
+			return true, nil
+		}
+	}
+	return false, nil
 }

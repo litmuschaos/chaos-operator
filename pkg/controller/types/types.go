@@ -54,6 +54,8 @@ var (
 
 	// DefaultChaosRunnerImage contains the default value of runner resource
 	DefaultChaosRunnerImage = "litmuschaos/chaos-runner:latest"
+
+	ResultCRDName = "chaosresults.litmuschaos.io"
 )
 
 // ApplicationInfo contains the chaos details for target application
