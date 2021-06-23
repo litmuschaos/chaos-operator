@@ -48,13 +48,13 @@ func TriggerAnalytics() error {
 	if err != nil {
 		return fmt.Errorf("new client generation failed, error : %s", err)
 	}
-
-	if ClientUUID == "" {
-		return fmt.Errorf("uuid generation failed")
+	// sets the clientUUID to operator uid
+	ClientUUID, err = getUID()
+	if err != nil {
+		return err
 	}
 	client.ClientID(ClientUUID)
-	err = client.Send(ga.NewEvent(category, action).Label(label))
-	if err != nil {
+	if err := client.Send(ga.NewEvent(category, action).Label(label)); err != nil {
 		return fmt.Errorf("analytics event sending failed, error: %s", err)
 	}
 	return nil
