@@ -274,29 +274,6 @@ func newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
 	return podObj, nil
 }
 
-// initializeApplicationInfo to initialize application info
-func initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine, appInfo *chaosTypes.ApplicationInfo) (*chaosTypes.ApplicationInfo, error) {
-	if instance == nil {
-		return nil, errors.New("empty chaosengine")
-	}
-
-	if instance.Spec.Appinfo.Applabel != "" {
-		appInfo.Label = instance.Spec.Appinfo.Applabel
-	}
-
-	if instance.Spec.Appinfo.Appns != "" {
-		appInfo.Namespace = instance.Spec.Appinfo.Appns
-	} else {
-		appInfo.Namespace = instance.Namespace
-	}
-	appInfo.Kind = instance.Spec.Appinfo.AppKind
-
-	appInfo.ExperimentList = instance.Spec.Experiments
-	appInfo.ServiceAccountName = instance.Spec.ChaosServiceAccount
-
-	return appInfo, nil
-}
-
 // engineRunnerPod to Check if the engineRunner pod already exists, else create
 func engineRunnerPod(runnerPod *podEngineRunner) error {
 	err := runnerPod.r.client.Get(context.TODO(), types.NamespacedName{Name: runnerPod.engineRunner.Name, Namespace: runnerPod.engineRunner.Namespace}, runnerPod.pod)
@@ -330,25 +307,22 @@ func (r *ReconcileChaosEngine) getChaosEngineInstance(engine *chaosTypes.EngineI
 
 // Get application details
 func getApplicationDetail(engine *chaosTypes.EngineInfo) error {
-	applicationInfo := &chaosTypes.ApplicationInfo{}
-	appInfo, err := initializeApplicationInfo(engine.Instance, applicationInfo)
-	if err != nil {
-		return err
+
+	if engine.Instance == nil {
+		return fmt.Errorf("chaosengine instance is nil")
 	}
-	engine.AppInfo = appInfo
 
 	var appExperiments []string
-	for _, exp := range appInfo.ExperimentList {
+	for _, exp := range engine.Instance.Spec.Experiments {
 		appExperiments = append(appExperiments, exp.Name)
 	}
 	engine.AppExperiments = appExperiments
 
-	chaosTypes.Log.Info("App key derived from chaosengine is ", "appLabelKey", chaosTypes.AppLabelKey)
-	chaosTypes.Log.Info("App Label derived from Chaosengine is ", "appLabelValue", chaosTypes.AppLabelValue)
-	chaosTypes.Log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.Namespace)
-	chaosTypes.Log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
-	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", engine.Instance.Spec.Components.Runner.Image)
-	chaosTypes.Log.Info("Annotation check is ", "annotationCheck", engine.Instance.Spec.AnnotationCheck)
+	chaosTypes.Log.Info("App Label derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "appLabel", engine.Instance.Spec.Appinfo.Applabel)
+	chaosTypes.Log.Info("App NS derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "appNamespace", engine.Instance.Spec.Appinfo.Appns)
+	chaosTypes.Log.Info("Exp list derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "appExpirements", appExperiments)
+	chaosTypes.Log.Info("Runner image derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "runnerImage", engine.Instance.Spec.Components.Runner.Image)
+	chaosTypes.Log.Info("Annotation check derived from ChaosEngine", "ChaosEngineName", engine.Instance.Name, "ChaosEngineNamespace", engine.Instance.Namespace, "annotationCheck", engine.Instance.Spec.AnnotationCheck)
 	return nil
 }
 
@@ -428,7 +402,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 
 	if len(chaosPodList.Items) != 0 {
 		chaosTypes.Log.Info("Performing a force delete of chaos experiment pods", "chaosengine", engine.Instance.Name)
-		err := r.forceRemoveChaosResources(engine, request)
+		err := r.forceRemoveAllChaosPods(engine, request)
 		if err != nil {
 			r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos stop) Unable to delete chaos experiment pods")
 			return reconcile.Result{}, err
@@ -567,7 +541,7 @@ func (r *ReconcileChaosEngine) reconcileForComplete(engine *chaosTypes.EngineInf
 
 // reconcileForRestartAfterAbort reconciles for restart of ChaosEngine after it was aborted previously
 func (r *ReconcileChaosEngine) reconcileForRestartAfterAbort(engine *chaosTypes.EngineInfo, request reconcile.Request) (reconcile.Result, error) {
-	err := r.forceRemoveChaosResources(engine, request)
+	err := r.forceRemoveAllChaosPods(engine, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -583,7 +557,7 @@ func (r *ReconcileChaosEngine) reconcileForRestartAfterComplete(engine *chaosTyp
 
 	patch := client.MergeFrom(engine.Instance.DeepCopy())
 
-	err := r.forceRemoveChaosResources(engine, request)
+	err := r.forceRemoveAllChaosPods(engine, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -706,8 +680,8 @@ func (r *ReconcileChaosEngine) validateAnnontatedApplication(engine *chaosTypes.
 
 	if engine.Instance.Spec.AnnotationCheck == "true" {
 
-		if engine.AppInfo.Label == "" || engine.AppInfo.Namespace == "" || engine.AppInfo.Kind == "" {
-			return errors.Errorf("incomplete AppInfo inside chaosengine")
+		if engine.Instance.Spec.Appinfo.Applabel == "" || engine.Instance.Spec.Appinfo.Appns == "" || engine.Instance.Spec.Appinfo.AppKind == "" {
+			return fmt.Errorf("incomplete AppInfo inside chaosengine")
 		}
 		// Determine whether apps with matching labels have chaos annotation set to true
 		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
@@ -740,15 +714,6 @@ func (r *ReconcileChaosEngine) updateEngineForRestart(engine *chaosTypes.EngineI
 	engine.Instance.Status.Experiments = nil
 	if err := r.client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("unable to restart ChaosEngine, due to update error: %v", err)
-	}
-	return nil
-}
-
-func (r *ReconcileChaosEngine) forceRemoveChaosResources(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
-
-	err := r.forceRemoveAllChaosPods(engine, request)
-	if err != nil {
-		return err
 	}
 	return nil
 }

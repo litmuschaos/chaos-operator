@@ -20,18 +20,14 @@ var (
 	}
 )
 
-// CheckRolloutAnnotation will check the annotation of argo rollout
+// CheckRolloutAnnotation check the annotation of the argo rollout
 func CheckRolloutAnnotation(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, error) {
 
 	rolloutList, err := getRolloutList(clientSet, engine)
 	if err != nil {
 		return engine, err
 	}
-	engine, chaosEnabledRollout, err := checkForChaosEnabledRollout(rolloutList, engine)
-	if err != nil {
-		return engine, err
-	}
-
+	engine, chaosEnabledRollout := checkForChaosEnabledRollout(rolloutList, engine)
 	if chaosEnabledRollout == 0 {
 		return engine, errors.New("no argo rollout chaos-candidate found")
 	}
@@ -44,27 +40,28 @@ func getRolloutList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) 
 
 	dynamicClient := clientSet.Resource(gvrro)
 
-	rolloutList, err := dynamicClient.Namespace(engine.AppInfo.Namespace).List(metav1.ListOptions{
-		LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
+	rolloutList, err := dynamicClient.Namespace(engine.Instance.Spec.Appinfo.Appns).List(metav1.ListOptions{
+		LabelSelector: engine.Instance.Spec.Appinfo.Applabel,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error while listing argo rollouts with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("error while listing argo rollouts with matching labels %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	if len(rolloutList.Items) == 0 {
-		return nil, fmt.Errorf("no argo rollouts with matching labels %s", engine.Instance.Spec.Appinfo.Applabel)
+		return nil, fmt.Errorf("no argo rollouts with matching labels: %s, namespace: %s", engine.Instance.Spec.Appinfo.Applabel, engine.Instance.Spec.Appinfo.Appns)
 	}
 	return rolloutList, err
 }
 
-// checkForChaosEnabledRollout  will check and count the total chaos enabled application
-func checkForChaosEnabledRollout(rolloutList *unstructured.UnstructuredList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int, error) {
+// checkForChaosEnabledRollout check and count the total chaos enabled application
+func checkForChaosEnabledRollout(rolloutList *unstructured.UnstructuredList, engine *chaosTypes.EngineInfo) (*chaosTypes.EngineInfo, int) {
 
 	chaosEnabledRollout := 0
 	for _, rollout := range rolloutList.Items {
 		annotationValue := rollout.GetAnnotations()[ChaosAnnotationKey]
 		if IsChaosEnabled(annotationValue) {
-			chaosTypes.Log.Info("chaos candidate of", "kind:", engine.AppInfo.Kind, "appName: ", rollout.GetName(), "appUUID: ", rollout.GetUID())
+			chaosTypes.Log.Info("chaos candidate for rollout", "kind:", engine.Instance.Spec.Appinfo.AppKind, "appName: ", rollout.GetName())
 			chaosEnabledRollout++
 		}
 	}
-	return engine, chaosEnabledRollout, nil
+	return engine, chaosEnabledRollout
 }

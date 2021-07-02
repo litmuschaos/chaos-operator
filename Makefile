@@ -8,15 +8,18 @@ DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-operator
 DOCKER_TAG ?= latest
 
-.PHONY: all
-all: deps unused-package-check build-chaos-operator test
-
 .PHONY: help
 help:
 	@echo ""
 	@echo "Usage:-"
-	@echo "\tmake deps      -- sets up dependencies for image build"
+	@echo "\tmake deps              -- sets up dependencies for image build"
+	@echo "\tbuild-chaos-operator   -- builds multi-arch image"
+	@echo "\tpush-chaos-operator    -- pushes the multi-arch image"
+	@echo "\tbuild-for-amd64        -- builds docker amd64 image"
 	@echo ""
+
+.PHONY: all
+all: deps unused-package-check build-chaos-operator test push-chaos-operator
 
 .PHONY: deps
 deps: _build_check_docker godeps
