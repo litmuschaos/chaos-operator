@@ -41,3 +41,8 @@ type VolumeOpts struct {
 	VolumeMounts   []corev1.VolumeMount
 	VolumeBuilders []*volume.Builder
 }
+
+// ENVDetails contains the ENV details
+type ENVDetails struct {
+	ENV []corev1.EnvVar
+}
