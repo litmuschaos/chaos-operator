@@ -17,25 +17,72 @@ limitations under the License.
 package analytics
 
 import (
-	"crypto/rand"
 	"fmt"
 	"os"
-	"strings"
+
+	clientset "github.com/litmuschaos/chaos-operator/pkg/kubernetes"
+	core_v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
-// UUIDGenerator creates a new UUID each time a new user triggers an event
-func UUIDGenerator() string {
-	uuid := ""
-	if strings.ToUpper(os.Getenv("ANALYTICS")) != "FALSE" {
-		b := make([]byte, 16)
-		_, err := rand.Read(b)
-		if err != nil {
-			return ""
-		}
-		uuid = fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+// contains clientUUID for analytics
+var ClientUUID string
+
+// it derives the UID of the chaos-operator deployment
+// and used it for the analytics
+func getUID() (string, error) {
+	// creates kubernetes client
+	clients, err := clientset.CreateClientSet()
+	if err != nil {
+		return "", err
 	}
-	return uuid
+	// deriving operator pod name & namespace
+	podName := os.Getenv("POD_NAME")
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podName == "" || podNamespace == "" {
+		return podName, fmt.Errorf("POD_NAME or POD_NAMESPACE ENV not set")
+	}
+	// get operator pod details
+	pod, err := clients.CoreV1().Pods(podNamespace).Get(podName, v1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("unable to get %s pod in %s namespace", podName, podNamespace)
+	}
+	return getOperatorUID(pod, clients)
 }
 
-// ClientUUID contains the UUID generated for the Google-Analytics
-var ClientUUID = UUIDGenerator()
+// it returns the deployment name, derived from the owner references
+func getDeploymentName(pod *core_v1.Pod, clients *kubernetes.Clientset) (string, error) {
+	for _, own := range pod.OwnerReferences {
+		if own.Kind == "ReplicaSet" {
+			rs, err := clients.AppsV1().ReplicaSets(pod.Namespace).Get(own.Name, v1.GetOptions{})
+			if err != nil {
+				return "", err
+			}
+			for _, own := range rs.OwnerReferences {
+				if own.Kind == "Deployment" {
+					return own.Name, nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("no deployment found for %v pod", pod.Name)
+}
+
+// it returns the uid of the chaos-operator deployment
+func getOperatorUID(pod *core_v1.Pod, clients *kubernetes.Clientset) (string, error) {
+	// derive the deployment name belongs to operator pod
+	deployName, err := getDeploymentName(pod, clients)
+	if err != nil {
+		return "", err
+	}
+
+	deploy, err := clients.AppsV1().Deployments(pod.Namespace).Get(deployName, v1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("unable to get %s deployment in %s namespace", deployName, pod.Namespace)
+	}
+	if string(deploy.UID) == "" {
+		return "", fmt.Errorf("unable to find the deployment uid")
+	}
+	return string(deploy.UID), nil
+}
