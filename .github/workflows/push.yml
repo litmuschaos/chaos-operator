@@ -31,7 +31,7 @@ jobs:
 
   image-build:
     runs-on: ubuntu-latest
-    needs: pre-checks
+    needs: tests
     steps:
       # Checkout to the latest commit
       # On specific directory/path
@@ -76,25 +76,28 @@ jobs:
           go-version: 1.14
 
       #Install and configure a kind cluster
-      - name: Installing Prerequisites (KinD Cluster)
-        uses: engineerd/setup-kind@v0.5.0
-        with:
-          version: "v0.7.0"
-
-      - name: Configuring and testing the Installation
+      - name: Installing Prerequisites (K3S Cluster)
+        env: 
+          KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         run: |
-          kubectl cluster-info --context kind-kind
-          kind get kubeconfig --internal >$HOME/.kube/config
+          curl -sfL https://get.k3s.io | sh -s - --docker --write-kubeconfig-mode 664
+          kubectl wait node --all --for condition=ready --timeout=90s
+          mkdir -p $HOME/.kube
+          cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config
           kubectl get nodes
 
       - name: Dependency checks
         run: |
           make deps
 
-      - name: Running Go BDD Test
+      - name: Build Docker Image
         env:
           DOCKER_REPO: litmuschaos
           DOCKER_IMAGE: chaos-operator
           DOCKER_TAG: ci
+        run: |
+          make build-amd64
+
+      - name: Running Go BDD Test
         run: |
           make test
