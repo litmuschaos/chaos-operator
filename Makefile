@@ -6,7 +6,7 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 # docker info
 DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-operator
-DOCKER_TAG ?= latest
+DOCKER_TAG ?= ci
 
 .PHONY: all
 all: deps unused-package-check build-chaos-operator test

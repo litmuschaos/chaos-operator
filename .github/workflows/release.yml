@@ -75,7 +75,7 @@ jobs:
         run: make push-chaos-operator
 
   tests:
-    needs: pre-checks
+    needs: image-build
     runs-on: ubuntu-latest
     steps:
       # Checkout to the latest commit
@@ -105,5 +105,9 @@ jobs:
           make deps
 
       - name: Running Go BDD Test
+        env:
+          DOCKER_REPO: litmuschaos
+          DOCKER_IMAGE: chaos-operator
+          DOCKER_TAG: ci
         run: |
           make test
