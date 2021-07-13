@@ -6,22 +6,24 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 # docker info
 DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-operator
-DOCKER_TAG ?= latest
-
-.PHONY: all
-all: deps unused-package-check build-chaos-operator test
+DOCKER_TAG ?= ci
 
 .PHONY: help
 help:
 	@echo ""
 	@echo "Usage:-"
-	@echo "\tmake deps      -- sets up dependencies for image build"
+	@echo "\tmake deps                   -- sets up dependencies for image build"
+	@echo "\tmake build-chaos-operator   -- builds multi-arch image"
+	@echo "\tmake push-chaos-operator    -- pushes the multi-arch image"
+	@echo "\tmake build-amd64            -- builds the amd64 image"
 	@echo ""
+
+.PHONY: all
+all: deps unused-package-check build-chaos-operator test
 
 .PHONY: deps
 deps: _build_check_docker godeps
 
-.PHONY: _build_check_docker
 _build_check_docker:
 	@if [ $(IS_DOCKER_INSTALLED) -eq 1 ]; \
 		then echo "" \
@@ -44,6 +46,7 @@ test:
 	@echo "------------------"
 	@go test ./... -coverprofile=coverage.txt -covermode=atomic -v
 
+.PHONY: unused-package-check
 unused-package-check:
 	@echo "------------------"
 	@echo "--> Check unused packages for the chaos-operator"
@@ -64,13 +67,24 @@ gofmt-check:
    		exit 1; \
   	fi
 
-.PHONY: build-chaos-operator build-chaos-operator-amd64 push-chaos-operator
 
+.PHONY: build-chaos-operator
 build-chaos-operator:
+	@echo "-------------------------"
+	@echo "--> Build go-runner image" 
+	@echo "-------------------------"
 	@docker buildx build --file build/Dockerfile --progress plane  --no-cache --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
-build-for-amd64:
-	@docker build -f build/Dockerfile  --no-cache -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .  --build-arg TARGETPLATFORM="linux/amd64"
-
+.PHONY: push-chaos-operator
 push-chaos-operator:
+	@echo "------------------------------"
+	@echo "--> Pushing image" 
+	@echo "------------------------------"
 	@docker buildx build --file build/Dockerfile --progress plane --no-cache --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+
+.PHONY: build-amd64
+build-amd64:
+	@echo "-------------------------"
+	@echo "--> Build go-runner image" 
+	@echo "-------------------------"
+	@docker build -f build/Dockerfile  --no-cache -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .  --build-arg TARGETPLATFORM="linux/amd64"

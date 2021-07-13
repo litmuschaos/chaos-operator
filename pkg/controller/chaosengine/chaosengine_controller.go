@@ -773,7 +773,7 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 	for _, result := range chaosresultList.Items {
 		if result.Labels["chaosUID"] == string(engine.Instance.UID) {
 			targetsList, annotations := getChaosStatus(result)
-			result.Status.History.Targets = append(result.Status.History.Targets, targetsList...)
+			result.Status.History.Targets = targetsList
 			result.ObjectMeta.Annotations = annotations
 
 			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
@@ -810,20 +810,32 @@ func (r *ReconcileChaosEngine) waitForChaosPodTermination(engine *chaosTypes.Eng
 func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alpha1.TargetDetails, map[string]string) {
 	annotations := result.ObjectMeta.Annotations
 
-	targetsList := []litmuschaosv1alpha1.TargetDetails{}
+	targetsList := result.Status.History.Targets
 	for k, v := range annotations {
 		switch strings.ToLower(v) {
 		case "injected", "reverted", "targeted":
 			kind := strings.TrimSpace(strings.Split(k, "/")[0])
 			name := strings.TrimSpace(strings.Split(k, "/")[1])
-			target := litmuschaosv1alpha1.TargetDetails{
-				Name:        name,
-				Kind:        kind,
-				ChaosStatus: v,
+			if !updateTargets(name, v, &targetsList) {
+				targetsList = append(targetsList, litmuschaosv1alpha1.TargetDetails{
+					Name:        name,
+					Kind:        kind,
+					ChaosStatus: v,
+				})
 			}
-			targetsList = append(targetsList, target)
 			delete(annotations, k)
 		}
 	}
 	return targetsList, annotations
+}
+
+// updates the chaos status of targets which is already present inside historyt.targets
+func updateTargets(name, status string, data *[]litmuschaosv1alpha1.TargetDetails) bool {
+	for i := range *data {
+		if (*data)[i].Name == name {
+			(*data)[i].ChaosStatus = status
+			return true
+		}
+	}
+	return false
 }
