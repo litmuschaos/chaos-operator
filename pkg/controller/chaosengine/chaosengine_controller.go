@@ -181,61 +181,25 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 // getChaosRunnerENV return the env required for chaos-runner
 func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, ClientUUID string) []corev1.EnvVar {
 
-	var appNS string
-
-	if cr.Spec.Appinfo.Appns != "" {
-		appNS = cr.Spec.Appinfo.Appns
-	} else {
+	appNS := cr.Spec.Appinfo.Appns
+	if appNS == "" {
 		appNS = cr.Namespace
 	}
 
-	return []corev1.EnvVar{
-		{
-			Name:  "CHAOSENGINE",
-			Value: cr.Name,
-		},
-		{
-			Name:  "APP_LABEL",
-			Value: cr.Spec.Appinfo.Applabel,
-		},
-		{
-			Name:  "APP_KIND",
-			Value: cr.Spec.Appinfo.AppKind,
-		},
-		{
-			Name:  "APP_NAMESPACE",
-			Value: appNS,
-		},
-		{
-			Name:  "EXPERIMENT_LIST",
-			Value: fmt.Sprint(strings.Join(aExList, ",")),
-		},
-		{
-			Name:  "CHAOS_SVC_ACC",
-			Value: cr.Spec.ChaosServiceAccount,
-		},
-		{
-			Name:  "AUXILIARY_APPINFO",
-			Value: cr.Spec.AuxiliaryAppInfo,
-		},
-		{
-			Name:  "CLIENT_UUID",
-			Value: ClientUUID,
-		},
-		{
-			Name:  "CHAOS_NAMESPACE",
-			Value: cr.Namespace,
-		},
-		{
-			Name:  "ANNOTATION_CHECK",
-			Value: cr.Spec.AnnotationCheck,
-		},
-		{
-			// we pass the key alone as we only support a boolean value for the annotation
-			Name:  "ANNOTATION_KEY",
-			Value: resource.GetAnnotationKey(),
-		},
-	}
+	var envDetails utils.ENVDetails
+	envDetails.SetEnv("CHAOSENGINE", cr.Name).
+		SetEnv("APP_LABEL", cr.Spec.Appinfo.Applabel).
+		SetEnv("APP_KIND", cr.Spec.Appinfo.AppKind).
+		SetEnv("APP_NAMESPACE", appNS).
+		SetEnv("EXPERIMENT_LIST", fmt.Sprint(strings.Join(aExList, ","))).
+		SetEnv("CHAOS_SVC_ACC", cr.Spec.ChaosServiceAccount).
+		SetEnv("AUXILIARY_APPINFO", cr.Spec.AuxiliaryAppInfo).
+		SetEnv("CLIENT_UUID", ClientUUID).
+		SetEnv("CHAOS_NAMESPACE", cr.Namespace).
+		SetEnv("ANNOTATION_CHECK", cr.Spec.AnnotationCheck).
+		SetEnv("ANNOTATION_KEY", resource.GetAnnotationKey())
+
+	return envDetails.ENV
 }
 
 // getChaosRunnerLabels return the labels required for chaos-runner
@@ -823,7 +787,7 @@ func (r *ReconcileChaosEngine) updatChaosResult(engine *chaosTypes.EngineInfo, r
 	for _, result := range chaosresultList.Items {
 		if result.Labels["chaosUID"] == string(engine.Instance.UID) {
 			targetsList, annotations := getChaosStatus(result)
-			result.Status.History.Targets = append(result.Status.History.Targets, targetsList...)
+			result.Status.History.Targets = targetsList
 			result.ObjectMeta.Annotations = annotations
 
 			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
@@ -859,18 +823,19 @@ func (r *ReconcileChaosEngine) waitForChaosPodTermination(engine *chaosTypes.Eng
 func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alpha1.TargetDetails, map[string]string) {
 	annotations := result.ObjectMeta.Annotations
 
-	targetsList := []litmuschaosv1alpha1.TargetDetails{}
+	targetsList := result.Status.History.Targets
 	for k, v := range annotations {
 		switch strings.ToLower(v) {
 		case "injected", "reverted", "targeted":
 			kind := strings.TrimSpace(strings.Split(k, "/")[0])
 			name := strings.TrimSpace(strings.Split(k, "/")[1])
-			target := litmuschaosv1alpha1.TargetDetails{
-				Name:        name,
-				Kind:        kind,
-				ChaosStatus: v,
+			if !updateTargets(name, v, &targetsList) {
+				targetsList = append(targetsList, litmuschaosv1alpha1.TargetDetails{
+					Name:        name,
+					Kind:        kind,
+					ChaosStatus: v,
+				})
 			}
-			targetsList = append(targetsList, target)
 			delete(annotations, k)
 		}
 	}
@@ -904,4 +869,15 @@ func isResultCRDAvailable() (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// updates the chaos status of targets which is already present inside historyt.targets
+func updateTargets(name, status string, data *[]litmuschaosv1alpha1.TargetDetails) bool {
+	for i := range *data {
+		if (*data)[i].Name == name {
+			(*data)[i].ChaosStatus = status
+			return true
+		}
+	}
+	return false
 }
