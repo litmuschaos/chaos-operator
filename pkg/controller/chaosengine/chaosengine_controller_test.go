@@ -1477,7 +1477,7 @@ func TestReconcileForDelete(t *testing.T) {
 			},
 			isErr: false,
 		},
-		"Test Negative-1": {
+		"Test Positive-2": {
 			engine: chaosTypes.EngineInfo{
 				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1513,7 +1513,7 @@ func TestReconcileForDelete(t *testing.T) {
 					Namespace: "default",
 				},
 			},
-			isErr: true,
+			isErr: false,
 		},
 	}
 	for name, mock := range tests {
