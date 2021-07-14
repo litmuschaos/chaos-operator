@@ -14,8 +14,8 @@ require (
 	github.com/openebs/maya v1.12.1
 	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.23.0
 	github.com/spf13/pflag v1.0.5
+	golang.org/x/tools v0.1.0 // indirect
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v12.0.0+incompatible
