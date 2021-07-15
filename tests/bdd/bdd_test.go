@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/martian/log"
+	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
@@ -75,10 +77,13 @@ var _ = BeforeSuite(func() {
 	//Creating crds
 	By("creating all crds")
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/chaos_crds.yaml").Run()
+	Expect(err).To(BeNil())
+	klog.Infoln("CRDS created")
 
 	//Creating rbacs
 	err = exec.Command("kubectl", "apply", "-f", "../../deploy/rbac.yaml").Run()
 	Expect(err).To(BeNil())
+	klog.Infoln("RBAC created")
 
 	//Creating Chaos-Operator
 	By("creating operator")
@@ -90,17 +95,26 @@ var _ = BeforeSuite(func() {
 	By("creating pod delete sa")
 	err = exec.Command("kubectl", "apply", "-f", "../manifest/pod_delete_rbac.yaml").Run()
 	Expect(err).To(BeNil())
+	klog.Infoln("pod-delete-sa created")
 
-	//Wait for the creation of chaos-operator
-	time.Sleep(50 * time.Second)
+	err = retry.
+		Times(uint(180 / 2)).
+		Wait(time.Duration(2) * time.Second).
+		Try(func(attempt uint) error {
+			podSpec, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{LabelSelector: "name=chaos-operator"})
+			if err != nil || len(podSpec.Items) == 0 {
+				return fmt.Errorf("Unable to list chaos-operator, err: %v", err)
+			}
+			for _, v := range podSpec.Items {
+				if v.Status.Phase != "Running" {
+					return fmt.Errorf("chaos-operator is not in running state, phase: %v", v.Status.Phase)
+				}
+			}
+			return nil
+		})
 
-	//Check for the status of the chaos-operator
-	operator, _ := client.CoreV1().Pods("litmus").List(metav1.ListOptions{LabelSelector: "name=chaos-operator"})
-	for _, v := range operator.Items {
-
-		Expect(string(v.Status.Phase)).To(Equal("Running"))
-		break
-	}
+	Expect(err).To(BeNil(), "the chaos-operator is not in running state")
+	klog.Infoln("Chaos-Operator is in running state")
 })
 
 //BDD Tests to check secondary resources
@@ -156,9 +170,11 @@ var _ = Describe("BDD on chaos-operator", func() {
 			}
 
 			_, err := client.AppsV1().Deployments("litmus").Create(deployment)
-			if err != nil {
-				klog.Infoln("Deployment is not created and error is ", err)
-			}
+			Expect(err).To(
+				BeNil(),
+				"while creating nginx deployment in namespace litmus",
+			)
+			klog.Infoln("nginx deployment created")
 
 			//creating chaos-experiment for pod-delete
 			By("Creating ChaosExperiments")
@@ -210,7 +226,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			_, err = clientSet.ChaosExperiments("litmus").Create(ChaosExperiment)
 			Expect(err).To(BeNil())
-
 			klog.Infoln("ChaosExperiment created successfully...")
 
 			//Creating chaosEngine
@@ -245,28 +260,26 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			_, err = clientSet.ChaosEngines("litmus").Create(chaosEngine)
 			Expect(err).To(BeNil())
-
 			klog.Infoln("Chaosengine created successfully...")
 
-			//Wait till the creation of runner pod resource
-			time.Sleep(5 * time.Second)
+			err = retry.
+				Times(uint(180 / 2)).
+				Wait(time.Duration(2) * time.Second).
+				Try(func(attempt uint) error {
+					pod, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					if err != nil {
+						return fmt.Errorf("unable to get chaos-runner pod, err: %v", err)
+					}
+					if pod.Status.Phase != v1.PodRunning && pod.Status.Phase != v1.PodSucceeded {
+						return fmt.Errorf("chaos runner is not in running state, phase: %v", pod.Status.Phase)
+					}
+					return nil
+				})
 
-			var runnerStatus v1.PodPhase
-
-			//Wait for 90s for runner to start running, before failing the test
-			for i := 0; i < 90; i++ {
-				runner, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
-				runnerStatus = runner.Status.Phase
-				Expect(err).To(BeNil())
-				klog.Infof("Runner state is: %s\n", string(runnerStatus))
-				if string(runnerStatus) != "Running" {
-					time.Sleep(1 * time.Second)
-				} else {
-					break
-				}
+			if err != nil {
+				log.Errorf("The chaos-runner is not in running state, err: %v", err)
 			}
-
-			Expect(string(runnerStatus)).To(Or(Equal("Running"), Equal("Succeeded")))
+			klog.Infoln("runner pod created")
 
 			// Check for EngineStatus
 			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
@@ -289,12 +302,22 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			_, err = clientSet.ChaosEngines("litmus").Update(engine)
 			Expect(err).To(BeNil())
-
 			klog.Infoln("Chaosengine updated successfully...")
 
-			//Wait till the creation of runner pod
-			time.Sleep(50 * time.Second)
-
+			err = retry.
+				Times(uint(180 / 2)).
+				Wait(time.Duration(2) * time.Second).
+				Try(func(attempt uint) error {
+					engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+					if err != nil {
+						return fmt.Errorf("unable to get chaosengine, err: %v", err)
+					}
+					if engine.Spec.EngineState != v1alpha1.EngineStateStop {
+						return fmt.Errorf("chaos engine is not in stopped state, state: %v", engine.Spec.EngineState)
+					}
+					return nil
+				})
+			Expect(err).To(BeNil())
 		})
 
 	})
@@ -303,13 +326,20 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 		It("Should delete chaos-runner pod", func() {
 
-			//Fetching engine-nginx-runner pod
-			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
-			klog.Infof("%v\n", err)
-			isNotFound := errors.IsNotFound(err)
-			Expect(isNotFound).To(BeTrue())
+			err := retry.
+				Times(uint(180 / 2)).
+				Wait(time.Duration(2) * time.Second).
+				Try(func(attempt uint) error {
+					_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					isNotFound := errors.IsNotFound(err)
+					if isNotFound {
+						return nil
+					} else {
+						return fmt.Errorf("chaos-runner is not deleted yet, err: %v", err)
+					}
+				})
+			Expect(err).To(BeNil())
 			klog.Infoln("chaos-runner pod deletion verified")
-
 		})
 
 		It("Should change the engineStatus ", func() {
@@ -317,27 +347,22 @@ var _ = Describe("BDD on chaos-operator", func() {
 			//Fetching engineStatus
 			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
 			Expect(err).To(BeNil())
-
 			isStopped := engine.Status.EngineStatus == v1alpha1.EngineStatusStopped
 			Expect(isStopped).To(BeTrue())
 		})
 	})
 
 	Context("Deletion of ChaosEngine", func() {
-
 		It("Should delete chaos engine", func() {
 
 			err := clientSet.ChaosEngines("litmus").Delete("engine-nginx", &metav1.DeleteOptions{})
 			Expect(err).To(BeNil())
-
 			klog.Infoln("chaos engine deleted successfully")
-
 		})
 
 	})
 
 	Context("Creation of ChaosEngine with invalid experiment", func() {
-
 		It("Should create invalid chaos engine", func() {
 
 			//Creating chaosEngine
@@ -372,23 +397,26 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			_, err := clientSet.ChaosEngines("litmus").Create(chaosEngine)
 			Expect(err).To(BeNil())
-
-			time.Sleep(50 * time.Second)
-
 		})
 	})
 
 	Context("Check for Chaos Resources for invalid engine", func() {
-
 		It("Should delete chaos-runner pod", func() {
 
-			//Fetching engine-nginx-runner pod
-			_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
-			klog.Infof("%v\n", err)
-			isNotFound := errors.IsNotFound(err)
-			Expect(isNotFound).To(BeTrue())
-			klog.Infoln("chaos-runner pod deletion verified")
-
+			err := retry.
+				Times(uint(180 / 2)).
+				Wait(time.Duration(2) * time.Second).
+				Try(func(attempt uint) error {
+					//Fetching engine-nginx-runner pod
+					_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					isNotFound := errors.IsNotFound(err)
+					if isNotFound {
+						return nil
+					} else {
+						return fmt.Errorf("chaos-runner is not deleted yet, err: %v", err)
+					}
+				})
+			Expect(err).To(BeNil())
 		})
 
 		It("Should change EngineStatus ", func() {
@@ -396,16 +424,14 @@ var _ = Describe("BDD on chaos-operator", func() {
 			//Fetching engineStatus
 			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
 			Expect(err).To(BeNil())
-
 			isComplete := engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted
 			Expect(isComplete).To(BeTrue())
-
 		})
 	})
 
 	Context("Validate via Chaos-Operator Logs", func() {
-
 		It("Should Generate Operator logs", func() {
+
 			pods, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("%v=%v", "name", "chaos-operator"),
 			})

@@ -32,8 +32,9 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -180,61 +181,25 @@ func (r *ReconcileChaosEngine) Reconcile(request reconcile.Request) (reconcile.R
 // getChaosRunnerENV return the env required for chaos-runner
 func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, ClientUUID string) []corev1.EnvVar {
 
-	var appNS string
-
-	if cr.Spec.Appinfo.Appns != "" {
-		appNS = cr.Spec.Appinfo.Appns
-	} else {
+	appNS := cr.Spec.Appinfo.Appns
+	if appNS == "" {
 		appNS = cr.Namespace
 	}
 
-	return []corev1.EnvVar{
-		{
-			Name:  "CHAOSENGINE",
-			Value: cr.Name,
-		},
-		{
-			Name:  "APP_LABEL",
-			Value: cr.Spec.Appinfo.Applabel,
-		},
-		{
-			Name:  "APP_KIND",
-			Value: cr.Spec.Appinfo.AppKind,
-		},
-		{
-			Name:  "APP_NAMESPACE",
-			Value: appNS,
-		},
-		{
-			Name:  "EXPERIMENT_LIST",
-			Value: fmt.Sprint(strings.Join(aExList, ",")),
-		},
-		{
-			Name:  "CHAOS_SVC_ACC",
-			Value: cr.Spec.ChaosServiceAccount,
-		},
-		{
-			Name:  "AUXILIARY_APPINFO",
-			Value: cr.Spec.AuxiliaryAppInfo,
-		},
-		{
-			Name:  "CLIENT_UUID",
-			Value: ClientUUID,
-		},
-		{
-			Name:  "CHAOS_NAMESPACE",
-			Value: cr.Namespace,
-		},
-		{
-			Name:  "ANNOTATION_CHECK",
-			Value: cr.Spec.AnnotationCheck,
-		},
-		{
-			// we pass the key alone as we only support a boolean value for the annotation
-			Name:  "ANNOTATION_KEY",
-			Value: resource.GetAnnotationKey(),
-		},
-	}
+	var envDetails utils.ENVDetails
+	envDetails.SetEnv("CHAOSENGINE", cr.Name).
+		SetEnv("APP_LABEL", cr.Spec.Appinfo.Applabel).
+		SetEnv("APP_KIND", cr.Spec.Appinfo.AppKind).
+		SetEnv("APP_NAMESPACE", appNS).
+		SetEnv("EXPERIMENT_LIST", fmt.Sprint(strings.Join(aExList, ","))).
+		SetEnv("CHAOS_SVC_ACC", cr.Spec.ChaosServiceAccount).
+		SetEnv("AUXILIARY_APPINFO", cr.Spec.AuxiliaryAppInfo).
+		SetEnv("CLIENT_UUID", ClientUUID).
+		SetEnv("CHAOS_NAMESPACE", cr.Namespace).
+		SetEnv("ANNOTATION_CHECK", cr.Spec.AnnotationCheck).
+		SetEnv("ANNOTATION_KEY", resource.GetAnnotationKey())
+
+	return envDetails.ENV
 }
 
 // getChaosRunnerLabels return the labels required for chaos-runner
@@ -484,7 +449,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 	updateExperimentStatusesForStop(engine)
 	engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusStopped
 
-	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil {
+	if err := r.client.Patch(context.TODO(), engine.Instance, patch); err != nil && !k8serrors.IsNotFound(err) {
 		r.recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos stop) Unable to update chaosengine")
 		return reconcile.Result{}, fmt.Errorf("unable to remove finalizer from chaosEngine Resource, due to error: %v", err)
 	}
@@ -503,7 +468,7 @@ func (r *ReconcileChaosEngine) reconcileForDelete(engine *chaosTypes.EngineInfo,
 
 // forceRemoveAllChaosPods force removes all chaos-related pods
 func (r *ReconcileChaosEngine) forceRemoveAllChaosPods(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
-	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(metav1.DeletePropagationBackground)}
+	optsDelete := []client.DeleteAllOfOption{client.InNamespace(request.NamespacedName.Namespace), client.MatchingLabels{"chaosUID": string(engine.Instance.UID)}, client.PropagationPolicy(v1.DeletePropagationBackground)}
 	if engine.Instance.Spec.TerminationGracePeriodSeconds != 0 {
 		optsDelete = append(optsDelete, client.GracePeriodSeconds(engine.Instance.Spec.TerminationGracePeriodSeconds))
 	}
@@ -701,7 +666,7 @@ func updateExperimentStatusesForStop(engine *chaosTypes.EngineInfo) {
 		if engine.Instance.Status.Experiments[i].Status == litmuschaosv1alpha1.ExperimentStatusRunning || engine.Instance.Status.Experiments[i].Status == litmuschaosv1alpha1.ExperimentStatusWaiting {
 			engine.Instance.Status.Experiments[i].Status = litmuschaosv1alpha1.ExperimentStatusAborted
 			engine.Instance.Status.Experiments[i].Verdict = "Stopped"
-			engine.Instance.Status.Experiments[i].LastUpdateTime = metav1.Now()
+			engine.Instance.Status.Experiments[i].LastUpdateTime = v1.Now()
 		}
 	}
 }
@@ -796,6 +761,19 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 		return err
 	}
 
+	found, err := isResultCRDAvailable()
+	if err != nil {
+		return err
+	}
+	if !found {
+		return nil
+	}
+	return r.updatChaosResult(engine, request)
+}
+
+// updatChaosResult update the chaosstatus and annotation inside the chaosresult
+func (r *ReconcileChaosEngine) updatChaosResult(engine *chaosTypes.EngineInfo, request reconcile.Request) error {
+
 	chaosresultList := &litmuschaosv1alpha1.ChaosResultList{}
 	opts := []client.ListOption{
 		client.InNamespace(request.NamespacedName.Namespace),
@@ -809,12 +787,11 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 	for _, result := range chaosresultList.Items {
 		if result.Labels["chaosUID"] == string(engine.Instance.UID) {
 			targetsList, annotations := getChaosStatus(result)
-			result.Status.History.Targets = append(result.Status.History.Targets, targetsList...)
+			result.Status.History.Targets = targetsList
 			result.ObjectMeta.Annotations = annotations
 
 			chaosTypes.Log.Info("updating chaos status inside chaosresult", "chaosresult", result.Name)
-			err := r.client.Update(context.TODO(), &result, &client.UpdateOptions{})
-			return err
+			return r.client.Update(context.TODO(), &result, &client.UpdateOptions{})
 		}
 	}
 	return nil
@@ -846,20 +823,61 @@ func (r *ReconcileChaosEngine) waitForChaosPodTermination(engine *chaosTypes.Eng
 func getChaosStatus(result litmuschaosv1alpha1.ChaosResult) ([]litmuschaosv1alpha1.TargetDetails, map[string]string) {
 	annotations := result.ObjectMeta.Annotations
 
-	targetsList := []litmuschaosv1alpha1.TargetDetails{}
+	targetsList := result.Status.History.Targets
 	for k, v := range annotations {
 		switch strings.ToLower(v) {
 		case "injected", "reverted", "targeted":
 			kind := strings.TrimSpace(strings.Split(k, "/")[0])
 			name := strings.TrimSpace(strings.Split(k, "/")[1])
-			target := litmuschaosv1alpha1.TargetDetails{
-				Name:        name,
-				Kind:        kind,
-				ChaosStatus: v,
+			if !updateTargets(name, v, &targetsList) {
+				targetsList = append(targetsList, litmuschaosv1alpha1.TargetDetails{
+					Name:        name,
+					Kind:        kind,
+					ChaosStatus: v,
+				})
 			}
-			targetsList = append(targetsList, target)
 			delete(annotations, k)
 		}
 	}
 	return targetsList, annotations
+}
+
+// isResultCRDAvailable check the existance of chaosresult CRD inside cluster
+func isResultCRDAvailable() (bool, error) {
+
+	dynamicClient, err := dynamicclientset.CreateClientSet()
+	if err != nil {
+		return false, err
+	}
+
+	//defining the gvr for the requested resource
+	gvr := schema.GroupVersionResource{
+		Group:    "apiextensions.k8s.io",
+		Version:  "v1",
+		Resource: "customresourcedefinitions",
+	}
+
+	resultList, err := (*dynamicClient).Resource(gvr).List(v1.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	// it will check the presence of chaosresult CRD inside cluster
+	for _, crd := range resultList.Items {
+		if crd.GetName() == chaosTypes.ResultCRDName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// updates the chaos status of targets which is already present inside historyt.targets
+func updateTargets(name, status string, data *[]litmuschaosv1alpha1.TargetDetails) bool {
+	for i := range *data {
+		if (*data)[i].Name == name {
+			(*data)[i].ChaosStatus = status
+			return true
+		}
+	}
+	return false
 }
