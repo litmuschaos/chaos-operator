@@ -761,12 +761,15 @@ func (r *ReconcileChaosEngine) updateChaosStatus(engine *chaosTypes.EngineInfo, 
 		return err
 	}
 
-	found, err := isResultCRDAvailable()
-	if err != nil {
-		return err
-	}
-	if !found {
-		return nil
+	// skipping CRD validation for the namespace scoped operator
+	if os.Getenv("WATCH_NAMESPACE") == "" {
+		found, err := isResultCRDAvailable()
+		if err != nil {
+			return err
+		}
+		if !found {
+			return nil
+		}
 	}
 	return r.updatChaosResult(engine, request)
 }
