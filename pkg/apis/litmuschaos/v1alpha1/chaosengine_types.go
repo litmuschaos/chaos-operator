@@ -30,6 +30,9 @@ type ChaosEngineSpec struct {
 	Appinfo ApplicationParams `json:"appinfo,omitempty"`
 	//AnnotationCheck defines whether annotation check is allowed or not. It can be true or false
 	AnnotationCheck string `json:"annotationCheck,omitempty"`
+	//DefaultChecks defines whether default health checks should be executed or not. It can be true or false
+	// default value is true
+	DefaultChecks string `json:"defaultChecks,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Components contains the image, imagePullPolicy, arguments, and commands of runner
