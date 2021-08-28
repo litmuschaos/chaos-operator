@@ -23,13 +23,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
+	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	litmusFakeClientset "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/controller/types"
 )
 
 func TestInitializeApplicationInfo(t *testing.T) {
@@ -1058,11 +1060,13 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			err := r.client.Create(context.TODO(), mock.engine.Instance)
-			if err != nil {
+			if err := r.client.Create(context.TODO(), mock.engine.Instance); err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
-			val := r.checkRunnerContainerCompletedStatus(&mock.engine)
+			val, err := r.checkRunnerContainerCompletedStatus(&mock.engine)
+			if err != nil {
+				fmt.Printf("Unable to check status: %v", err)
+			}
 			if mock.isErr && val == false {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -1613,7 +1617,7 @@ func TestForceRemoveAllChaosPods(t *testing.T) {
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
-			err = r.forceRemoveAllChaosPods(&mock.engine, mock.request)
+			err = r.forceRemoveChaosResources(&mock.engine, mock.request)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
