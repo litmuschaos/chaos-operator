@@ -1,7 +1,7 @@
 name: build-pipeline
 on:
   pull_request:
-    branches: [master]
+    branches: [dev]
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.16
 
       # Checkout to the latest commit
       # On specific directory/path
@@ -40,7 +40,7 @@ jobs:
         env:
           DOCKER_REPO: litmuschaos
           DOCKER_IMAGE: chaos-operator
-          DOCKER_TAG: ci
+          DOCKER_TAG: dev
         run: |
           make build-amd64
           docker save -o ${{ github.workspace }}/image.tar litmuschaos/chaos-operator:ci
@@ -60,7 +60,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.16
 
       # Checkout to the latest commit
       # On specific directory/path

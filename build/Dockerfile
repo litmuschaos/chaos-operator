@@ -1,6 +1,6 @@
 # Multi-stage docker build
 # Build stage
-FROM golang:1.14 AS builder
+FROM golang:alpine AS builder
 
 LABEL maintainer="LitmusChaos"
 
@@ -16,20 +16,23 @@ RUN go env
 
 RUN CGO_ENABLED=0 go build -o /output/chaos-operator -v ./cmd/manager/
 
+RUN apk --no-cache add ca-certificates
+
+# add a user here because addgroup and adduser are not available in scratch
+RUN addgroup -S chaos-operator \
+    && adduser -S -u 1001 -g chaos-operator chaos-operator
+
 # Packaging stage
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+FROM scratch
 
 LABEL maintainer="LitmusChaos"
 
-ENV OPERATOR=/usr/local/bin/chaos-operator \
-    USER_UID=1001 \
-    USER_NAME=chaos-operator
+ENV OPERATOR=/usr/local/bin/chaos-operator
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /output/chaos-operator ${OPERATOR}
-COPY build/bin /usr/local/bin
+COPY --from=builder /etc/passwd /etc/passwd
 
-RUN  /usr/local/bin/user_setup
+ENTRYPOINT ["/usr/local/bin/chaos-operator"]
 
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
-
-USER ${USER_UID}
+USER 1001
