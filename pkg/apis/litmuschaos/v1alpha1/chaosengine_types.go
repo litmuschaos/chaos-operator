@@ -30,6 +30,9 @@ type ChaosEngineSpec struct {
 	Appinfo ApplicationParams `json:"appinfo,omitempty"`
 	//AnnotationCheck defines whether annotation check is allowed or not. It can be true or false
 	AnnotationCheck string `json:"annotationCheck,omitempty"`
+	//DefaultAppHealthCheck defines whether default health checks should be executed or not. It can be true or false
+	// default value is true
+	DefaultAppHealthCheck string `json:"defaultAppHealthCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Components contains the image, imagePullPolicy, arguments, and commands of runner
@@ -224,8 +227,17 @@ type CmdProbeInputs struct {
 	// Comparator check for the correctness of the probe output
 	Comparator ComparatorInfo `json:"comparator,omitempty"`
 	// The source where we have to run the command
-	// It can be a image or inline(inside experiment itself)
-	Source string `json:"source,omitempty"`
+	// It will run in inline(inside experiment itself) mode if source is nil
+	Source SourceDetails `json:"source,omitempty"`
+}
+
+// SourceDetails contains source details of the cmdProbe
+type SourceDetails struct {
+	// Image of the source pod
+	Image string `json:"image,omitempty"`
+	// HostNetwork define the hostNetwork of the external pod
+	// it supports boolean values and default value is false
+	HostNetwork bool `json:"hostNetwork,omitempty"`
 }
 
 //PromProbeInputs contains all the inputs required for prometheus probe
