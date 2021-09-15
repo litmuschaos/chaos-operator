@@ -43,6 +43,9 @@ spec:
               annotationCheck:
                 type: string
                 pattern: ^(true|false)$
+              defaultAppHealthCheck:
+                type: string
+                pattern: ^(true|false)$ 
               appinfo:
                 type: object
                 properties:
