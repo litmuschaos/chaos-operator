@@ -2,7 +2,7 @@ name: push-pipeline
 on:
   push:
     branches:
-      - dev
+      - master
     tags-ignore:
       - '**'
 
@@ -13,7 +13,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: 1.14
 
       # Checkout to the latest commit
       # On specific directory/path
@@ -56,7 +56,7 @@ jobs:
         env:
           DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
           DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
-          DOCKER_TAG: dev
+          DOCKER_TAG: ci
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: make push-chaos-operator
@@ -73,7 +73,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: 1.14
 
       #Install and configure a kind cluster
       - name: Installing Prerequisites (K3S Cluster)
@@ -94,7 +94,7 @@ jobs:
         env:
           DOCKER_REPO: litmuschaos
           DOCKER_IMAGE: chaos-operator
-          DOCKER_TAG: dev
+          DOCKER_TAG: ci
         run: |
           make build-amd64
 
