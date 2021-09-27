@@ -33,6 +33,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	scheme "k8s.io/client-go/kubernetes/scheme"
@@ -344,11 +345,19 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 		It("Should change the engineStatus ", func() {
 
-			//Fetching engineStatus
-			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			err := retry.
+				Times(uint(180 / 2)).
+				Wait(time.Duration(2) * time.Second).
+				Try(func(attempt uint) error {
+					//Fetching engineStatus
+					engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+					Expect(err).To(BeNil())
+					if engine.Status.EngineStatus != v1alpha1.EngineStatusStopped {
+						fmt.Printf("engine is not in stopped state")
+					}
+					return nil
+				})
 			Expect(err).To(BeNil())
-			isStopped := engine.Status.EngineStatus == v1alpha1.EngineStatusStopped
-			Expect(isStopped).To(BeTrue())
 		})
 	})
 
@@ -356,6 +365,17 @@ var _ = Describe("BDD on chaos-operator", func() {
 		It("Should delete chaos engine", func() {
 
 			err := clientSet.ChaosEngines("litmus").Delete("engine-nginx", &metav1.DeleteOptions{})
+			Expect(err).To(BeNil())
+			err = retry.
+				Times(uint(180 / 2)).
+				Wait(time.Duration(2) * time.Second).
+				Try(func(attempt uint) error {
+					_, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+					if err != nil && !k8serrors.IsNotFound(err) {
+						return fmt.Errorf("unable to get chaosengine, err: %v", err)
+					}
+					return nil
+				})
 			Expect(err).To(BeNil())
 			klog.Infoln("chaos engine deleted successfully")
 		})
@@ -421,11 +441,21 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 		It("Should change EngineStatus ", func() {
 
-			//Fetching engineStatus
-			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			err := retry.
+				Times(uint(180 / 2)).
+				Wait(time.Duration(2) * time.Second).
+				Try(func(attempt uint) error {
+					//Fetching engineStatus
+					engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+					if err != nil {
+						return err
+					}
+					if engine.Status.EngineStatus != v1alpha1.EngineStatusCompleted {
+						return fmt.Errorf("engine is not in completed state")
+					}
+					return nil
+				})
 			Expect(err).To(BeNil())
-			isComplete := engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted
-			Expect(isComplete).To(BeTrue())
 		})
 	})
 
