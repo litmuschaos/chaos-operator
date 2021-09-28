@@ -1,6 +1,6 @@
 module github.com/litmuschaos/chaos-operator
 
-go 1.13
+go 1.16
 
 require (
 	github.com/go-logr/logr v0.1.0
@@ -11,12 +11,12 @@ require (
 	github.com/litmuschaos/litmus-go v0.0.0-20210705063441-babf0c4aa57d
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
-	github.com/openebs/maya v1.12.1
 	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/tools v0.1.0 // indirect
-	k8s.io/api v0.17.3
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
+	golang.org/x/tools v0.1.6 // indirect
+	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
