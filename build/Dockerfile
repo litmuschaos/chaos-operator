@@ -1,6 +1,6 @@
 # Multi-stage docker build
 # Build stage
-FROM golang:1.14 AS builder
+FROM golang:alpine AS builder
 
 LABEL maintainer="LitmusChaos"
 
@@ -17,19 +17,13 @@ RUN go env
 RUN CGO_ENABLED=0 go build -o /output/chaos-operator -v ./cmd/manager/
 
 # Packaging stage
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+# Image source: https://github.com/litmuschaos/test-tools/blob/master/custom/hardened-alpine/infra/Dockerfile
+# The base image is non-root (have litmus user) with default litmus directory.
+FROM litmuschaos/infra-alpine
 
 LABEL maintainer="LitmusChaos"
 
-ENV OPERATOR=/usr/local/bin/chaos-operator \
-    USER_UID=1001 \
-    USER_NAME=chaos-operator
-
+ENV OPERATOR=/usr/local/bin/chaos-operator
 COPY --from=builder /output/chaos-operator ${OPERATOR}
-COPY build/bin /usr/local/bin
 
-RUN  /usr/local/bin/user_setup
-
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
-
-USER ${USER_UID}
+ENTRYPOINT ["/usr/local/bin/chaos-operator"]
