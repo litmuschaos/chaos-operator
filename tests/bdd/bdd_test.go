@@ -335,9 +335,8 @@ var _ = Describe("BDD on chaos-operator", func() {
 					isNotFound := errors.IsNotFound(err)
 					if isNotFound {
 						return nil
-					} else {
-						return fmt.Errorf("chaos-runner is not deleted yet, err: %v", err)
 					}
+					return fmt.Errorf("chaos-runner is not deleted yet, err: %v", err)
 				})
 			Expect(err).To(BeNil())
 			klog.Infoln("chaos-runner pod deletion verified")
@@ -432,9 +431,8 @@ var _ = Describe("BDD on chaos-operator", func() {
 					isNotFound := errors.IsNotFound(err)
 					if isNotFound {
 						return nil
-					} else {
-						return fmt.Errorf("chaos-runner is not deleted yet, err: %v", err)
 					}
+					return fmt.Errorf("chaos-runner is not deleted yet, err: %v", err)
 				})
 			Expect(err).To(BeNil())
 		})
