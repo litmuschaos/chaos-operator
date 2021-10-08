@@ -1,10 +1,18 @@
 # Litmus chaos-operator for injecting chaos experiments on Kubernetes
 
+[![Slack Channel](https://img.shields.io/badge/Slack-Join-purple)](https://slack.litmuschaos.io)
+![GitHub Workflow](https://github.com/litmuschaos/chaos-operator/actions/workflows/push.yml/badge.svg?branch=master)
+[![Docker Pulls](https://img.shields.io/docker/pulls/litmuschaos/chaos-operator.svg)](https://hub.docker.com/r/litmuschaos/chaos-operator)
+[![GitHub issues](https://img.shields.io/github/issues/litmuschaos/chaos-operator)](https://github.com/litmuschaos/chaos-operator/issues)
+[![Twitter Follow](https://img.shields.io/twitter/follow/litmuschaos?style=social)](https://twitter.com/LitmusChaos)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2597079b1b5240d3866a6deb4112a2f2)](https://www.codacy.com/manual/litmuschaos/chaos-operator?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=litmuschaos/chaos-operator&amp;utm_campaign=Badge_Grade)
 [![Go Report Card](https://goreportcard.com/badge/github.com/litmuschaos/chaos-operator)](https://goreportcard.com/report/github.com/litmuschaos/chaos-operator)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5290/badge)](https://bestpractices.coreinfrastructure.org/projects/5290)
 [![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-operator?branch=master)](https://bettercodehub.com/)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-operator.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-operator?ref=badge_shield)
 [![codecov](https://codecov.io/gh/litmuschaos/chaos-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/litmuschaos/chaos-operator)
+[![YouTube Channel](https://img.shields.io/badge/YouTube-Subscribe-red)](https://www.youtube.com/channel/UCa57PMqmz_j0wnteRa9nCaw)
+<br><br>
   
 Litmus chaos operator is used by Kubernetes application developers and SREs to inject chaos into the applications 
 and Kubernetes infrastructure in a managed fashion. Its objective is to make the process of validation and 
