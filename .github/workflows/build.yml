@@ -27,6 +27,17 @@ jobs:
       - name: unused-package check
         run: make unused-package-check
 
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/golang@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high     
+
   trivy:
     needs: pre-checks
     runs-on: ubuntu-latest

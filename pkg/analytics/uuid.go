@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// contains clientUUID for analytics
+// ClientUUID contains clientUUID for analytics
 var ClientUUID string
 
 // it derives the UID of the chaos-operator deployment
