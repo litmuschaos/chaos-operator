@@ -244,7 +244,7 @@ type SourceDetails struct {
 type PromProbeInputs struct {
 	// Endpoint for the prometheus probe
 	Endpoint string `json:"endpoint,omitempty"`
-	// Query to get promethus metrices
+	// Query to get promethus metrics
 	Query string `json:"query,omitempty"`
 	// QueryPath contains filePath, which contains prometheus query
 	QueryPath string `json:"queryPath,omitempty"`

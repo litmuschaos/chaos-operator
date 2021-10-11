@@ -53,7 +53,7 @@ const (
 	ResultVerdictPassed ResultVerdict = "Pass"
 	// ResultVerdictFailed is verdict of chaosresult when experiment failed
 	ResultVerdictFailed ResultVerdict = "Fail"
-	// ResultVerdictFailed is verdict of chaosresult when experiment aborted
+	// ResultVerdictStopped is verdict of chaosresult when experiment aborted
 	ResultVerdictStopped ResultVerdict = "Stopped"
 )
 
