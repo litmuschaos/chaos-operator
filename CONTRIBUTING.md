@@ -69,6 +69,5 @@ For setting up a Development environment on your local host, see the detailed in
 
 ## Community
 
-The litmus community will have a weekly contributor sync-up on Tuesdays 16.00-16.30IST / 12.30-13.00CEST
--   The sync up meeting is held online on [Google Hangouts](https://meet.google.com/uvt-ozaw-bvp)
--   The release items are tracked in this [planning sheet](https://docs.google.com/spreadsheets/d/15svGB99bDcSTkwAYttH1QzP5WJSb-dFKbPzl-9WqmXM). 
+The litmus community will have a monthly community sync-up on 3rd Wednesday 22.00-23.00IST / 18.30-19.30CEST
+-  The community meeting details are available [here](https://hackmd.io/a4Zu_sH4TZGeih-xCimi3Q). Please feel free to join the community meeting.
