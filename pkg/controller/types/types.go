@@ -32,11 +32,10 @@ limitations under the License.
 package types
 
 import (
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-
 	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/chaos-operator/pkg/controller/utils"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -50,7 +49,7 @@ var (
 	AppLabelValue string
 
 	// Log with default name ie: controller_chaosengine
-	Log = logf.Log.WithName("controller_chaosengine")
+	Log = log.Log.WithName("controller_chaosengine")
 
 	// DefaultChaosRunnerImage contains the default value of runner resource
 	DefaultChaosRunnerImage = "litmuschaos/chaos-runner:latest"
