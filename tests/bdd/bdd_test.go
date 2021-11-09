@@ -18,6 +18,7 @@ package bdd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -102,7 +103,7 @@ var _ = BeforeSuite(func() {
 		Times(uint(180 / 2)).
 		Wait(time.Duration(2) * time.Second).
 		Try(func(attempt uint) error {
-			podSpec, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{LabelSelector: "name=chaos-operator"})
+			podSpec, err := client.CoreV1().Pods("litmus").List(context.TODO(), metav1.ListOptions{LabelSelector: "name=chaos-operator"})
 			if err != nil || len(podSpec.Items) == 0 {
 				return fmt.Errorf("Unable to list chaos-operator, err: %v", err)
 			}
@@ -170,7 +171,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err := client.AppsV1().Deployments("litmus").Create(deployment)
+			_, err := client.AppsV1().Deployments("litmus").Create(context.TODO(), deployment, metav1.CreateOptions{})
 			Expect(err).To(
 				BeNil(),
 				"while creating nginx deployment in namespace litmus",
@@ -267,7 +268,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Times(uint(180 / 2)).
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
-					pod, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					pod, err := client.CoreV1().Pods("litmus").Get(context.TODO(), "engine-nginx-runner", metav1.GetOptions{})
 					if err != nil {
 						return fmt.Errorf("unable to get chaos-runner pod, err: %v", err)
 					}
@@ -331,7 +332,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Times(uint(180 / 2)).
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
-					_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					_, err := client.CoreV1().Pods("litmus").Get(context.TODO(), "engine-nginx-runner", metav1.GetOptions{})
 					isNotFound := errors.IsNotFound(err)
 					if isNotFound {
 						return nil
@@ -427,7 +428,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
 					//Fetching engine-nginx-runner pod
-					_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-1-runner", metav1.GetOptions{})
+					_, err := client.CoreV1().Pods("litmus").Get(context.TODO(), "engine-nginx-1-runner", metav1.GetOptions{})
 					isNotFound := errors.IsNotFound(err)
 					if isNotFound {
 						return nil
@@ -460,7 +461,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 	Context("Validate via Chaos-Operator Logs", func() {
 		It("Should Generate Operator logs", func() {
 
-			pods, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{
+			pods, err := client.CoreV1().Pods("litmus").List(context.TODO(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("%v=%v", "name", "chaos-operator"),
 			})
 			Expect(err).To(BeNil())
@@ -486,7 +487,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			req := client.CoreV1().Pods("litmus").GetLogs(podName, &podLogOpts)
 
-			podLogs, err := req.Stream()
+			podLogs, err := req.Stream(context.TODO())
 			Expect(err).To(BeNil())
 
 			defer podLogs.Close()

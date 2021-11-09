@@ -419,7 +419,7 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			err := r.Client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
@@ -529,7 +529,7 @@ func TestUpdateEngineForComplete(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			err := r.Client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
@@ -613,7 +613,7 @@ func TestUpdateEngineForRestart(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			err := r.Client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
@@ -972,7 +972,7 @@ func TestUpdateEngineState(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			err := r.Client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
@@ -1060,7 +1060,7 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			if err := r.client.Create(context.TODO(), mock.engine.Instance); err != nil {
+			if err := r.Client.Create(context.TODO(), mock.engine.Instance); err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
 			val, err := r.checkRunnerContainerCompletedStatus(&mock.engine)
@@ -1121,7 +1121,7 @@ func TestEngineRunnerPod(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 
 			if name == "Test Positive-2" {
-				mock.runner.r.client.Create(context.TODO(), mock.runner.engineRunner)
+				mock.runner.r.Client.Create(context.TODO(), mock.runner.engineRunner)
 			}
 			err := engineRunnerPod(mock.runner)
 			if mock.isErr && err == nil {
@@ -1248,7 +1248,7 @@ func TestGetChaosEngineInstance(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
 			if name == "Test Positive-1" {
-				err := r.client.Create(context.TODO(), mock.engine.Instance)
+				err := r.Client.Create(context.TODO(), mock.engine.Instance)
 				if err != nil {
 					fmt.Printf("Unable to create engine: %v", err)
 				}
@@ -1524,7 +1524,7 @@ func TestReconcileForDelete(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
 			if name == "Test Positive-1" {
-				err := r.client.Create(context.TODO(), mock.engine.Instance)
+				err := r.Client.Create(context.TODO(), mock.engine.Instance)
 				if err != nil {
 					fmt.Printf("Unable to create engine: %v", err)
 				}
@@ -1613,7 +1613,7 @@ func TestForceRemoveAllChaosPods(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			err := r.Client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
@@ -1714,7 +1714,7 @@ func TestGracefullyRemoveDefaultChaosResources(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			err := r.client.Create(context.TODO(), mock.engine.Instance)
+			err := r.Client.Create(context.TODO(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
@@ -1830,7 +1830,7 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 	}
 }
 
-func CreateFakeClient(t *testing.T) *ReconcileChaosEngine {
+func CreateFakeClient(t *testing.T) *ChaosEngineReconciler {
 
 	fakeClient := litmusFakeClientset.NewFakeClient()
 	if fakeClient == nil {
@@ -1854,10 +1854,10 @@ func CreateFakeClient(t *testing.T) *ReconcileChaosEngine {
 
 	recorder := record.NewFakeRecorder(1024)
 
-	r := &ReconcileChaosEngine{
-		client:   fakeClient,
-		scheme:   s,
-		recorder: recorder,
+	r := &ChaosEngineReconciler{
+		Client:   fakeClient,
+		Scheme:   s,
+		Recorder: recorder,
 	}
 
 	return r
