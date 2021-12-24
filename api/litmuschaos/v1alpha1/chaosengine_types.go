@@ -230,11 +230,31 @@ type CmdProbeInputs struct {
 
 // SourceDetails contains source details of the cmdProbe
 type SourceDetails struct {
-	// Image of the source pod
+	// Image for the source pod
 	Image string `json:"image,omitempty"`
 	// HostNetwork define the hostNetwork of the external pod
 	// it supports boolean values and default value is false
 	HostNetwork bool `json:"hostNetwork,omitempty"`
+	// Args for the source pod
+	Args []string `json:"args,omitempty"`
+	// ENVList contains ENV passed to the source pod
+	ENVList []corev1.EnvVar `json:"env,omitempty"`
+	// Labels for the source pod
+	Labels map[string]string `json:"labels,omitempty"`
+	// Annotations for the source pod
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Command for the source pod
+	Command []string `json:"command,omitempty"`
+	// ImagePullPolicy for the source pod
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+	// Privileged for the source pod
+	Privileged bool `json:"privileged,omitempty"`
+	// NodeSelector for the source pod
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// Volumes for the source pod
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+	// VolumesMount for the source pod
+	VolumesMount []corev1.VolumeMount `json:"volumeMount,omitempty"`
 }
 
 //PromProbeInputs contains all the inputs required for prometheus probe
