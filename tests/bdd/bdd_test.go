@@ -388,7 +388,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			By("Creating ChaosEngine")
 			chaosEngine := &v1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "engine-nginx",
+					Name:      "engine-nginx-1",
 					Namespace: "litmus",
 				},
 				Spec: v1alpha1.ChaosEngineSpec{
@@ -427,7 +427,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
 					//Fetching engine-nginx-runner pod
-					_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-1-runner", metav1.GetOptions{})
 					isNotFound := errors.IsNotFound(err)
 					if isNotFound {
 						return nil
@@ -444,7 +444,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
 					//Fetching engineStatus
-					engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+					engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx-1", metav1.GetOptions{})
 					if err != nil {
 						return err
 					}

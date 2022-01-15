@@ -93,7 +93,7 @@ jobs:
         env: 
           KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         run: |
-          curl -sfL https://get.k3s.io | sh -s - --docker --write-kubeconfig-mode 664
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.20.14-rc1+k3s1 sh -s - --docker --write-kubeconfig-mode 664
           kubectl wait node --all --for condition=ready --timeout=90s
           mkdir -p $HOME/.kube
           cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config
