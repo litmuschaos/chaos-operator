@@ -28,15 +28,20 @@ jobs:
         run: make unused-package-check
 
   security:
+    container:
+      image: litmuschaos/snyk:1.0
+      volumes:
+      - /home/runner/work/_actions/:/home/runner/work/_actions/
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/golang@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - uses: actions/checkout@v2
+      - uses: snyk/actions/setup@master
+      - run: snyk auth ${SNYK_TOKEN}
+      - uses: actions/setup-go@v1
         with:
-          args: --severity-threshold=high     
+          go-version: '1.17'
+      - name: Snyk monitor
+        run: snyk test
 
   trivy:
     needs: pre-checks
