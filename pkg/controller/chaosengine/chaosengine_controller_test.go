@@ -138,7 +138,7 @@ func TestGetChaosRunnerENV(t *testing.T) {
 					Value: fmt.Sprint(strings.Join(fakeAExList, ",")),
 				},
 				{
-					Name:  "CHAOS_SVC_ACC",
+					Name:  "CHAOS_SERVICE_ACCOUNT",
 					Value: fakeServiceAcc,
 				},
 				{

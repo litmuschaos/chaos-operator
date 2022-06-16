@@ -186,7 +186,7 @@ func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, Cl
 		SetEnv("APP_KIND", cr.Spec.Appinfo.AppKind).
 		SetEnv("APP_NAMESPACE", appNS).
 		SetEnv("EXPERIMENT_LIST", fmt.Sprint(strings.Join(aExList, ","))).
-		SetEnv("CHAOS_SVC_ACC", cr.Spec.ChaosServiceAccount).
+		SetEnv("CHAOS_SERVICE_ACCOUNT", cr.Spec.ChaosServiceAccount).
 		SetEnv("AUXILIARY_APPINFO", cr.Spec.AuxiliaryAppInfo).
 		SetEnv("CLIENT_UUID", ClientUUID).
 		SetEnv("CHAOS_NAMESPACE", cr.Namespace).
