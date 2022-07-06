@@ -807,7 +807,8 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := newGoRunnerPodForCR(&mock.engine)
+			r := CreateFakeClient(t)
+			_, err := r.newGoRunnerPodForCR(&mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -1830,7 +1831,7 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 	}
 }
 
-func CreateFakeClient(t *testing.T) *ChaosEngineReconciler {
+func CreateFakeClient(t *testing.T) *ReconcileChaosEngine {
 
 	fakeClient := litmusFakeClientset.NewFakeClient()
 	if fakeClient == nil {
@@ -1854,7 +1855,7 @@ func CreateFakeClient(t *testing.T) *ChaosEngineReconciler {
 
 	recorder := record.NewFakeRecorder(1024)
 
-	r := &ChaosEngineReconciler{
+	r := &ReconcileChaosEngine{
 		Client:   fakeClient,
 		Scheme:   s,
 		Recorder: recorder,

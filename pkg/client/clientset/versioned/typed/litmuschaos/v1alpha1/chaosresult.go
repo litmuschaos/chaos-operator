@@ -38,15 +38,15 @@ type ChaosResultsGetter interface {
 
 // ChaosResultInterface has methods to work with ChaosResult resources.
 type ChaosResultInterface interface {
-	Create(*v1alpha1.ChaosResult) (*v1alpha1.ChaosResult, error)
-	Update(*v1alpha1.ChaosResult) (*v1alpha1.ChaosResult, error)
-	UpdateStatus(*v1alpha1.ChaosResult) (*v1alpha1.ChaosResult, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.ChaosResult, error)
-	List(opts v1.ListOptions) (*v1alpha1.ChaosResultList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ChaosResult, err error)
+	Create(context.Context, *v1alpha1.ChaosResult) (*v1alpha1.ChaosResult, error)
+	Update(context.Context, *v1alpha1.ChaosResult) (*v1alpha1.ChaosResult, error)
+	UpdateStatus(context.Context, *v1alpha1.ChaosResult) (*v1alpha1.ChaosResult, error)
+	Delete(ctx context.Context, name string, options *v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, options *v1.DeleteOptions, listOptions v1.ListOptions) error
+	Get(ctx context.Context, name string, options v1.GetOptions) (*v1alpha1.ChaosResult, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.ChaosResultList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ChaosResult, err error)
 	ChaosResultExpansion
 }
 
@@ -65,20 +65,20 @@ func newChaosResults(c *LitmuschaosV1alpha1Client, namespace string) *chaosResul
 }
 
 // Get takes name of the chaosResult, and returns the corresponding chaosResult object, and an error if there is any.
-func (c *chaosResults) Get(name string, options v1.GetOptions) (result *v1alpha1.ChaosResult, err error) {
+func (c *chaosResults) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ChaosResult, err error) {
 	result = &v1alpha1.ChaosResult{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("chaosresults").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do(context.TODO()).
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of ChaosResults that match those selectors.
-func (c *chaosResults) List(opts v1.ListOptions) (result *v1alpha1.ChaosResultList, err error) {
+func (c *chaosResults) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ChaosResultList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -89,13 +89,13 @@ func (c *chaosResults) List(opts v1.ListOptions) (result *v1alpha1.ChaosResultLi
 		Resource("chaosresults").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do(context.TODO()).
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested chaosResults.
-func (c *chaosResults) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *chaosResults) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -106,30 +106,30 @@ func (c *chaosResults) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("chaosresults").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch(context.TODO())
+		Watch(ctx)
 }
 
 // Create takes the representation of a chaosResult and creates it.  Returns the server's representation of the chaosResult, and an error, if there is any.
-func (c *chaosResults) Create(chaosResult *v1alpha1.ChaosResult) (result *v1alpha1.ChaosResult, err error) {
+func (c *chaosResults) Create(ctx context.Context, chaosResult *v1alpha1.ChaosResult) (result *v1alpha1.ChaosResult, err error) {
 	result = &v1alpha1.ChaosResult{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("chaosresults").
 		Body(chaosResult).
-		Do(context.TODO()).
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a chaosResult and updates it. Returns the server's representation of the chaosResult, and an error, if there is any.
-func (c *chaosResults) Update(chaosResult *v1alpha1.ChaosResult) (result *v1alpha1.ChaosResult, err error) {
+func (c *chaosResults) Update(ctx context.Context, chaosResult *v1alpha1.ChaosResult) (result *v1alpha1.ChaosResult, err error) {
 	result = &v1alpha1.ChaosResult{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("chaosresults").
 		Name(chaosResult.Name).
 		Body(chaosResult).
-		Do(context.TODO()).
+		Do(ctx).
 		Into(result)
 	return
 }
@@ -137,7 +137,7 @@ func (c *chaosResults) Update(chaosResult *v1alpha1.ChaosResult) (result *v1alph
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 
-func (c *chaosResults) UpdateStatus(chaosResult *v1alpha1.ChaosResult) (result *v1alpha1.ChaosResult, err error) {
+func (c *chaosResults) UpdateStatus(ctx context.Context, chaosResult *v1alpha1.ChaosResult) (result *v1alpha1.ChaosResult, err error) {
 	result = &v1alpha1.ChaosResult{}
 	err = c.client.Put().
 		Namespace(c.ns).
@@ -145,24 +145,24 @@ func (c *chaosResults) UpdateStatus(chaosResult *v1alpha1.ChaosResult) (result *
 		Name(chaosResult.Name).
 		SubResource("status").
 		Body(chaosResult).
-		Do(context.TODO()).
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the chaosResult and deletes it. Returns an error if one occurs.
-func (c *chaosResults) Delete(name string, options *v1.DeleteOptions) error {
+func (c *chaosResults) Delete(ctx context.Context, name string, options *v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("chaosresults").
 		Name(name).
 		Body(options).
-		Do(context.TODO()).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *chaosResults) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *chaosResults) DeleteCollection(ctx context.Context, options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	var timeout time.Duration
 	if listOptions.TimeoutSeconds != nil {
 		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
@@ -173,12 +173,12 @@ func (c *chaosResults) DeleteCollection(options *v1.DeleteOptions, listOptions v
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(options).
-		Do(context.TODO()).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched chaosResult.
-func (c *chaosResults) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ChaosResult, err error) {
+func (c *chaosResults) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ChaosResult, err error) {
 	result = &v1alpha1.ChaosResult{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
@@ -186,7 +186,7 @@ func (c *chaosResults) Patch(name string, pt types.PatchType, data []byte, subre
 		SubResource(subresources...).
 		Name(name).
 		Body(data).
-		Do(context.TODO()).
+		Do(ctx).
 		Into(result)
 	return
 }

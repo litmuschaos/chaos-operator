@@ -289,13 +289,13 @@ func TestCheckChaosAnnotationDeployment(t *testing.T) {
 			f.SetFakeClient()
 			if mock.check == true {
 				for _, deploy := range mock.deployment {
-					_, err := f.k8sClient.AppsV1().Deployments(deploy.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{})
+					_, err := f.k8sClient.AppsV1().Deployments(deploy.Namespace).Create(context.Background(), &deploy, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("deployment not created, err: %v", err)
 					}
 				}
 			}
-			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(context.Background(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}
@@ -549,13 +549,13 @@ func TestCheckChaosAnnotationStatefulSet(t *testing.T) {
 			f.SetFakeClient()
 			if mock.check == true {
 				for _, sts := range mock.statefulSet {
-					_, err := f.k8sClient.AppsV1().StatefulSets(sts.Namespace).Create(context.TODO(), &sts, metav1.CreateOptions{})
+					_, err := f.k8sClient.AppsV1().StatefulSets(sts.Namespace).Create(context.Background(), &sts, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("statefulset not created, err: %v", err)
 					}
 				}
 			}
-			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(context.Background(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}
@@ -809,13 +809,13 @@ func TestCheckChaosAnnotationDaemonset(t *testing.T) {
 			f.SetFakeClient()
 			if mock.check == true {
 				for _, ds := range mock.daemonset {
-					_, err := f.k8sClient.AppsV1().DaemonSets(ds.Namespace).Create(context.TODO(), &ds, metav1.CreateOptions{})
+					_, err := f.k8sClient.AppsV1().DaemonSets(ds.Namespace).Create(context.Background(), &ds, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("daemonset not created, err: %v", err)
 					}
 				}
 			}
-			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(context.Background(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}
@@ -1085,14 +1085,14 @@ func TestCheckChaosAnnotationDeploymentConfigs(t *testing.T) {
 
 			if mock.check == true {
 				for _, dc := range mock.deploymentconfig {
-					_, err := dynamic.Create(context.TODO(), &dc, metav1.CreateOptions{})
+					_, err := dynamic.Create(context.Background(), &dc, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("deploymentconfig not created, err: %v", err)
 					}
 
 				}
 			}
-			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(context.Background(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}
@@ -1371,14 +1371,14 @@ func TestCheckChaosAnnotationRollouts(t *testing.T) {
 
 			if mock.check == true {
 				for _, ro := range mock.rollout {
-					_, err := dynamic.Create(context.TODO(), &ro, metav1.CreateOptions{})
+					_, err := dynamic.Create(context.Background(), &ro, metav1.CreateOptions{})
 					if err != nil {
 						fmt.Printf("rollout not created, err: %v", err)
 					}
 
 				}
 			}
-			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(mock.engine.Instance)
+			_, err := f.litmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.engine.Instance.Namespace).Create(context.Background(), mock.engine.Instance)
 			if err != nil {
 				fmt.Printf("engine not created, err: %v", err)
 			}

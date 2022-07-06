@@ -45,7 +45,7 @@ func getUID() (string, error) {
 		return podName, fmt.Errorf("POD_NAME or POD_NAMESPACE ENV not set")
 	}
 	// get operator pod details
-	pod, err := clients.CoreV1().Pods(podNamespace).Get(context.TODO(), podName, v1.GetOptions{})
+	pod, err := clients.CoreV1().Pods(podNamespace).Get(context.Background(), podName, v1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("unable to get %s pod in %s namespace", podName, podNamespace)
 	}
@@ -56,7 +56,7 @@ func getUID() (string, error) {
 func getDeploymentName(pod *core_v1.Pod, clients *kubernetes.Clientset) (string, error) {
 	for _, own := range pod.OwnerReferences {
 		if own.Kind == "ReplicaSet" {
-			rs, err := clients.AppsV1().ReplicaSets(pod.Namespace).Get(context.TODO(), own.Name, v1.GetOptions{})
+			rs, err := clients.AppsV1().ReplicaSets(pod.Namespace).Get(context.Background(), own.Name, v1.GetOptions{})
 			if err != nil {
 				return "", err
 			}
@@ -78,7 +78,7 @@ func getOperatorUID(pod *core_v1.Pod, clients *kubernetes.Clientset) (string, er
 		return "", err
 	}
 
-	deploy, err := clients.AppsV1().Deployments(pod.Namespace).Get(context.TODO(), deployName, v1.GetOptions{})
+	deploy, err := clients.AppsV1().Deployments(pod.Namespace).Get(context.Background(), deployName, v1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("unable to get %s deployment in %s namespace", deployName, pod.Namespace)
 	}

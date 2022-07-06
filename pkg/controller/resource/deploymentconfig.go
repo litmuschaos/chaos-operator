@@ -43,7 +43,7 @@ func CheckDeploymentConfigAnnotation(clientSet dynamic.Interface, engine *chaosT
 func getDeploymentConfigList(clientSet dynamic.Interface, engine *chaosTypes.EngineInfo) (*unstructured.UnstructuredList, error) {
 	dynamicClient := clientSet.Resource(gvrdc)
 
-	deploymentConfigList, err := dynamicClient.Namespace(engine.AppInfo.Namespace).List(context.TODO(), metav1.ListOptions{
+	deploymentConfigList, err := dynamicClient.Namespace(engine.AppInfo.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: engine.Instance.Spec.Appinfo.Applabel})
 	if err != nil {
 		return nil, fmt.Errorf("error while listing deploymentconfigs with matching labels: %s", engine.Instance.Spec.Appinfo.Applabel)
