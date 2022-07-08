@@ -14,7 +14,7 @@ RUN export GOOS=$(echo ${TARGETPLATFORM} | cut -d / -f1) && \
 
 RUN go env
 
-RUN CGO_ENABLED=0 go build -buildvcs=false -o /output/chaos-operator -v ./cmd/manager/
+RUN CGO_ENABLED=0 go build -buildvcs=false -o /output/chaos-operator -v ./main.go
 
 # Packaging stage
 # Image source: https://github.com/litmuschaos/test-tools/blob/master/custom/hardened-alpine/infra/Dockerfile
