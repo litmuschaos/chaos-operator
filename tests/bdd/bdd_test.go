@@ -18,6 +18,7 @@ package bdd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -41,7 +42,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 
-	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 	restclient "k8s.io/client-go/rest"
 )
@@ -102,7 +103,7 @@ var _ = BeforeSuite(func() {
 		Times(uint(180 / 2)).
 		Wait(time.Duration(2) * time.Second).
 		Try(func(attempt uint) error {
-			podSpec, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{LabelSelector: "name=chaos-operator"})
+			podSpec, err := client.CoreV1().Pods("litmus").List(context.Background(), metav1.ListOptions{LabelSelector: "name=chaos-operator"})
 			if err != nil || len(podSpec.Items) == 0 {
 				return fmt.Errorf("Unable to list chaos-operator, err: %v", err)
 			}
@@ -170,7 +171,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err := client.AppsV1().Deployments("litmus").Create(deployment)
+			_, err := client.AppsV1().Deployments("litmus").Create(context.Background(), deployment, metav1.CreateOptions{})
 			Expect(err).To(
 				BeNil(),
 				"while creating nginx deployment in namespace litmus",
@@ -225,7 +226,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err = clientSet.ChaosExperiments("litmus").Create(ChaosExperiment)
+			_, err = clientSet.ChaosExperiments("litmus").Create(context.Background(), ChaosExperiment, metav1.CreateOptions{})
 			Expect(err).To(BeNil())
 			klog.Infoln("ChaosExperiment created successfully...")
 
@@ -259,7 +260,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err = clientSet.ChaosEngines("litmus").Create(chaosEngine)
+			_, err = clientSet.ChaosEngines("litmus").Create(context.Background(), chaosEngine, metav1.CreateOptions{})
 			Expect(err).To(BeNil())
 			klog.Infoln("Chaosengine created successfully...")
 
@@ -267,7 +268,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Times(uint(180 / 2)).
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
-					pod, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					pod, err := client.CoreV1().Pods("litmus").Get(context.Background(), "engine-nginx-runner", metav1.GetOptions{})
 					if err != nil {
 						return fmt.Errorf("unable to get chaos-runner pod, err: %v", err)
 					}
@@ -283,7 +284,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 			klog.Infoln("runner pod created")
 
 			// Check for EngineStatus
-			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			engine, err := clientSet.ChaosEngines("litmus").Get(context.Background(), "engine-nginx", metav1.GetOptions{})
 			Expect(err).To(BeNil())
 
 			isInit := engine.Status.EngineStatus == v1alpha1.EngineStatusInitialized
@@ -295,13 +296,13 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 		It("Should delete chaos-resources", func() {
 
-			engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+			engine, err := clientSet.ChaosEngines("litmus").Get(context.Background(), "engine-nginx", metav1.GetOptions{})
 			Expect(err).To(BeNil())
 
 			// setting the EngineState of chaosEngine to stop
 			engine.Spec.EngineState = v1alpha1.EngineStateStop
 
-			_, err = clientSet.ChaosEngines("litmus").Update(engine)
+			_, err = clientSet.ChaosEngines("litmus").Update(context.Background(), engine, metav1.UpdateOptions{})
 			Expect(err).To(BeNil())
 			klog.Infoln("Chaosengine updated successfully...")
 
@@ -309,7 +310,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Times(uint(180 / 2)).
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
-					engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+					engine, err := clientSet.ChaosEngines("litmus").Get(context.Background(), "engine-nginx", metav1.GetOptions{})
 					if err != nil {
 						return fmt.Errorf("unable to get chaosengine, err: %v", err)
 					}
@@ -331,7 +332,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Times(uint(180 / 2)).
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
-					_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					_, err := client.CoreV1().Pods("litmus").Get(context.Background(), "engine-nginx-runner", metav1.GetOptions{})
 					isNotFound := errors.IsNotFound(err)
 					if isNotFound {
 						return nil
@@ -349,7 +350,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
 					//Fetching engineStatus
-					engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+					engine, err := clientSet.ChaosEngines("litmus").Get(context.Background(), "engine-nginx", metav1.GetOptions{})
 					Expect(err).To(BeNil())
 					if engine.Status.EngineStatus != v1alpha1.EngineStatusStopped {
 						fmt.Printf("engine is not in stopped state")
@@ -363,13 +364,13 @@ var _ = Describe("BDD on chaos-operator", func() {
 	Context("Deletion of ChaosEngine", func() {
 		It("Should delete chaos engine", func() {
 
-			err := clientSet.ChaosEngines("litmus").Delete("engine-nginx", &metav1.DeleteOptions{})
+			err := clientSet.ChaosEngines("litmus").Delete(context.Background(), "engine-nginx", metav1.DeleteOptions{})
 			Expect(err).To(BeNil())
 			err = retry.
 				Times(uint(180 / 2)).
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
-					_, err := clientSet.ChaosEngines("litmus").Get("engine-nginx", metav1.GetOptions{})
+					_, err := clientSet.ChaosEngines("litmus").Get(context.Background(), "engine-nginx", metav1.GetOptions{})
 					if err != nil && !k8serrors.IsNotFound(err) {
 						return fmt.Errorf("unable to get chaosengine, err: %v", err)
 					}
@@ -414,7 +415,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				},
 			}
 
-			_, err := clientSet.ChaosEngines("litmus").Create(chaosEngine)
+			_, err := clientSet.ChaosEngines("litmus").Create(context.Background(), chaosEngine, metav1.CreateOptions{})
 			Expect(err).To(BeNil())
 		})
 	})
@@ -427,7 +428,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
 					//Fetching engine-nginx-runner pod
-					_, err := client.CoreV1().Pods("litmus").Get("engine-nginx-1-runner", metav1.GetOptions{})
+					_, err := client.CoreV1().Pods("litmus").Get(context.Background(), "engine-nginx-1-runner", metav1.GetOptions{})
 					isNotFound := errors.IsNotFound(err)
 					if isNotFound {
 						return nil
@@ -444,7 +445,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
 					//Fetching engineStatus
-					engine, err := clientSet.ChaosEngines("litmus").Get("engine-nginx-1", metav1.GetOptions{})
+					engine, err := clientSet.ChaosEngines("litmus").Get(context.Background(), "engine-nginx-1", metav1.GetOptions{})
 					if err != nil {
 						return err
 					}
@@ -460,7 +461,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 	Context("Validate via Chaos-Operator Logs", func() {
 		It("Should Generate Operator logs", func() {
 
-			pods, err := client.CoreV1().Pods("litmus").List(metav1.ListOptions{
+			pods, err := client.CoreV1().Pods("litmus").List(context.Background(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("%v=%v", "name", "chaos-operator"),
 			})
 			Expect(err).To(BeNil())
@@ -486,7 +487,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 			req := client.CoreV1().Pods("litmus").GetLogs(podName, &podLogOpts)
 
-			podLogs, err := req.Stream()
+			podLogs, err := req.Stream(context.Background())
 			Expect(err).To(BeNil())
 
 			defer podLogs.Close()
