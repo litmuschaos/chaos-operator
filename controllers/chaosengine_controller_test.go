@@ -1859,7 +1859,7 @@ func CreateFakeClient(t *testing.T) *ChaosEngineReconciler {
 		Items: []v1alpha1.ChaosResult{},
 	}
 
-	s.AddKnownTypes(v1alpha1.GroupVersion, engineR, chaosResultList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, engineR, chaosResultList)
 
 	recorder := record.NewFakeRecorder(1024)
 
