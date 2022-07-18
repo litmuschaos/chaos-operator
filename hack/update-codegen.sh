@@ -30,7 +30,7 @@ fi
 # Switching to v0.15.12 if already cloned
 git --git-dir=${GOPATH}/src/k8s.io/code-generator/.git  --work-tree=${GOPATH}/src/k8s.io/code-generator checkout v0.20.0
 
-${GOPATH}/src/k8s.io/code-generator/generate-groups.sh client \
+${GOPATH}/src/k8s.io/code-generator/generate-groups.sh client,lister,informer \
   github.com/litmuschaos/chaos-operator/pkg/client github.com/litmuschaos/chaos-operator/api \
   litmuschaos:v1alpha1
 
