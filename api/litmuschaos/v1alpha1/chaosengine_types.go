@@ -255,6 +255,8 @@ type SourceDetails struct {
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
 	// VolumesMount for the source pod
 	VolumesMount []corev1.VolumeMount `json:"volumeMount,omitempty"`
+	//ImagePullSecrets for source pod
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 }
 
 //PromProbeInputs contains all the inputs required for prometheus probe
