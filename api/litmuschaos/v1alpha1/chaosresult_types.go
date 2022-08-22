@@ -63,7 +63,7 @@ type ChaosResultStatus struct {
 	// ProbeStatus contains the status of the probe
 	ProbeStatus []ProbeStatus `json:"probeStatus,omitempty"`
 	// History contains cumulative values of verdicts
-	History HistoryDetails `json:"history,omitempty"`
+	History *HistoryDetails `json:"history,omitempty"`
 }
 
 // HistoryDetails contains cumulative values of verdicts
