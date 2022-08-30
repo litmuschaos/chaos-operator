@@ -35,6 +35,8 @@ spec:
           image: litmuschaos/chaos-operator:ci
           command:
           - chaos-operator
+          args:
+          - -leader-elect=true
           imagePullPolicy: IfNotPresent
           env:
             - name: CHAOS_RUNNER_IMAGE
