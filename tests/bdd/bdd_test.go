@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/google/martian/log"
-	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
+	"github.com/litmuschaos/chaos-operator/pkg/utils/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
