@@ -292,8 +292,6 @@ type HTTPProbeInputs struct {
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// Method define the http method, it can be get or post
 	Method HTTPMethod `json:"method,omitempty"`
-	// ResponseTimeout contains the http response timeout
-	ResponseTimeout int `json:"responseTimeout,omitempty"`
 }
 
 // HTTPMethod define the http method details
