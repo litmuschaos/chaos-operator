@@ -235,6 +235,9 @@ type SourceDetails struct {
 	// HostNetwork define the hostNetwork of the external pod
 	// it supports boolean values and default value is false
 	HostNetwork bool `json:"hostNetwork,omitempty"`
+	// InheritInputs defined to inherit experiment pod attributes(ENV, volumes, and volumeMounts) into probe pod
+	// it supports boolean values and default value is false
+	InheritInputs bool `json:"inheritInputs,omitempty"`
 	// Args for the source pod
 	Args []string `json:"args,omitempty"`
 	// ENVList contains ENV passed to the source pod
