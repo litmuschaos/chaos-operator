@@ -34,61 +34,13 @@ import (
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/types"
 )
 
-func TestInitializeApplicationInfo(t *testing.T) {
-	tests := map[string]struct {
-		instance *v1alpha1.ChaosEngine
-		isErr    bool
-	}{
-		"Test Positive-1": {
-			instance: &v1alpha1.ChaosEngine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-monitor",
-					Namespace: "test",
-				},
-				Spec: v1alpha1.ChaosEngineSpec{
-					Appinfo: v1alpha1.ApplicationParams{
-						Applabel: "key=value",
-					},
-				},
-			},
-			isErr: false,
-		},
-		"Test Negative-1": {
-			instance: nil,
-			isErr:    true,
-		},
-	}
-	for name, mock := range tests {
-		t.Run(name, func(t *testing.T) {
-			appInfo := &chaosTypes.ApplicationInfo{
-				Namespace: "namespace",
-				Label:     "fake_id=aa",
-				ExperimentList: []v1alpha1.ExperimentList{
-					{
-						Name: "fake_name",
-					},
-				},
-				ServiceAccountName: "fake-service-account-name",
-			}
-			_, err := initializeApplicationInfo(mock.instance, appInfo)
-			if mock.isErr && err == nil {
-				t.Fatalf("Test %q failed: expected error not to be nil", name)
-			}
-			if !mock.isErr && err != nil {
-				fmt.Println(err)
-				t.Fatalf("Test %q failed: expected error to be nil", name)
-			}
-		})
-	}
-}
 func TestGetChaosRunnerENV(t *testing.T) {
 	fakeEngineName := "Fake Engine"
 	fakeNameSpace := "Fake NameSpace"
 	fakeServiceAcc := "Fake Service Account"
+	fakeTargets := "fakeTargets"
 	fakeAppLabel := "Fake Label"
 	fakeAppKind := "Fake Kind"
-	fakeAnnotationCheck := "Fake Annotation Check"
-	fakeAnnotationKey := "litmuschaos.io/chaos"
 	fakeAExList := []string{"fake string"}
 	fakeAuxilaryAppInfo := "ns1:name=percona,ns2:run=nginx"
 	fakeClientUUID := "12345678-9012-3456-7890-123456789012"
@@ -106,7 +58,6 @@ func TestGetChaosRunnerENV(t *testing.T) {
 				},
 				Spec: v1alpha1.ChaosEngineSpec{
 					ChaosServiceAccount: fakeServiceAcc,
-					AnnotationCheck:     fakeAnnotationCheck,
 					Appinfo: v1alpha1.ApplicationParams{
 						Applabel: fakeAppLabel,
 						Appns:    fakeNameSpace,
@@ -122,16 +73,8 @@ func TestGetChaosRunnerENV(t *testing.T) {
 					Value: fakeEngineName,
 				},
 				{
-					Name:  "APP_LABEL",
-					Value: fakeAppLabel,
-				},
-				{
-					Name:  "APP_KIND",
-					Value: fakeAppKind,
-				},
-				{
-					Name:  "APP_NAMESPACE",
-					Value: fakeNameSpace,
+					Name:  "TARGETS",
+					Value: fakeTargets,
 				},
 				{
 					Name:  "EXPERIMENT_LIST",
@@ -153,282 +96,21 @@ func TestGetChaosRunnerENV(t *testing.T) {
 					Name:  "CHAOS_NAMESPACE",
 					Value: fakeNameSpace,
 				},
-				{
-					Name:  "ANNOTATION_CHECK",
-					Value: fakeAnnotationCheck,
-				},
-				{
-					Name:  "ANNOTATION_KEY",
-					Value: fakeAnnotationKey,
-				},
 			},
 		},
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-			actualResult := getChaosRunnerENV(mock.instance, mock.aExList, fakeClientUUID)
-			println(actualResult)
-			if len(actualResult) != 11 {
-				t.Fatalf("Test %q failed: expected array length to be 11", name)
+			engine := &chaosTypes.EngineInfo{Instance: mock.instance, Targets: fakeTargets, AppExperiments: fakeAExList}
+			actualResult := getChaosRunnerENV(engine, fakeClientUUID)
+			println(len(actualResult))
+			if len(actualResult) != 7 {
+				t.Fatalf("Test %q failed: expected array length to be 7", name)
 			}
 			for index, result := range actualResult {
 				if result.Value != mock.expectedResult[index].Value {
 					t.Fatalf("Test %q failed: actual result %q, received result %q", name, result, mock.expectedResult[index])
 				}
-			}
-		})
-	}
-}
-
-func TestGetApplicationDetail(t *testing.T) {
-	tests := map[string]struct {
-		engine chaosTypes.EngineInfo
-		isErr  bool
-	}{
-		"Test Positive-1": {
-			engine: chaosTypes.EngineInfo{
-				Instance: &v1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-monitor",
-						Namespace: "test",
-					},
-					Spec: v1alpha1.ChaosEngineSpec{
-						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "key=value",
-						},
-					},
-				},
-			},
-			isErr: false,
-		},
-		"Test Negative": {
-			engine: chaosTypes.EngineInfo{
-				Instance: nil,
-			},
-			isErr: true,
-		},
-	}
-	for name, mock := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := getApplicationDetail(&mock.engine)
-			if mock.isErr && err == nil {
-				t.Fatalf("Test %q failed: expected error not to be nil", name)
-			}
-			if !mock.isErr && err != nil {
-				fmt.Println(err)
-				t.Fatalf("Test %q failed: expected error to be nil", name)
-			}
-		})
-	}
-}
-
-func TestGetAnnotationCheck(t *testing.T) {
-	tests := map[string]struct {
-		engine chaosTypes.EngineInfo
-		isErr  bool
-	}{
-		"Test Positive-1": {
-			engine: chaosTypes.EngineInfo{
-				Instance: &v1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-runner",
-						Namespace: "test",
-					},
-					Spec: v1alpha1.ChaosEngineSpec{
-						ChaosServiceAccount: "fake-serviceAccount",
-						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "run=nginx",
-						},
-						AnnotationCheck: "true",
-						Components: v1alpha1.ComponentParams{
-							Runner: v1alpha1.RunnerInfo{
-								Image: "fake-runner-image",
-							},
-						},
-					},
-				},
-
-				AppExperiments: []string{"exp-1"},
-			},
-			isErr: false,
-		},
-		"Test Positive-2": {
-			engine: chaosTypes.EngineInfo{
-				Instance: &v1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-runner",
-						Namespace: "test",
-					},
-					Spec: v1alpha1.ChaosEngineSpec{
-						ChaosServiceAccount: "fake-serviceAccount",
-						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "run=nginx",
-						},
-						AnnotationCheck: "false",
-						Components: v1alpha1.ComponentParams{
-							Runner: v1alpha1.RunnerInfo{
-								Image: "fake-runner-image",
-							},
-						},
-					},
-				},
-
-				AppExperiments: []string{"exp-1"},
-			},
-
-			isErr: false,
-		},
-		"Test Negative-1": {
-			engine: chaosTypes.EngineInfo{
-				Instance: &v1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-runner",
-						Namespace: "test",
-					},
-					Spec: v1alpha1.ChaosEngineSpec{
-						ChaosServiceAccount: "fake-serviceAccount",
-						AnnotationCheck:     "fakeCheck",
-						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "run=nginx",
-						},
-						Components: v1alpha1.ComponentParams{
-							Runner: v1alpha1.RunnerInfo{
-								Image: "fake-runner-image",
-							},
-						},
-					},
-				},
-
-				AppExperiments: []string{"exp-1"},
-			},
-			isErr: true,
-		},
-	}
-	for name, mock := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := getAnnotationCheck(&mock.engine)
-			if mock.isErr && err == nil {
-				t.Fatalf("Test %q failed: expected error not to be nil", name)
-			}
-			if !mock.isErr && err != nil {
-				t.Fatalf("Test %q failed: expected error to be nil", name)
-			}
-		})
-	}
-}
-
-func TestValidateAnnontatedApplication(t *testing.T) {
-	tests := map[string]struct {
-		engine chaosTypes.EngineInfo
-		isErr  bool
-	}{
-		"Test Positive-1": {
-			engine: chaosTypes.EngineInfo{
-				Instance: &v1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "validate-annotation-p2",
-						Namespace: "default",
-					},
-					Spec: v1alpha1.ChaosEngineSpec{
-						ChaosServiceAccount: "fake-serviceAccount",
-						EngineState:         "active",
-						AnnotationCheck:     "false",
-						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "app=nginx",
-							AppKind:  "deployment",
-						},
-						Components: v1alpha1.ComponentParams{
-							Runner: v1alpha1.RunnerInfo{
-								Image: "fake-runner-image",
-							},
-						},
-						Experiments: []v1alpha1.ExperimentList{
-							{
-								Name: "exp-1",
-							},
-						},
-					},
-				},
-
-				AppExperiments: []string{"exp-1"},
-			},
-
-			isErr: false,
-		},
-		"Test Negetive-1": {
-			engine: chaosTypes.EngineInfo{
-				Instance: &v1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "validate-annotation-n1",
-						Namespace: "default",
-					},
-					Spec: v1alpha1.ChaosEngineSpec{
-						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "app=nginx",
-							AppKind:  "deployment",
-						},
-						EngineState:     "active",
-						AnnotationCheck: "dummy",
-						Components: v1alpha1.ComponentParams{
-							Runner: v1alpha1.RunnerInfo{
-								Image: "fake-runner-image",
-							},
-						},
-						Experiments: []v1alpha1.ExperimentList{
-							{
-								Name: "exp-1",
-							},
-						},
-					},
-				},
-			},
-			isErr: true,
-		},
-		"Test Negetive-2": {
-			engine: chaosTypes.EngineInfo{
-				Instance: &v1alpha1.ChaosEngine{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "validate-annotation-n2",
-						Namespace: "default",
-					},
-					Spec: v1alpha1.ChaosEngineSpec{
-						AnnotationCheck: "true",
-						EngineState:     "active",
-						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "app=nginx",
-							AppKind:  "deployment",
-						},
-						Components: v1alpha1.ComponentParams{
-							Runner: v1alpha1.RunnerInfo{
-								Image: "fake-runner-image",
-							},
-						},
-						Experiments: []v1alpha1.ExperimentList{
-							{
-								Name: "exp-1",
-							},
-						},
-					},
-				},
-
-				AppExperiments: []string{"exp-1"},
-			},
-			isErr: true,
-		},
-	}
-	for name, mock := range tests {
-		t.Run(name, func(t *testing.T) {
-			r := CreateFakeClient(t)
-			err := r.Client.Create(context.TODO(), mock.engine.Instance)
-			if err != nil {
-				fmt.Printf("Unable to create engine: %v", err)
-			}
-			err = r.validateAnnotatedApplication(&mock.engine)
-			if mock.isErr && err == nil {
-				t.Fatalf("Test %q failed: expected error not to be nil", name)
-			}
-			if !mock.isErr && err != nil {
-				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
 		})
 	}
@@ -451,8 +133,7 @@ func TestUpdateEngineForComplete(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -483,8 +164,7 @@ func TestUpdateEngineForComplete(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
@@ -510,8 +190,7 @@ func TestUpdateEngineForComplete(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
@@ -562,8 +241,7 @@ func TestUpdateEngineForRestart(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -594,8 +272,7 @@ func TestUpdateEngineForRestart(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
@@ -695,7 +372,6 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 					},
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						AnnotationCheck:     "false",
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image:           "fake-runner-image",
@@ -723,7 +399,6 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 					},
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						AnnotationCheck:     "true",
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image:           "fake-runner-image",
@@ -836,7 +511,6 @@ func TestInitEngine(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						AnnotationCheck: "false",
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -867,8 +541,7 @@ func TestInitEngine(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     "active",
-						AnnotationCheck: "false",
+						EngineState: "active",
 						Experiments: []v1alpha1.ExperimentList{
 							{
 								Name: "exp-1",
@@ -915,8 +588,7 @@ func TestUpdateEngineState(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -948,8 +620,7 @@ func TestUpdateEngineState(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1005,8 +676,7 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1037,8 +707,7 @@ func TestCheckRunnerPodCompletedStatus(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1188,8 +857,7 @@ func TestGetChaosEngineInstance(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1226,8 +894,7 @@ func TestGetChaosEngineInstance(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1330,7 +997,6 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 					},
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						AnnotationCheck:     "false",
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1353,7 +1019,6 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 					},
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						AnnotationCheck:     "true",
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1464,8 +1129,7 @@ func TestReconcileForDelete(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1502,8 +1166,7 @@ func TestReconcileForDelete(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1567,8 +1230,7 @@ func TestForceRemoveAllChaosPods(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1605,8 +1267,7 @@ func TestForceRemoveAllChaosPods(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 					},
 				},
 			},
@@ -1655,8 +1316,7 @@ func TestGracefullyRemoveDefaultChaosResources(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1693,8 +1353,7 @@ func TestGracefullyRemoveDefaultChaosResources(t *testing.T) {
 							Applabel: "app=nginx",
 							AppKind:  "deployment",
 						},
-						EngineState:     v1alpha1.EngineStateActive,
-						AnnotationCheck: "false",
+						EngineState: v1alpha1.EngineStateActive,
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1753,9 +1412,10 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "run=nginx",
+							Applabel: "fakeAppLabel",
+							Appns:    "fakeAppNs",
+							AppKind:  "fakeAppKind",
 						},
-						AnnotationCheck: "false",
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
@@ -1767,6 +1427,12 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 							},
 						},
 					},
+				},
+
+				AppInfo: v1alpha1.ApplicationParams{
+					Applabel: "fakeAppLabel",
+					Appns:    "fakeAppNs",
+					AppKind:  "fakeAppKind",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -1782,9 +1448,10 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 					},
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
-						AnnotationCheck:     "fakeCheck",
 						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "run=nginx",
+							Applabel: "fakeAppLabel",
+							Appns:    "fakeAppNs",
+							AppKind:  "fakeAppKind",
 						},
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
@@ -1792,6 +1459,12 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 							},
 						},
 					},
+				},
+
+				AppInfo: v1alpha1.ApplicationParams{
+					Applabel: "fakeAppLabel",
+					Appns:    "fakeAppNs",
+					AppKind:  "fakeAppKind",
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -1808,15 +1481,21 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
 						Appinfo: v1alpha1.ApplicationParams{
-							Applabel: "run=nginx",
+							Applabel: "fakeAppLabel",
+							Appns:    "fakeAppNs",
+							AppKind:  "fakeAppKind",
 						},
-						AnnotationCheck: "true",
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
 							},
 						},
 					},
+				},
+				AppInfo: v1alpha1.ApplicationParams{
+					Applabel: "fakeAppLabel",
+					Appns:    "fakeAppNs",
+					AppKind:  "fakeAppKind",
 				},
 
 				AppExperiments: []string{"exp-1"},
