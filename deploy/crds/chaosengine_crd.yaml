@@ -42,7 +42,7 @@ spec:
               annotationCheck:
                 type: string
                 pattern: ^(true|false)$
-              defaultAppHealthCheck:
+              defaultHealthCheck:
                 type: string
                 pattern: ^(true|false)$ 
               appinfo:
