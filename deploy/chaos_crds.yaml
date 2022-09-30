@@ -2013,7 +2013,6 @@ spec:
                                 required:
                                   - probeTimeout
                                   - interval
-                                  - retry
                                 properties:
                                   probeTimeout:
                                     type: integer
