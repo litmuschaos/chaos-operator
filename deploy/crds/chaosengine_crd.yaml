@@ -42,7 +42,7 @@ spec:
               annotationCheck:
                 type: string
                 pattern: ^(true|false)$
-              defaultAppHealthCheck:
+              defaultHealthCheck:
                 type: string
                 pattern: ^(true|false)$ 
               appinfo:
@@ -2012,7 +2012,6 @@ spec:
                                 required:
                                   - probeTimeout
                                   - interval
-                                  - retry
                                 properties:
                                   probeTimeout:
                                     type: integer
