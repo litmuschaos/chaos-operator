@@ -56,12 +56,21 @@ const (
 	ResultVerdictStopped ResultVerdict = "Stopped"
 )
 
+type ProbeVerdict string
+
+const (
+	ProbeVerdictPassed  ProbeVerdict = "Passed"
+	ProbeVerdictFailed  ProbeVerdict = "Failed"
+	ProbeVerdictNA      ProbeVerdict = "N/A"
+	ProbeVerdictAwaited ProbeVerdict = "Awaited"
+)
+
 // ChaosResultStatus defines the observed state of ChaosResult
 type ChaosResultStatus struct {
 	// ExperimentStatus contains the status,verdict of the experiment
 	ExperimentStatus TestStatus `json:"experimentStatus"`
 	// ProbeStatus contains the status of the probe
-	ProbeStatus []ProbeStatus `json:"probeStatus,omitempty"`
+	ProbeStatuses []ProbeStatuses `json:"probeStatuses,omitempty"`
 	// History contains cumulative values of verdicts
 	History *HistoryDetails `json:"history,omitempty"`
 }
@@ -82,13 +91,23 @@ type TargetDetails struct {
 }
 
 // ProbeStatus defines information about the status and result of the probes
-type ProbeStatus struct {
+type ProbeStatuses struct {
 	// Name defines the name of probe
 	Name string `json:"name,omitempty"`
 	// Type defined the type of probe, supported values: K8sProbe, HttpProbe, CmdProbe
 	Type string `json:"type,omitempty"`
+	// Mode defined the mode of probe, supported values: SOT, EOT, Edge, OnChaos, Continuous
+	Mode string `json:"mode,omitempty"`
 	// Status defines whether a probe is pass or fail
-	Status map[string]string `json:"status,omitempty"`
+	Status ProbeStatus `json:"status,omitempty"`
+}
+
+// ProbeStatus defines information about the status and result of the probes
+type ProbeStatus struct {
+	// Verdict defines the verdict of the probe, range: Passed, Failed, N/A
+	Verdict ProbeVerdict `json:"verdict,omitempty"`
+	// Description defines the description of probe status
+	Description string `json:"description,omitempty"`
 }
 
 // TestStatus defines information about the status and results of a chaos experiment

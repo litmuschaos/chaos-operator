@@ -235,6 +235,9 @@ type SourceDetails struct {
 	// HostNetwork define the hostNetwork of the external pod
 	// it supports boolean values and default value is false
 	HostNetwork bool `json:"hostNetwork,omitempty"`
+	// InheritInputs defined to inherit experiment pod attributes(ENV, volumes, and volumeMounts) into probe pod
+	// it supports boolean values and default value is false
+	InheritInputs bool `json:"inheritInputs,omitempty"`
 	// Args for the source pod
 	Args []string `json:"args,omitempty"`
 	// ENVList contains ENV passed to the source pod
@@ -292,8 +295,6 @@ type HTTPProbeInputs struct {
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// Method define the http method, it can be get or post
 	Method HTTPMethod `json:"method,omitempty"`
-	// ResponseTimeout contains the http response timeout
-	ResponseTimeout int `json:"responseTimeout,omitempty"`
 }
 
 // HTTPMethod define the http method details

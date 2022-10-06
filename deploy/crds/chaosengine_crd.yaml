@@ -314,6 +314,11 @@ spec:
                                           of the external pod it supports boolean values
                                           and default value is false
                                         type: boolean
+                                      inheritInputs:
+                                        description: InheritInputs define to inherit experiment
+                                          details in probe pod it supports boolean values
+                                          and default value is false.
+                                        type: boolean
                                       image:
                                         description: Image for the source pod
                                         type: string
@@ -1956,8 +1961,6 @@ spec:
                                     minLength: 1
                                   insecureSkipVerify:
                                     type: boolean
-                                  responseTimeout: 
-                                    type: integer
                                   method:
                                     type: object
                                     minProperties: 1
