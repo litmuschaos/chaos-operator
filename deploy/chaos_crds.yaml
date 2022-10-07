@@ -79,6 +79,8 @@ spec:
                         pattern: ^(go)$
                       runnerAnnotations:
                         type: object
+                      runnerLabels:
+                        type: object
                         additionalProperties:
                           type: string
                           properties:

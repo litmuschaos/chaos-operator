@@ -141,6 +141,8 @@ type RunnerInfo struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// Runner Annotations that needs to be provided in the pod for pod that is getting created
 	RunnerAnnotation map[string]string `json:"runnerAnnotations,omitempty"`
+	// RunnerLabels labels for the runner pod
+	RunnerLabels map[string]string `json:"runnerLabels,omitempty"`
 	// NodeSelector for runner pod
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// ConfigMaps for runner pod
