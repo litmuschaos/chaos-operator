@@ -423,7 +423,7 @@ func TestValidateAnnontatedApplication(t *testing.T) {
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
-			err = r.validateAnnontatedApplication(&mock.engine)
+			err = r.validateAnnotatedApplication(&mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
