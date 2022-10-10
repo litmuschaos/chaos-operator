@@ -262,6 +262,10 @@ func engineRunnerPod(runnerPod *podEngineRunner) error {
 	if err := runnerPod.r.Client.Get(context.TODO(), types.NamespacedName{Name: runnerPod.engineRunner.Name, Namespace: runnerPod.engineRunner.Namespace}, runnerPod.pod); err != nil && k8serrors.IsNotFound(err) {
 		runnerPod.reqLogger.Info("Creating a new engineRunner Pod", "Pod.Namespace", runnerPod.engineRunner.Namespace, "Pod.Name", runnerPod.engineRunner.Name)
 		if err = runnerPod.r.Client.Create(context.TODO(), runnerPod.engineRunner); err != nil {
+			if k8serrors.IsAlreadyExists(err) {
+				runnerPod.reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", runnerPod.pod.Namespace, "Pod.Name", runnerPod.pod.Name)
+				return nil
+			}
 			return err
 		}
 
@@ -591,7 +595,7 @@ func (r *ChaosEngineReconciler) initEngine(engine *chaosTypes.EngineInfo) error 
 
 // reconcileForCreationAndRunning reconciles for Chaos execution of Chaos Engine
 func (r *ChaosEngineReconciler) reconcileForCreationAndRunning(engine *chaosTypes.EngineInfo, reqLogger logr.Logger) (reconcile.Result, error) {
-	if err := r.validateAnnontatedApplication(engine); err != nil {
+	if err := r.validateAnnotatedApplication(engine); err != nil {
 		if stopEngineWithAnnotationErrorMessage := r.updateEngineState(engine, litmuschaosv1alpha1.EngineStateStop); stopEngineWithAnnotationErrorMessage != nil {
 			r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos stop) Unable to update chaosengine")
 			return reconcile.Result{}, fmt.Errorf("unable to Update Engine State: %v", err)
@@ -607,6 +611,9 @@ func (r *ChaosEngineReconciler) reconcileForCreationAndRunning(engine *chaosType
 
 	isCompleted, err := r.checkRunnerContainerCompletedStatus(engine)
 	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return reconcile.Result{Requeue: true}, nil
+		}
 		r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos running) Unable to check chaos status")
 		return reconcile.Result{}, err
 	}
@@ -639,7 +646,7 @@ func startReqLogger(request reconcile.Request) logr.Logger {
 	return reqLogger
 }
 
-func (r *ChaosEngineReconciler) validateAnnontatedApplication(engine *chaosTypes.EngineInfo) error {
+func (r *ChaosEngineReconciler) validateAnnotatedApplication(engine *chaosTypes.EngineInfo) error {
 	// Get the image for runner pod from chaosengine spec,operator env or default values.
 	setChaosResourceImage(engine)
 
@@ -742,6 +749,9 @@ func (r *ChaosEngineReconciler) updateChaosResult(engine *chaosTypes.EngineInfo,
 
 	for _, result := range chaosresultList.Items {
 		if result.Labels["chaosUID"] == string(engine.Instance.UID) {
+			if len(result.ObjectMeta.Annotations) == 0 {
+				return nil
+			}
 			targetsList, annotations := getChaosStatus(result)
 			result.Status.History.Targets = targetsList
 			result.ObjectMeta.Annotations = annotations
