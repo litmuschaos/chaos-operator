@@ -54,6 +54,8 @@ const (
 	ResultVerdictFailed ResultVerdict = "Fail"
 	// ResultVerdictStopped is verdict of chaosresult when experiment aborted
 	ResultVerdictStopped ResultVerdict = "Stopped"
+	// ResultVerdictAwaited is verdict of chaosresult when experiment is yet to evaluated(experiment is in running state)
+	ResultVerdictAwaited ResultVerdict = "Awaited"
 )
 
 type ProbeVerdict string

@@ -133,4 +133,5 @@ jobs:
 
       - name: Running Go BDD Test
         run: |
+          go mod tidy
           make test
