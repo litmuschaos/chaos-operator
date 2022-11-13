@@ -156,6 +156,9 @@ spec:
                                     type: string
                                     pattern: ^(present|absent|create|delete)$
                                     minLength: 1
+                                oneOf:
+                                  - required: [ labelSelector ]
+                                  - required: [ resourceNames ]
                               cmdProbe/inputs:
                                 type: object
                                 properties:
