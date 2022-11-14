@@ -208,6 +208,8 @@ type K8sProbeInputs struct {
 	Version string `json:"version,omitempty"`
 	// kind of resource
 	Resource string `json:"resource,omitempty"`
+	// ResourceNames to get the resources using their list of comma separated names
+	ResourceNames string `json:"resourceNames,omitempty"`
 	// namespace of the resource
 	Namespace string `json:"namespace,omitempty"`
 	// fieldselector to get the resource using fields selector

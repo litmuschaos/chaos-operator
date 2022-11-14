@@ -147,6 +147,8 @@ spec:
                                     type: string
                                   namespace:
                                     type: string
+                                  resourceNames:
+                                    type: string
                                   fieldSelector:
                                     type: string
                                   labelSelector:
