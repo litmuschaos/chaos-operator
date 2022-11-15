@@ -19,9 +19,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"os"
 	"runtime"
+	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -68,6 +70,13 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	printVersion()
+
+	// Trigger the Analytics if it's enabled
+	if isAnalytics := strings.ToUpper(os.Getenv("ANALYTICS")); isAnalytics != "FALSE" {
+		if err := analytics.TriggerAnalytics(); err != nil {
+			setupLog.Error(err, "failed to trigger analytics, err: %v", err)
+		}
+	}
 
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
