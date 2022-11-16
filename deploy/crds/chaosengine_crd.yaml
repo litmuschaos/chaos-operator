@@ -39,12 +39,9 @@ spec:
                 #oneOf:
                 #  - pattern: '^delete$'
                 #  - pattern: '^retain$'
-              annotationCheck:
-                type: string
-                pattern: ^(true|false)$
               defaultHealthCheck:
                 type: string
-                pattern: ^(true|false)$ 
+                pattern: ^(true|false)$
               appinfo:
                 type: object
                 properties:
@@ -55,6 +52,44 @@ spec:
                     type: string
                   appns:
                     type: string
+              selectors:
+                type: object
+                properties:
+                  pods:
+                    items:
+                      properties:
+                        names:
+                          type: string
+                        namespace:
+                          type: string
+                      required:
+                        - names
+                        - namespace
+                      type: object
+                    type: array
+                  workloads:
+                    items:
+                      properties:
+                        kind:
+                          type: string
+                          pattern: ^(^$|deployment|statefulset|daemonset|deploymentconfig|rollout)$
+                        labels:
+                          type: string
+                        names:
+                          type: string
+                        namespace:
+                          type: string
+                      oneOf:
+                        - required: [ names ]
+                        - required: [ labels ]
+                      required:
+                        - kind
+                        - namespace
+                      type: object
+                    type: array
+                oneOf:
+                  - required: [ pods ]
+                  - required: [ workloads ]
               auxiliaryAppInfo:
                 type: string
               engineState:
