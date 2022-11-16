@@ -71,17 +71,17 @@ func main() {
 
 	printVersion()
 
-	// Trigger the Analytics if it's enabled
-	if isAnalytics := strings.ToUpper(os.Getenv("ANALYTICS")); isAnalytics != "FALSE" {
-		if err := analytics.TriggerAnalytics(); err != nil {
-			setupLog.Error(err, "failed to trigger analytics, err: %v", err)
-		}
-	}
-
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "failed to get watch namespace")
 		os.Exit(1)
+	}
+
+	// Trigger the Analytics if it's enabled
+	if isAnalytics := strings.ToUpper(os.Getenv("ANALYTICS")); isAnalytics != "FALSE" {
+		if err := analytics.TriggerAnalytics(); err != nil {
+			setupLog.Error(err, "failed to trigger analytics")
+		}
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
