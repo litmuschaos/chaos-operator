@@ -2,7 +2,7 @@ name: push-pipeline
 on:
   push:
     branches:
-      - master
+      - dev-3.x
     tags-ignore:
       - '**'
 
@@ -56,7 +56,7 @@ jobs:
         env:
           DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
           DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
-          DOCKER_TAG: ci
+          DOCKER_TAG: dev-3.x
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: make push-chaos-operator

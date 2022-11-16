@@ -7,7 +7,7 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 DOCKER_REGISTRY ?= docker.io
 DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-operator
-DOCKER_TAG ?= ci
+DOCKER_TAG ?= dev-3.x
 
 .PHONY: help
 help:

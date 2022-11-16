@@ -25,10 +25,8 @@ import (
 // ChaosEngineSpec describes a user-facing custom resource which is used by developers
 // to create a chaos profile
 type ChaosEngineSpec struct {
-	//Appinfo contains deployment details of AUT
+	//Appinfo contains the AUT details
 	Appinfo ApplicationParams `json:"appinfo,omitempty"`
-	//AnnotationCheck defines whether annotation check is allowed or not. It can be true or false
-	AnnotationCheck string `json:"annotationCheck,omitempty"`
 	//DefaultHealthCheck defines whether default health checks should be executed or not. It can be true or false
 	// default value is true
 	DefaultHealthCheck string `json:"defaultHealthCheck,omitempty"`
@@ -46,6 +44,8 @@ type ChaosEngineSpec struct {
 	EngineState EngineState `json:"engineState"`
 	// TerminationGracePeriodSeconds contains terminationGracePeriod for the chaos resources
 	TerminationGracePeriodSeconds int64 `json:"terminationGracePeriodSeconds,omitempty"`
+	// Selectors contains the target application details
+	Selectors *Selector `json:"selectors,omitempty"`
 }
 
 // EngineState provides interface for all supported strings in spec.EngineState
@@ -117,6 +117,33 @@ type ApplicationParams struct {
 	Applabel string `json:"applabel,omitempty"`
 	//kind of application
 	AppKind string `json:"appkind,omitempty"`
+}
+
+type Selector struct {
+	Workloads []Workload `json:"workloads,omitempty"`
+	Pods      []Pod      `json:"pods,omitempty"`
+}
+
+type WorkloadKind string
+
+const (
+	WorkloadDeployment       WorkloadKind = "deployment"
+	WorkloadStatefulSet      WorkloadKind = "statefulset"
+	WorkloadDaemonSet        WorkloadKind = "daemonSet"
+	WorkloadDeploymentConfig WorkloadKind = "deploymentconfig"
+	WorkloadRollout          WorkloadKind = "rollout"
+)
+
+type Workload struct {
+	Kind      WorkloadKind `json:"kind"`
+	Namespace string       `json:"namespace"`
+	Names     string       `json:"names,omitempty"`
+	Labels    string       `json:"labels,omitempty"`
+}
+
+type Pod struct {
+	Namespace string `json:"namespace"`
+	Names     string `json:"names"`
 }
 
 // ComponentParams defines information about the runner
