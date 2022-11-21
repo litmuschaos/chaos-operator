@@ -23,8 +23,6 @@ import (
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/chaos-operator/pkg/analytics"
 	dynamicclientset "github.com/litmuschaos/chaos-operator/pkg/client/dynamic"
-	clientset "github.com/litmuschaos/chaos-operator/pkg/client/kubernetes"
-	"github.com/litmuschaos/chaos-operator/pkg/resource"
 	chaosTypes "github.com/litmuschaos/chaos-operator/pkg/types"
 	"github.com/litmuschaos/chaos-operator/pkg/utils"
 	"github.com/litmuschaos/chaos-operator/pkg/utils/retry"
@@ -137,24 +135,16 @@ func (r *ChaosEngineReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 }
 
 // getChaosRunnerENV return the env required for chaos-runner
-func getChaosRunnerENV(cr *litmuschaosv1alpha1.ChaosEngine, aExList []string, ClientUUID string) []corev1.EnvVar {
-	appNS := cr.Spec.Appinfo.Appns
-	if appNS == "" {
-		appNS = cr.Namespace
-	}
+func getChaosRunnerENV(engine *chaosTypes.EngineInfo, ClientUUID string) []corev1.EnvVar {
 
 	var envDetails utils.ENVDetails
-	envDetails.SetEnv("CHAOSENGINE", cr.Name).
-		SetEnv("APP_LABEL", cr.Spec.Appinfo.Applabel).
-		SetEnv("APP_KIND", cr.Spec.Appinfo.AppKind).
-		SetEnv("APP_NAMESPACE", appNS).
-		SetEnv("EXPERIMENT_LIST", fmt.Sprint(strings.Join(aExList, ","))).
-		SetEnv("CHAOS_SVC_ACC", cr.Spec.ChaosServiceAccount).
-		SetEnv("AUXILIARY_APPINFO", cr.Spec.AuxiliaryAppInfo).
+	envDetails.SetEnv("CHAOSENGINE", engine.Instance.Name).
+		SetEnv("TARGETS", engine.Targets).
+		SetEnv("EXPERIMENT_LIST", fmt.Sprint(strings.Join(engine.AppExperiments, ","))).
+		SetEnv("CHAOS_SVC_ACC", engine.Instance.Spec.ChaosServiceAccount).
+		SetEnv("AUXILIARY_APPINFO", engine.Instance.Spec.AuxiliaryAppInfo).
 		SetEnv("CLIENT_UUID", ClientUUID).
-		SetEnv("CHAOS_NAMESPACE", cr.Namespace).
-		SetEnv("ANNOTATION_CHECK", cr.Spec.AnnotationCheck).
-		SetEnv("ANNOTATION_KEY", resource.GetAnnotationKey())
+		SetEnv("CHAOS_NAMESPACE", engine.Instance.Namespace)
 
 	return envDetails.ENV
 }
@@ -178,7 +168,7 @@ func (r *ChaosEngineReconciler) newGoRunnerPodForCR(engine *chaosTypes.EngineInf
 	engine.VolumeOpts.VolumeOperations(engine.Instance.Spec.Components.Runner.ConfigMaps, engine.Instance.Spec.Components.Runner.Secrets)
 
 	containerForRunner := container.NewBuilder().
-		WithEnvsNew(getChaosRunnerENV(engine.Instance, engine.AppExperiments, analytics.ClientUUID)).
+		WithEnvsNew(getChaosRunnerENV(engine, analytics.ClientUUID)).
 		WithName("chaos-runner").
 		WithImage(engine.Instance.Spec.Components.Runner.Image).
 		WithImagePullPolicy(corev1.PullIfNotPresent)
@@ -238,29 +228,6 @@ func (r *ChaosEngineReconciler) newGoRunnerPodForCR(engine *chaosTypes.EngineInf
 	return runnerPod, nil
 }
 
-// initializeApplicationInfo to initialize application info
-func initializeApplicationInfo(instance *litmuschaosv1alpha1.ChaosEngine, appInfo *chaosTypes.ApplicationInfo) (*chaosTypes.ApplicationInfo, error) {
-	if instance == nil {
-		return nil, errors.New("chaosengine is empty")
-	}
-
-	if instance.Spec.Appinfo.Applabel != "" {
-		appInfo.Label = instance.Spec.Appinfo.Applabel
-	}
-
-	if instance.Spec.Appinfo.Appns != "" {
-		appInfo.Namespace = instance.Spec.Appinfo.Appns
-	} else {
-		appInfo.Namespace = instance.Namespace
-	}
-	appInfo.Kind = instance.Spec.Appinfo.AppKind
-
-	appInfo.ExperimentList = instance.Spec.Experiments
-	appInfo.ServiceAccountName = instance.Spec.ChaosServiceAccount
-
-	return appInfo, nil
-}
-
 // engineRunnerPod to Check if the engineRunner pod already exists, else create
 func engineRunnerPod(runnerPod *podEngineRunner) error {
 	if err := runnerPod.r.Client.Get(context.TODO(), types.NamespacedName{Name: runnerPod.engineRunner.Name, Namespace: runnerPod.engineRunner.Namespace}, runnerPod.pod); err != nil && k8serrors.IsNotFound(err) {
@@ -291,30 +258,8 @@ func (r *ChaosEngineReconciler) getChaosEngineInstance(engine *chaosTypes.Engine
 		return err
 	}
 	engine.Instance = instance
-	return nil
-}
-
-// Get application details
-func getApplicationDetail(engine *chaosTypes.EngineInfo) error {
-	applicationInfo := &chaosTypes.ApplicationInfo{}
-
-	appInfo, err := initializeApplicationInfo(engine.Instance, applicationInfo)
-	if err != nil {
-		return err
-	}
-
-	engine.AppInfo = appInfo
-	var appExperiments []string
-	for _, exp := range appInfo.ExperimentList {
-		appExperiments = append(appExperiments, exp.Name)
-	}
-	engine.AppExperiments = appExperiments
-
-	chaosTypes.Log.Info("App Label derived from Chaosengine is ", "appLabels", appInfo.Label)
-	chaosTypes.Log.Info("App NS derived from Chaosengine is ", "appNamespace", appInfo.Namespace)
-	chaosTypes.Log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
-	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", engine.Instance.Spec.Components.Runner.Image)
-	chaosTypes.Log.Info("Annotation check is ", "annotationCheck", engine.Instance.Spec.AnnotationCheck)
+	engine.AppInfo = instance.Spec.Appinfo
+	engine.Selectors = instance.Spec.Selectors
 	return nil
 }
 
@@ -355,19 +300,6 @@ func setChaosResourceImage(engine *chaosTypes.EngineInfo) {
 	} else if engine.Instance.Spec.Components.Runner.Image == "" {
 		engine.Instance.Spec.Components.Runner.Image = ChaosRunnerImage
 	}
-}
-
-// getAnnotationCheck() checks for annotation on the application
-func getAnnotationCheck(engine *chaosTypes.EngineInfo) error {
-	if engine.Instance.Spec.AnnotationCheck == "" {
-		engine.Instance.Spec.AnnotationCheck = chaosTypes.DefaultAnnotationCheck
-	}
-
-	if engine.Instance.Spec.AnnotationCheck != "true" && engine.Instance.Spec.AnnotationCheck != "false" {
-		return fmt.Errorf("annotationCheck '%s', is not supported it should be either true or false", engine.Instance.Spec.AnnotationCheck)
-	}
-
-	return nil
 }
 
 // reconcileForDelete reconciles for deletion/force deletion of Chaos Engine
@@ -599,17 +531,11 @@ func (r *ChaosEngineReconciler) initEngine(engine *chaosTypes.EngineInfo) error 
 
 // reconcileForCreationAndRunning reconciles for Chaos execution of Chaos Engine
 func (r *ChaosEngineReconciler) reconcileForCreationAndRunning(engine *chaosTypes.EngineInfo, reqLogger logr.Logger) (reconcile.Result, error) {
-	if err := r.validateAnnotatedApplication(engine); err != nil {
-		if stopEngineWithAnnotationErrorMessage := r.updateEngineState(engine, litmuschaosv1alpha1.EngineStateStop); stopEngineWithAnnotationErrorMessage != nil {
-			r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos stop) Unable to update chaosengine")
-			return reconcile.Result{}, fmt.Errorf("unable to Update Engine State: %v", err)
+	var runner corev1.Pod
+	if err := r.Client.Get(context.TODO(), types.NamespacedName{Name: engine.Instance.Name + "-runner", Namespace: engine.Instance.Namespace}, &runner); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return r.createRunnerPod(engine, reqLogger)
 		}
-		return reconcile.Result{}, err
-	}
-
-	// Check if the engineRunner pod already exists, else create
-	if err := r.checkEngineRunnerPod(engine, reqLogger); err != nil {
-		r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos start) Unable to get chaos resources")
 		return reconcile.Result{}, err
 	}
 
@@ -629,7 +555,92 @@ func (r *ChaosEngineReconciler) reconcileForCreationAndRunning(engine *chaosType
 		}
 	}
 
+	reqLogger.Info("Skip reconcile: engineRunner Pod already exists", "Pod.Namespace", runner.Namespace, "Pod.Name", runner.Name)
+
 	return reconcile.Result{}, nil
+}
+
+func (r *ChaosEngineReconciler) createRunnerPod(engine *chaosTypes.EngineInfo, reqLogger logr.Logger) (reconcile.Result, error) {
+	if err := r.setExperimentDetails(engine); err != nil {
+		if updateEngineErr := r.updateEngineState(engine, litmuschaosv1alpha1.EngineStateStop); updateEngineErr != nil {
+			r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos stop) Unable to update chaosengine")
+			return reconcile.Result{}, fmt.Errorf("unable to Update Engine State: %v", err)
+		}
+		return reconcile.Result{}, err
+	}
+
+	// Check if the engineRunner pod already exists, else create
+	if err := r.checkEngineRunnerPod(engine, reqLogger); err != nil {
+		r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos start) Unable to get chaos resources")
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ChaosEngineReconciler) setExperimentDetails(engine *chaosTypes.EngineInfo) error {
+	// Get the image for runner pod from chaosengine spec,operator env or default values.
+	setChaosResourceImage(engine)
+
+	if engine.Selectors != nil && engine.Selectors.Workloads == nil && engine.Selectors.Pods == nil {
+		return fmt.Errorf("specify one out of workloads or pods")
+	}
+
+	if (engine.AppInfo.AppKind != "") != (engine.AppInfo.Applabel != "") {
+		return fmt.Errorf("incomplete appinfo, provide appkind and applabel both")
+	}
+
+	engine.Targets = getTargets(engine)
+
+	var appExperiments []string
+	for _, exp := range engine.Instance.Spec.Experiments {
+		appExperiments = append(appExperiments, exp.Name)
+	}
+	engine.AppExperiments = appExperiments
+
+	chaosTypes.Log.Info("Targets derived from Chaosengine is ", "targets", engine.Targets)
+	chaosTypes.Log.Info("Exp list derived from chaosengine is ", "appExpirements", appExperiments)
+	chaosTypes.Log.Info("Runner image derived from chaosengine is", "runnerImage", engine.Instance.Spec.Components.Runner.Image)
+	return nil
+}
+
+func getTargets(engine *chaosTypes.EngineInfo) string {
+	if engine.Selectors == nil && reflect.DeepEqual(engine.AppInfo, litmuschaosv1alpha1.ApplicationParams{}) {
+		return ""
+	}
+
+	var targets []string
+
+	if engine.Selectors != nil {
+		if engine.Selectors.Workloads != nil {
+			for _, w := range engine.Selectors.Workloads {
+				var filter string
+				if w.Names != "" {
+					filter = w.Names
+				} else {
+					filter = w.Labels
+				}
+
+				target := strings.Join([]string{string(w.Kind), w.Namespace, fmt.Sprintf("[%v]", filter)}, ":")
+				targets = append(targets, target)
+			}
+			return strings.Join(targets, ";")
+		}
+
+		for _, w := range engine.Selectors.Pods {
+			target := strings.Join([]string{"pod", w.Namespace, fmt.Sprintf("[%v]", w.Names)}, ":")
+			targets = append(targets, target)
+		}
+		return strings.Join(targets, ";")
+	}
+
+	if engine.AppInfo.Appns == "" {
+		engine.AppInfo.Appns = engine.Instance.Namespace
+	}
+
+	if engine.AppInfo.AppKind == "" {
+		engine.AppInfo.AppKind = "KIND"
+	}
+	return strings.Join([]string{engine.AppInfo.AppKind, engine.AppInfo.Appns, fmt.Sprintf("[%v]", engine.AppInfo.Applabel)}, ":")
 }
 
 // updateExperimentStatusesForStop updates ChaosEngine.Status.Experiment with Abort Status.
@@ -648,51 +659,6 @@ func startReqLogger(request reconcile.Request) logr.Logger {
 	reqLogger.Info("Reconciling ChaosEngine")
 
 	return reqLogger
-}
-
-func (r *ChaosEngineReconciler) validateAnnotatedApplication(engine *chaosTypes.EngineInfo) error {
-	// Get the image for runner pod from chaosengine spec,operator env or default values.
-	setChaosResourceImage(engine)
-
-	clientSet, err := clientset.CreateClientSet()
-	if err != nil {
-		return err
-	}
-
-	dynamicClient, err := dynamicclientset.CreateClientSet()
-	if err != nil {
-		return err
-	}
-
-	// getAnnotationCheck fetch the annotationCheck from engine spec
-	if err = getAnnotationCheck(engine); err != nil {
-		return err
-	}
-
-	// Fetch the app details from ChaosEngine instance. Check if app is present
-	// Also check, if the app is annotated for chaos & that the labels are unique
-	if err = getApplicationDetail(engine); err != nil {
-		r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(appinfo derivation) Unable to get chaosengine")
-		return err
-	}
-
-	if engine.Instance.Spec.AnnotationCheck == "true" {
-		if engine.AppInfo.Label == "" || engine.AppInfo.Namespace == "" || engine.AppInfo.Kind == "" {
-			return errors.Errorf("incomplete AppInfo inside chaosengine")
-		}
-		// Determine whether apps with matching labels have chaos annotation set to true
-		engine, err = resource.CheckChaosAnnotation(engine, clientSet, *dynamicClient)
-		if err != nil {
-			// using an event msg that indicates the app couldn't be identified. By this point in execution,
-			// if the engine could not be found or accessed, it would already be caught in r.initEngine & getApplicationDetail
-			r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(app indentification) Unable to filter app by specified info")
-			chaosTypes.Log.Info("Annotation check failed with", "error:", err)
-
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (r *ChaosEngineReconciler) updateEngineForComplete(engine *chaosTypes.EngineInfo, isCompleted bool) error {
