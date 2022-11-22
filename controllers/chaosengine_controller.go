@@ -102,7 +102,10 @@ func (r *ChaosEngineReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 	}
 
 	// Start the reconcile by setting default values into ChaosEngine
-	if err := r.initEngine(engine); err != nil {
+	if requeue, err := r.initEngine(engine); err != nil {
+		if requeue {
+			return reconcile.Result{Requeue: true}, nil
+		}
 		return reconcile.Result{}, err
 	}
 
@@ -470,8 +473,11 @@ func (r *ChaosEngineReconciler) reconcileForRestartAfterAbort(engine *chaosTypes
 		return reconcile.Result{}, err
 	}
 
-	if err := r.updateEngineForRestart(engine); err != nil {
-		return reconcile.Result{}, nil
+	if requeue, err := r.updateEngineForRestart(engine); err != nil {
+		if requeue {
+			return reconcile.Result{Requeue: true}, nil
+		}
+		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
@@ -506,7 +512,7 @@ func (r *ChaosEngineReconciler) reconcileForRestartAfterComplete(engine *chaosTy
 }
 
 // initEngine initialize Chaos Engine, and add a finalizer to it.
-func (r *ChaosEngineReconciler) initEngine(engine *chaosTypes.EngineInfo) error {
+func (r *ChaosEngineReconciler) initEngine(engine *chaosTypes.EngineInfo) (bool, error) {
 	if engine.Instance.Spec.EngineState == "" {
 		engine.Instance.Spec.EngineState = litmuschaosv1alpha1.EngineStateActive
 	}
@@ -519,14 +525,17 @@ func (r *ChaosEngineReconciler) initEngine(engine *chaosTypes.EngineInfo) error 
 		if engine.Instance.ObjectMeta.Finalizers == nil {
 			engine.Instance.ObjectMeta.Finalizers = append(engine.Instance.ObjectMeta.Finalizers, finalizer)
 			if err := r.Client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-				return fmt.Errorf("unable to initialize ChaosEngine, because of Update Error: %v", err)
+				if k8serrors.IsConflict(err) {
+					return true, err
+				}
+				return false, fmt.Errorf("unable to initialize ChaosEngine, because of Update Error: %v", err)
 			}
 			// generate the ChaosEngineInitialized event once finalizer has been added
 			r.Recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineInitialized", "Identifying app under test & launching %s", engine.Instance.Name+"-runner")
 		}
 	}
 
-	return nil
+	return false, nil
 }
 
 // reconcileForCreationAndRunning reconciles for Chaos execution of Chaos Engine
@@ -549,7 +558,10 @@ func (r *ChaosEngineReconciler) reconcileForCreationAndRunning(engine *chaosType
 	}
 
 	if isCompleted {
-		if err := r.updateEngineForComplete(engine, isCompleted); err != nil {
+		if requeue, err := r.updateEngineForComplete(engine, isCompleted); err != nil {
+			if requeue {
+				return reconcile.Result{Requeue: true}, nil
+			}
 			r.Recorder.Eventf(engine.Instance, corev1.EventTypeWarning, "ChaosResourcesOperationFailed", "(chaos completed) Unable to update chaos engine")
 			return reconcile.Result{}, err
 		}
@@ -661,28 +673,34 @@ func startReqLogger(request reconcile.Request) logr.Logger {
 	return reqLogger
 }
 
-func (r *ChaosEngineReconciler) updateEngineForComplete(engine *chaosTypes.EngineInfo, isCompleted bool) error {
+func (r *ChaosEngineReconciler) updateEngineForComplete(engine *chaosTypes.EngineInfo, isCompleted bool) (bool, error) {
 	if engine.Instance.Status.EngineStatus != litmuschaosv1alpha1.EngineStatusCompleted {
 		engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusCompleted
 		engine.Instance.Spec.EngineState = litmuschaosv1alpha1.EngineStateStop
 		if err := r.Client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-			return fmt.Errorf("unable to update ChaosEngine Status, due to update error: %v", err)
+			if k8serrors.IsConflict(err) {
+				return true, err
+			}
+			return false, fmt.Errorf("unable to update ChaosEngine Status, due to update error: %v", err)
 		}
 		r.Recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "ChaosEngineCompleted", "ChaosEngine completed, will delete or retain the resources according to jobCleanUpPolicy")
 	}
 
-	return nil
+	return false, nil
 }
 
-func (r *ChaosEngineReconciler) updateEngineForRestart(engine *chaosTypes.EngineInfo) error {
+func (r *ChaosEngineReconciler) updateEngineForRestart(engine *chaosTypes.EngineInfo) (bool, error) {
 	r.Recorder.Eventf(engine.Instance, corev1.EventTypeNormal, "RestartInProgress", "ChaosEngine is restarted")
 	engine.Instance.Status.EngineStatus = litmuschaosv1alpha1.EngineStatusInitialized
 	engine.Instance.Status.Experiments = nil
 	if err := r.Client.Update(context.TODO(), engine.Instance, &client.UpdateOptions{}); err != nil {
-		return fmt.Errorf("unable to restart ChaosEngine, due to update error: %v", err)
+		if k8serrors.IsConflict(err) {
+			return true, err
+		}
+		return false, fmt.Errorf("unable to restart ChaosEngine, due to update error: %v", err)
 	}
 
-	return nil
+	return false, nil
 }
 
 // updateChaosStatus update the chaos status inside the chaosresult
