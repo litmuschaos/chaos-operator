@@ -213,7 +213,7 @@ func TestUpdateEngineForComplete(t *testing.T) {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
 
-			err = r.updateEngineForComplete(&mock.engine, true)
+			_, err = r.updateEngineForComplete(&mock.engine, true)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -295,7 +295,7 @@ func TestUpdateEngineForRestart(t *testing.T) {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
 
-			err = r.updateEngineForRestart(&mock.engine)
+			_, err = r.updateEngineForRestart(&mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -559,7 +559,7 @@ func TestInitEngine(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			err := r.initEngine(&mock.engine)
+			_, err := r.initEngine(&mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
