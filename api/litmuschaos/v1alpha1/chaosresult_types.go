@@ -118,12 +118,18 @@ type TestStatus struct {
 	Phase ResultPhase `json:"phase"`
 	// Verdict defines whether an experiment result is pass or fail
 	Verdict ResultVerdict `json:"verdict"`
-	// FailStep defines step where the experiments fail
-	FailStep string `json:"failStep,omitempty"`
-	// ErrorCode defines error code of the experiment
-	ErrorCode string `json:"errorCode,omitempty"`
+	// FailureOutput defines failed step and errorCode, if experiment failed
+	FailureOutput *FailureOutput `json:"failureOutput,omitempty"`
 	// ProbeSuccessPercentage defines the score of the probes
 	ProbeSuccessPercentage string `json:"probeSuccessPercentage,omitempty"`
+}
+
+// FailureOutput defines failed step and error code
+type FailureOutput struct {
+	// ErrorCode defines error code of the experiment
+	ErrorCode string `json:"errorCode,omitempty"`
+	// FailedStep defines step where the experiments failed
+	FailedStep string `json:"failedStep,omitempty"`
 }
 
 //+kubebuilder:object:root=true
