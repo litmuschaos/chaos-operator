@@ -118,8 +118,10 @@ type TestStatus struct {
 	Phase ResultPhase `json:"phase"`
 	// Verdict defines whether an experiment result is pass or fail
 	Verdict ResultVerdict `json:"verdict"`
-	// FailStep defines step where the experiments fails
+	// FailStep defines step where the experiments fail
 	FailStep string `json:"failStep,omitempty"`
+	// ErrorCode defines error code of the experiment
+	ErrorCode string `json:"errorCode,omitempty"`
 	// ProbeSuccessPercentage defines the score of the probes
 	ProbeSuccessPercentage string `json:"probeSuccessPercentage,omitempty"`
 }
