@@ -11,7 +11,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.17.5
+          go-version: 1.18
 
       # Checkout to the latest commit
       # On specific directory/path
@@ -86,7 +86,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.17.5
+          go-version: 1.18
 
       #Install and configure a kind cluster
       - name: Installing Prerequisites (K3S Cluster)
