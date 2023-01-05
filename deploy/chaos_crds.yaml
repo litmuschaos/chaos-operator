@@ -103,6 +103,14 @@ spec:
               components:
                 type: object
                 properties:
+                  sidecar:
+                    x-kubernetes-preserve-unknown-fields: true
+                    type: object
+                    properties:
+                      image:
+                        type: string
+                      imagePullPolicy:
+                        type: string
                   runner:
                     x-kubernetes-preserve-unknown-fields: true 
                     type: object
