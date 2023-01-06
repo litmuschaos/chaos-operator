@@ -151,14 +151,16 @@ type ComponentParams struct {
 	//Contains information of the runner pod
 	Runner RunnerInfo `json:"runner"`
 	// Contains information of the sidecar
-	SideCar *SideCar `json:"sideCar,omitempty"`
+	Sidecar []Sidecar `json:"sidecar,omitempty"`
 }
 
-type SideCar struct {
+type Sidecar struct {
 	//Image of the runner pod
-	Image string `json:"image,omitempty"`
+	Image string `json:"image"`
 	//ImagePullPolicy for runner pod
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+	// Secrets for runner pod
+	Secrets []Secret `json:"secrets,omitempty"`
 }
 
 // RunnerInfo defines the information of the runnerinfo pod

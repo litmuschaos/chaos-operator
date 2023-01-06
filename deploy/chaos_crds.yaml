@@ -104,13 +104,27 @@ spec:
                 type: object
                 properties:
                   sidecar:
-                    x-kubernetes-preserve-unknown-fields: true
-                    type: object
-                    properties:
-                      image:
-                        type: string
-                      imagePullPolicy:
-                        type: string
+                    type: array
+                    items:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                      properties:
+                        image:
+                          type: string
+                        imagePullPolicy:
+                          type: string
+                        secrets:
+                          items:
+                            properties:
+                              mountPath:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                              - mountPath
+                              - name
+                            type: object
+                          type: array
                   runner:
                     x-kubernetes-preserve-unknown-fields: true 
                     type: object
