@@ -155,12 +155,16 @@ type ComponentParams struct {
 }
 
 type Sidecar struct {
-	//Image of the runner pod
+	//Image of the sidecar container
 	Image string `json:"image"`
-	//ImagePullPolicy for runner pod
+	//ImagePullPolicy of the sidecar container
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
-	// Secrets for runner pod
+	// Secrets for the sidecar container
 	Secrets []Secret `json:"secrets,omitempty"`
+	// EnvFrom for the sidecar container
+	EnvFrom []corev1.EnvFromSource `json:"envFrom"`
+	// ENV contains ENV passed to the sidecar container
+	ENV []corev1.EnvVar `json:"env,omitempty"`
 }
 
 // RunnerInfo defines the information of the runnerinfo pod
