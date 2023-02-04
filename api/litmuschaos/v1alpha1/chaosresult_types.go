@@ -42,6 +42,8 @@ const (
 	ResultPhaseCompleted ResultPhase = "Completed"
 	// ResultPhaseStopped is phase of chaosresult which is in stopped state
 	ResultPhaseStopped ResultPhase = "Stopped"
+	// ResultPhaseError is phase of chaosresult, which indicates that the experiment is terminated due to an error
+	ResultPhaseError ResultPhase = "Error"
 )
 
 // ResultVerdict is typecasted to string for supporting the values below.
@@ -56,6 +58,8 @@ const (
 	ResultVerdictStopped ResultVerdict = "Stopped"
 	// ResultVerdictAwaited is verdict of chaosresult when experiment is yet to evaluated(experiment is in running state)
 	ResultVerdictAwaited ResultVerdict = "Awaited"
+	// ResultVerdictError is verdict of chaosresult when experiment is completed because of an error
+	ResultVerdictError ResultVerdict = "Error"
 )
 
 type ProbeVerdict string
@@ -118,18 +122,18 @@ type TestStatus struct {
 	Phase ResultPhase `json:"phase"`
 	// Verdict defines whether an experiment result is pass or fail
 	Verdict ResultVerdict `json:"verdict"`
-	// FailureOutput defines failed step and errorCode, if experiment failed
-	FailureOutput *FailureOutput `json:"failureOutput,omitempty"`
+	// ErrorOutput defines error message and error code
+	ErrorOutput *ErrorOutput `json:"errorOutput,omitempty"`
 	// ProbeSuccessPercentage defines the score of the probes
 	ProbeSuccessPercentage string `json:"probeSuccessPercentage,omitempty"`
 }
 
-// FailureOutput defines failed step and error code
-type FailureOutput struct {
+// ErrorOutput defines error reason and error code
+type ErrorOutput struct {
 	// ErrorCode defines error code of the experiment
 	ErrorCode string `json:"errorCode,omitempty"`
-	// FailedStep defines step where the experiments failed
-	FailedStep string `json:"failedStep,omitempty"`
+	// Reason contains the error reason
+	Reason string `json:"reason,omitempty"`
 }
 
 //+kubebuilder:object:root=true
