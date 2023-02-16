@@ -377,10 +377,10 @@ type PostMethod struct {
 type RunProperty struct {
 	//ProbeTimeout contains timeout for the probe
 	ProbeTimeout int `json:"probeTimeout,omitempty"`
-	// Interval contains the inverval for the probe
+	// Interval contains the interval for the probe
 	Interval int `json:"interval,omitempty"`
-	// Retry contains the retry count for the probe
-	Retry int `json:"retry,omitempty"`
+	// Attempt contains the total attempt count for the probe
+	Attempt int `json:"attempt"`
 	//ProbePollingInterval contains time interval, for which continuous probe should be sleep
 	// after each iteration
 	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
