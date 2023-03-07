@@ -225,13 +225,13 @@ type ProbeAttributes struct {
 	// Type of probe
 	Type string `json:"type"`
 	// inputs needed for the k8s probe
-	K8sProbeInputs K8sProbeInputs `json:"k8sProbe/inputs,omitempty"`
+	K8sProbeInputs *K8sProbeInputs `json:"k8sProbe/inputs,omitempty"`
 	// inputs needed for the http probe
-	HTTPProbeInputs HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
+	HTTPProbeInputs *HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
 	// inputs needed for the cmd probe
-	CmdProbeInputs CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
+	CmdProbeInputs *CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
 	// inputs needed for the prometheus probe
-	PromProbeInputs PromProbeInputs `json:"promProbe/inputs,omitempty"`
+	PromProbeInputs *PromProbeInputs `json:"promProbe/inputs,omitempty"`
 	// RunProperty contains timeout, retry and interval for the probe
 	RunProperties RunProperty `json:"runProperties"`
 	// mode for k8s probe
@@ -271,7 +271,7 @@ type CmdProbeInputs struct {
 	Comparator ComparatorInfo `json:"comparator"`
 	// The source where we have to run the command
 	// It will run in inline(inside experiment itself) mode if source is nil
-	Source SourceDetails `json:"source,omitempty"`
+	Source *SourceDetails `json:"source,omitempty"`
 }
 
 // SourceDetails contains source details of the cmdProbe
@@ -312,7 +312,7 @@ type SourceDetails struct {
 type PromProbeInputs struct {
 	// Endpoint for the prometheus probe
 	Endpoint string `json:"endpoint"`
-	// Query to get promethus metrics
+	// Query to get prometheus metrics
 	Query string `json:"query,omitempty"`
 	// QueryPath contains filePath, which contains prometheus query
 	QueryPath string `json:"queryPath,omitempty"`
@@ -345,8 +345,8 @@ type HTTPProbeInputs struct {
 
 // HTTPMethod define the http method details
 type HTTPMethod struct {
-	Get  GetMethod  `json:"get,omitempty"`
-	Post PostMethod `json:"post,omitempty"`
+	Get  *GetMethod  `json:"get,omitempty"`
+	Post *PostMethod `json:"post,omitempty"`
 }
 
 // GetMethod define the http Get method
