@@ -41,7 +41,7 @@ const (
 	// ResultPhaseCompleted is phase of chaosresult which is in completed state
 	ResultPhaseCompleted ResultPhase = "Completed"
 	// ResultPhaseCompletedWithError is phase of chaosresult when probe is failed
-	ResultPhaseCompletedWithError ResultPhase = "CompletedWithError"
+	ResultPhaseCompletedWithError ResultPhase = "Completed_With_Error"
 	// ResultPhaseStopped is phase of chaosresult which is in stopped state
 	ResultPhaseStopped ResultPhase = "Stopped"
 	// ResultPhaseError is phase of chaosresult, which indicates that the experiment is terminated due to an error
