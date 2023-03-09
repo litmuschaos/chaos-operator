@@ -336,10 +336,7 @@ spec:
                           items:
                             type: object
                             required:
-                              - name
-                              - type
                               - runProperties
-                              - mode
                             properties:
                               name:
                                 type: string
@@ -349,11 +346,6 @@ spec:
                                 pattern: ^(k8sProbe|httpProbe|cmdProbe|promProbe)$
                               k8sProbe/inputs:
                                 type: object
-                                required:
-                                  - group
-                                  - version
-                                  - resource
-                                  - operation
                                 properties:
                                   group:
                                     type: string
@@ -375,19 +367,12 @@ spec:
                                     minLength: 1
                               cmdProbe/inputs:
                                 type: object
-                                required:
-                                  - command
-                                  - comparator
                                 properties:
                                   command:
                                     type: string
                                     minLength: 1
                                   comparator:
                                     type: object
-                                    required:
-                                      - type
-                                      - criteria
-                                      - value
                                     properties:
                                       type:
                                         type: string
@@ -400,8 +385,6 @@ spec:
                                   source:
                                     description: The external pod where we have to run the
                                       probe commands. It will run the commands inside the experiment pod itself(inline mode) if source contains a nil value
-                                    required:
-                                      - image
                                     properties:
                                       annotations:
                                         additionalProperties:
@@ -2185,9 +2168,6 @@ spec:
                                     type: object
                               httpProbe/inputs:
                                 type: object
-                                required:
-                                  - url
-                                  - method
                                 properties:
                                   url:
                                     type: string
@@ -2200,9 +2180,6 @@ spec:
                                     properties:
                                       get:
                                         type: object
-                                        required:
-                                          - criteria
-                                          - responseCode
                                         properties:
                                           criteria:
                                             type: string
@@ -2212,9 +2189,6 @@ spec:
                                             minLength: 1
                                       post:
                                         type: object
-                                        required:
-                                          - criteria
-                                          - responseCode
                                         properties:
                                           contentType:
                                             type: string
@@ -2231,9 +2205,6 @@ spec:
                                             minLength: 1                                       
                               promProbe/inputs:
                                 type: object
-                                required:
-                                  - endpoint
-                                  - comparator
                                 properties:
                                   endpoint:
                                     type: string
@@ -2243,9 +2214,6 @@ spec:
                                     type: string
                                   comparator:
                                     type: object
-                                    required:
-                                      - criteria
-                                      - value
                                     properties:
                                       criteria:
                                         type: string

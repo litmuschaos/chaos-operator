@@ -221,22 +221,22 @@ type ExperimentAttributes struct {
 // ProbeAttributes contains details of probe, which can be applied on the experiments
 type ProbeAttributes struct {
 	// Name of probe
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 	// Type of probe
-	Type string `json:"type"`
+	Type string `json:"type,omitempty"`
 	// inputs needed for the k8s probe
-	K8sProbeInputs *K8sProbeInputs `json:"k8sProbe/inputs,omitempty"`
+	K8sProbeInputs K8sProbeInputs `json:"k8sProbe/inputs,omitempty"`
 	// inputs needed for the http probe
-	HTTPProbeInputs *HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
+	HTTPProbeInputs HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
 	// inputs needed for the cmd probe
-	CmdProbeInputs *CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
+	CmdProbeInputs CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
 	// inputs needed for the prometheus probe
-	PromProbeInputs *PromProbeInputs `json:"promProbe/inputs,omitempty"`
+	PromProbeInputs PromProbeInputs `json:"promProbe/inputs,omitempty"`
 	// RunProperty contains timeout, retry and interval for the probe
-	RunProperties RunProperty `json:"runProperties"`
+	RunProperties RunProperty `json:"runProperties,omitempty"`
 	// mode for k8s probe
 	// it can be SOT, EOT, Edge
-	Mode string `json:"mode"`
+	Mode string `json:"mode,omitempty"`
 	// Data contains the manifest/data for the resource, which need to be created
 	// it supported for create operation only
 	Data string `json:"data,omitempty"`
@@ -245,11 +245,11 @@ type ProbeAttributes struct {
 // K8sProbeInputs contains all the inputs required for k8s probe
 type K8sProbeInputs struct {
 	// group of the resource
-	Group string `json:"group"`
+	Group string `json:"group,omitempty"`
 	// apiversion of the resource
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
 	// kind of resource
-	Resource string `json:"resource"`
+	Resource string `json:"resource,omitempty"`
 	// ResourceNames to get the resources using their list of comma separated names
 	ResourceNames string `json:"resourceNames,omitempty"`
 	// namespace of the resource
@@ -260,24 +260,24 @@ type K8sProbeInputs struct {
 	LabelSelector string `json:"labelSelector,omitempty"`
 	// Operation performed by the k8s probe
 	// it can be create, delete, present, absent
-	Operation string `json:"operation"`
+	Operation string `json:"operation,omitempty"`
 }
 
-// CmdProbeInputs contains all the inputs required for cmd probe
+//CmdProbeInputs contains all the inputs required for cmd probe
 type CmdProbeInputs struct {
 	// Command need to be executed for the probe
-	Command string `json:"command"`
+	Command string `json:"command,omitempty"`
 	// Comparator check for the correctness of the probe output
-	Comparator ComparatorInfo `json:"comparator"`
+	Comparator ComparatorInfo `json:"comparator,omitempty"`
 	// The source where we have to run the command
 	// It will run in inline(inside experiment itself) mode if source is nil
-	Source *SourceDetails `json:"source,omitempty"`
+	Source SourceDetails `json:"source,omitempty"`
 }
 
 // SourceDetails contains source details of the cmdProbe
 type SourceDetails struct {
 	// Image for the source pod
-	Image string `json:"image"`
+	Image string `json:"image,omitempty"`
 	// HostNetwork define the hostNetwork of the external pod
 	// it supports boolean values and default value is false
 	HostNetwork bool `json:"hostNetwork,omitempty"`
@@ -308,16 +308,16 @@ type SourceDetails struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 }
 
-// PromProbeInputs contains all the inputs required for prometheus probe
+//PromProbeInputs contains all the inputs required for prometheus probe
 type PromProbeInputs struct {
 	// Endpoint for the prometheus probe
-	Endpoint string `json:"endpoint"`
-	// Query to get prometheus metrics
+	Endpoint string `json:"endpoint,omitempty"`
+	// Query to get promethus metrics
 	Query string `json:"query,omitempty"`
 	// QueryPath contains filePath, which contains prometheus query
 	QueryPath string `json:"queryPath,omitempty"`
 	// Comparator check for the correctness of the probe output
-	Comparator ComparatorInfo `json:"comparator"`
+	Comparator ComparatorInfo `json:"comparator,omitempty"`
 }
 
 // ComparatorInfo contains the comparator details
@@ -328,34 +328,34 @@ type ComparatorInfo struct {
 	// Criteria for matching data
 	// it supports >=, <=, ==, >, <, != for int and float
 	// it supports equal, notEqual, contains for string
-	Criteria string `json:"criteria"`
+	Criteria string `json:"criteria,omitempty"`
 	// Value contains relative value for criteria
-	Value string `json:"value"`
+	Value string `json:"value,omitempty"`
 }
 
-// HTTPProbeInputs contains all the inputs required for http probe
+//HTTPProbeInputs contains all the inputs required for http probe
 type HTTPProbeInputs struct {
 	// URL which needs to curl, to check the status
-	URL string `json:"url"`
+	URL string `json:"url,omitempty"`
 	// InsecureSkipVerify flag to skip certificate checks
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// Method define the http method, it can be get or post
-	Method HTTPMethod `json:"method"`
+	Method HTTPMethod `json:"method,omitempty"`
 }
 
 // HTTPMethod define the http method details
 type HTTPMethod struct {
-	Get  *GetMethod  `json:"get,omitempty"`
-	Post *PostMethod `json:"post,omitempty"`
+	Get  GetMethod  `json:"get,omitempty"`
+	Post PostMethod `json:"post,omitempty"`
 }
 
 // GetMethod define the http Get method
 type GetMethod struct {
 	// Criteria for matching data
 	// it supports  == != operations
-	Criteria string `json:"criteria"`
+	Criteria string `json:"criteria,omitempty"`
 	// Value contains relative value for criteria
-	ResponseCode string `json:"responseCode"`
+	ResponseCode string `json:"responseCode,omitempty"`
 }
 
 // PostMethod define the http Post method
@@ -368,17 +368,17 @@ type PostMethod struct {
 	BodyPath string `json:"bodyPath,omitempty"`
 	// Criteria for matching data
 	// it supports  == != operations
-	Criteria string `json:"criteria"`
+	Criteria string `json:"criteria,omitempty"`
 	// Value contains relative value for criteria
-	ResponseCode string `json:"responseCode"`
+	ResponseCode string `json:"responseCode,omitempty"`
 }
 
-// RunProperty contains timeout, retry and interval for the probe
+//RunProperty contains timeout, retry and interval for the probe
 type RunProperty struct {
 	//ProbeTimeout contains timeout for the probe
-	ProbeTimeout int `json:"probeTimeout"`
+	ProbeTimeout int `json:"probeTimeout,omitempty"`
 	// Interval contains the interval for the probe
-	Interval int `json:"interval"`
+	Interval int `json:"interval,omitempty"`
 	// Retry contains the retry count for the probe
 	Retry int `json:"retry,omitempty"`
 	// Attempt contains the total attempt count for the probe
