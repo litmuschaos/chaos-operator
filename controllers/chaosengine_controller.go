@@ -645,10 +645,6 @@ func getTargets(engine *chaosTypes.EngineInfo) string {
 		return strings.Join(targets, ";")
 	}
 
-	if engine.AppInfo.Appns == "" {
-		engine.AppInfo.Appns = engine.Instance.Namespace
-	}
-
 	if engine.AppInfo.AppKind == "" {
 		engine.AppInfo.AppKind = "KIND"
 	}
