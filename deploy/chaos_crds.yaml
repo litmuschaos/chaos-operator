@@ -2242,6 +2242,81 @@ spec:
                                     type: integer
                                   stopOnFailure:
                                     type: boolean
+                              sloProbe/inputs:
+                                description: inputs needed for the SLO probe
+                                properties:
+                                  SLOSourceMetadata:
+                                    description: SLOSourceMetadata consists of required
+                                      metadata details to fetch metric data
+                                    properties:
+                                      scope:
+                                        description: Scope required for fetching details
+                                        properties:
+                                          accountIdentifier:
+                                            description: AccountIdentifier for account
+                                              ID
+                                            type: string
+                                          orgIdentifier:
+                                            description: OrgIdentifier for organization
+                                              ID
+                                            type: string
+                                          projectIdentifier:
+                                            description: ProjectIdentifier for project
+                                              ID
+                                            type: string
+                                        type: object
+                                      secret:
+                                        description: Secret required to authenticate
+                                          with selected platform API
+                                        type: string
+                                    type: object
+                                  apiTokenSecret:
+                                    description: APITokenSecret for authenticating
+                                      with the platform service
+                                    type: string
+                                  comparator:
+                                    description: Comparator check for the correctness
+                                      of the probe output
+                                    properties:
+                                      criteria:
+                                        description: Criteria for matching data it
+                                          supports >=, <=, ==, >, <, != for int and
+                                          float it supports equal, notEqual, contains
+                                          for string
+                                        type: string
+                                      type:
+                                        description: Type of data it can be int, float,
+                                          string
+                                        type: string
+                                      value:
+                                        description: Value contains relative value
+                                          for criteria
+                                        type: string
+                                    type: object
+                                  evaluationWindow:
+                                    description: EvaluationWindow is the time period
+                                      for which the metrics will be evaluated
+                                    properties:
+                                      evaluationEndTime:
+                                        description: End time of evaluation
+                                        type: integer
+                                      evaluationStartTime:
+                                        description: Start time of evaluation
+                                        type: integer
+                                    type: object
+                                  platformEndpoint:
+                                    description: PlatformEndpoint for the monitoring
+                                      service endpoint
+                                    type: string
+                                  secretNamespace:
+                                    description: SecretNamespace where the APITokenSecret
+                                      is present
+                                    type: string
+                                  sloIdentifier:
+                                    description: SLOIdentifier for fetching the details
+                                      of the SLO
+                                    type: string
+                                type: object
                               mode:
                                 type: string
                                 pattern: ^(SOT|EOT|Edge|Continuous|OnChaos)$
