@@ -2245,10 +2245,6 @@ spec:
                               sloProbe/inputs:
                                 description: inputs needed for the SLO probe
                                 properties:
-                                  apiTokenSecret:
-                                    description: APITokenSecret for authenticating
-                                      with the platform service
-                                    type: string
                                   comparator:
                                     description: Comparator check for the correctness
                                       of the probe output
@@ -2283,10 +2279,6 @@ spec:
                                     description: PlatformEndpoint for the monitoring
                                       service endpoint
                                     type: string
-                                  secretNamespace:
-                                    description: SecretNamespace where the APITokenSecret
-                                      is present
-                                    type: string
                                   sloIdentifier:
                                     description: SLOIdentifier for fetching the details
                                       of the SLO
@@ -2295,6 +2287,10 @@ spec:
                                     description: SLOSourceMetadata consists of required
                                       metadata details to fetch metric data
                                     properties:
+                                      apiTokenSecret:
+                                        description: APITokenSecret for authenticating
+                                          with the platform service
+                                        type: string
                                       scope:
                                         description: Scope required for fetching details
                                         properties:
@@ -2311,9 +2307,9 @@ spec:
                                               ID
                                             type: string
                                         type: object
-                                      secret:
-                                        description: Secret required to authenticate
-                                          with selected platform API
+                                      secretNamespace:
+                                        description: SecretNamespace where the APITokenSecret
+                                          is present
                                         type: string
                                     type: object
                                 type: object
