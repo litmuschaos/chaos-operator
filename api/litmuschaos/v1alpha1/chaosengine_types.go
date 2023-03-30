@@ -326,16 +326,12 @@ type PromProbeInputs struct {
 type SLOProbeInputs struct {
 	// PlatformEndpoint for the monitoring service endpoint
 	PlatformEndpoint string `json:"platformEndpoint,omitempty"`
-	// APITokenSecret for authenticating with the platform service
-	APITokenSecret string `json:"apiTokenSecret,omitempty"`
-	// SecretNamespace where the APITokenSecret is present
-	SecretNamespace string `json:"secretNamespace,omitempty"`
 	// SLOIdentifier for fetching the details of the SLO
 	SLOIdentifier string `json:"sloIdentifier,omitempty"`
 	// EvaluationWindow is the time period for which the metrics will be evaluated
 	EvaluationWindow EvaluationWindow `json:"evaluationWindow,omitempty"`
 	// SLOSourceMetadata consists of required metadata details to fetch metric data
-	SLOSourceMetadata SLOSourceMetadata `json:"SLOSourceMetadata,omitempty"`
+	SLOSourceMetadata SLOSourceMetadata `json:"sloSourceMetadata,omitempty"`
 	// Comparator check for the correctness of the probe output
 	Comparator ComparatorInfo `json:"comparator,omitempty"`
 }
@@ -349,8 +345,10 @@ type EvaluationWindow struct {
 }
 
 type SLOSourceMetadata struct {
-	// Secret required to authenticate with selected platform API
-	Secret string `json:"secret,omitempty"`
+	// APITokenSecret for authenticating with the platform service
+	APITokenSecret string `json:"apiTokenSecret,omitempty"`
+	// SecretNamespace where the APITokenSecret is present
+	SecretNamespace string `json:"secretNamespace,omitempty"`
 	// Scope required for fetching details
 	Scope Identifier `json:"scope,omitempty"`
 }

@@ -2245,31 +2245,6 @@ spec:
                               sloProbe/inputs:
                                 description: inputs needed for the SLO probe
                                 properties:
-                                  SLOSourceMetadata:
-                                    description: SLOSourceMetadata consists of required
-                                      metadata details to fetch metric data
-                                    properties:
-                                      scope:
-                                        description: Scope required for fetching details
-                                        properties:
-                                          accountIdentifier:
-                                            description: AccountIdentifier for account
-                                              ID
-                                            type: string
-                                          orgIdentifier:
-                                            description: OrgIdentifier for organization
-                                              ID
-                                            type: string
-                                          projectIdentifier:
-                                            description: ProjectIdentifier for project
-                                              ID
-                                            type: string
-                                        type: object
-                                      secret:
-                                        description: Secret required to authenticate
-                                          with selected platform API
-                                        type: string
-                                    type: object
                                   apiTokenSecret:
                                     description: APITokenSecret for authenticating
                                       with the platform service
@@ -2316,6 +2291,31 @@ spec:
                                     description: SLOIdentifier for fetching the details
                                       of the SLO
                                     type: string
+                                  sloSourceMetadata:
+                                    description: SLOSourceMetadata consists of required
+                                      metadata details to fetch metric data
+                                    properties:
+                                      scope:
+                                        description: Scope required for fetching details
+                                        properties:
+                                          accountIdentifier:
+                                            description: AccountIdentifier for account
+                                              ID
+                                            type: string
+                                          orgIdentifier:
+                                            description: OrgIdentifier for organization
+                                              ID
+                                            type: string
+                                          projectIdentifier:
+                                            description: ProjectIdentifier for project
+                                              ID
+                                            type: string
+                                        type: object
+                                      secret:
+                                        description: Secret required to authenticate
+                                          with selected platform API
+                                        type: string
+                                    type: object
                                 type: object
                               mode:
                                 type: string
