@@ -345,7 +345,7 @@ spec:
                               type:
                                 type: string
                                 minLength: 1
-                                pattern: ^(k8sProbe|httpProbe|cmdProbe|promProbe)$
+                                pattern: ^(k8sProbe|httpProbe|cmdProbe|promProbe|sloProbe)$
                               k8sProbe/inputs:
                                 type: object
                                 properties:
