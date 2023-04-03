@@ -347,8 +347,6 @@ type EvaluationWindow struct {
 type SLOSourceMetadata struct {
 	// APITokenSecret for authenticating with the platform service
 	APITokenSecret string `json:"apiTokenSecret,omitempty"`
-	// SecretNamespace where the APITokenSecret is present
-	SecretNamespace string `json:"secretNamespace,omitempty"`
 	// Scope required for fetching details
 	Scope Identifier `json:"scope,omitempty"`
 }
@@ -435,6 +433,9 @@ type RunProperty struct {
 	// it will stop the experiment execution, if provided true
 	// it will continue the experiment execution, if provided false or not provided(default case)
 	StopOnFailure bool `json:"stopOnFailure,omitempty"`
+	// EvaluationTimeout is the timeout window in which the SLO metrics
+	// will be fetched and will be evaluated
+	EvaluationTimeout bool `json:"evaluationTimeout,omitempty"`
 }
 
 // ExperimentComponents contains ENV, Configmaps and Secrets

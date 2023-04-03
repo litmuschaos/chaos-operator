@@ -2228,6 +2228,8 @@ spec:
                                   - probeTimeout
                                   - interval
                                 properties:
+                                  evaluationTimeout:
+                                    type: boolean
                                   probeTimeout:
                                     type: integer
                                   interval:
@@ -2307,10 +2309,6 @@ spec:
                                               ID
                                             type: string
                                         type: object
-                                      secretNamespace:
-                                        description: SecretNamespace where the APITokenSecret
-                                          is present
-                                        type: string
                                     type: object
                                 type: object
                               mode:
