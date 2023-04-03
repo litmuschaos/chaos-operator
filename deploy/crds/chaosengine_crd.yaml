@@ -2227,7 +2227,7 @@ spec:
                                   - interval
                                 properties:
                                   evaluationTimeout:
-                                    type: boolean
+                                    type: integer
                                   probeTimeout:
                                     type: integer
                                   interval:
