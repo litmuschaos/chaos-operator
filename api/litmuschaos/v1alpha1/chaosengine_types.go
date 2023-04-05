@@ -232,6 +232,8 @@ type ProbeAttributes struct {
 	CmdProbeInputs CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
 	// inputs needed for the prometheus probe
 	PromProbeInputs PromProbeInputs `json:"promProbe/inputs,omitempty"`
+	// inputs needed for the SLO probe
+	SLOProbeInputs SLOProbeInputs `json:"sloProbe/inputs,omitempty"`
 	// RunProperty contains timeout, retry and interval for the probe
 	RunProperties RunProperty `json:"runProperties,omitempty"`
 	// mode for k8s probe
@@ -263,7 +265,7 @@ type K8sProbeInputs struct {
 	Operation string `json:"operation,omitempty"`
 }
 
-//CmdProbeInputs contains all the inputs required for cmd probe
+// CmdProbeInputs contains all the inputs required for cmd probe
 type CmdProbeInputs struct {
 	// Command need to be executed for the probe
 	Command string `json:"command,omitempty"`
@@ -308,7 +310,7 @@ type SourceDetails struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 }
 
-//PromProbeInputs contains all the inputs required for prometheus probe
+// PromProbeInputs contains all the inputs required for prometheus probe
 type PromProbeInputs struct {
 	// Endpoint for the prometheus probe
 	Endpoint string `json:"endpoint,omitempty"`
@@ -318,6 +320,45 @@ type PromProbeInputs struct {
 	QueryPath string `json:"queryPath,omitempty"`
 	// Comparator check for the correctness of the probe output
 	Comparator ComparatorInfo `json:"comparator,omitempty"`
+}
+
+// SLOProbeInputs contains all the inputs required for SLO probe
+type SLOProbeInputs struct {
+	// PlatformEndpoint for the monitoring service endpoint
+	PlatformEndpoint string `json:"platformEndpoint,omitempty"`
+	// SLOIdentifier for fetching the details of the SLO
+	SLOIdentifier string `json:"sloIdentifier,omitempty"`
+	// EvaluationWindow is the time period for which the metrics will be evaluated
+	EvaluationWindow EvaluationWindow `json:"evaluationWindow,omitempty"`
+	// SLOSourceMetadata consists of required metadata details to fetch metric data
+	SLOSourceMetadata SLOSourceMetadata `json:"sloSourceMetadata,omitempty"`
+	// Comparator check for the correctness of the probe output
+	Comparator ComparatorInfo `json:"comparator,omitempty"`
+}
+
+// EvaluationWindow is the time period for which the SLO probe will work
+type EvaluationWindow struct {
+	// Start time of evaluation
+	EvaluationStartTime int `json:"evaluationStartTime,omitempty"`
+	// End time of evaluation
+	EvaluationEndTime int `json:"evaluationEndTime,omitempty"`
+}
+
+type SLOSourceMetadata struct {
+	// APITokenSecret for authenticating with the platform service
+	APITokenSecret string `json:"apiTokenSecret,omitempty"`
+	// Scope required for fetching details
+	Scope Identifier `json:"scope,omitempty"`
+}
+
+// Identifier required for fetching details from the Platform APIs
+type Identifier struct {
+	// AccountIdentifier for account ID
+	AccountIdentifier string `json:"accountIdentifier,omitempty"`
+	// OrgIdentifier for organization ID
+	OrgIdentifier string `json:"orgIdentifier,omitempty"`
+	// ProjectIdentifier for project ID
+	ProjectIdentifier string `json:"projectIdentifier,omitempty"`
 }
 
 // ComparatorInfo contains the comparator details
@@ -333,7 +374,7 @@ type ComparatorInfo struct {
 	Value string `json:"value,omitempty"`
 }
 
-//HTTPProbeInputs contains all the inputs required for http probe
+// HTTPProbeInputs contains all the inputs required for http probe
 type HTTPProbeInputs struct {
 	// URL which needs to curl, to check the status
 	URL string `json:"url,omitempty"`
@@ -373,7 +414,7 @@ type PostMethod struct {
 	ResponseCode string `json:"responseCode,omitempty"`
 }
 
-//RunProperty contains timeout, retry and interval for the probe
+// RunProperty contains timeout, retry and interval for the probe
 type RunProperty struct {
 	//ProbeTimeout contains timeout for the probe
 	ProbeTimeout int `json:"probeTimeout,omitempty"`
@@ -388,6 +429,9 @@ type RunProperty struct {
 	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
 	//InitialDelaySeconds time interval for which probe will wait before run
 	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
+	// EvaluationTimeout is the timeout window in which the SLO metrics
+	// will be fetched and will be evaluated
+	EvaluationTimeout int `json:"evaluationTimeout,omitempty"`
 	// StopOnFailure contains flag to stop/continue experiment execution, if probe fails
 	// it will stop the experiment execution, if provided true
 	// it will continue the experiment execution, if provided false or not provided(default case)
