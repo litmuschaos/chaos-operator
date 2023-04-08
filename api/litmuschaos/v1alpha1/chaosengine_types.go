@@ -329,7 +329,7 @@ type SLOProbeInputs struct {
 	// SLOIdentifier for fetching the details of the SLO
 	SLOIdentifier string `json:"sloIdentifier,omitempty"`
 	// InsecureSkipVerify flag to skip certificate checks
-	InsecureSkipVerify string `json:"insecureSkipVerify,omitempty"`
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// EvaluationWindow is the time period for which the metrics will be evaluated
 	EvaluationWindow EvaluationWindow `json:"evaluationWindow,omitempty"`
 	// SLOSourceMetadata consists of required metadata details to fetch metric data

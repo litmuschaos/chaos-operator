@@ -2282,7 +2282,7 @@ spec:
                                   insecureSkipVerify:
                                     description: InsecureSkipVerify flag to skip certificate
                                       checks
-                                    type: string
+                                    type: boolean
                                   sloIdentifier:
                                     description: SLOIdentifier for fetching the details
                                       of the SLO
