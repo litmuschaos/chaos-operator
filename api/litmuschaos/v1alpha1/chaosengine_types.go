@@ -29,7 +29,7 @@ type ChaosEngineSpec struct {
 	Appinfo ApplicationParams `json:"appinfo,omitempty"`
 	//DefaultHealthCheck defines whether default health checks should be executed or not. It can be true or false
 	// default value is true
-	DefaultHealthCheck string `json:"defaultHealthCheck,omitempty"`
+	DefaultHealthCheck bool `json:"defaultHealthCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Components contains the image, imagePullPolicy, arguments, and commands of runner
@@ -419,21 +419,21 @@ type PostMethod struct {
 // RunProperty contains timeout, retry and interval for the probe
 type RunProperty struct {
 	//ProbeTimeout contains timeout for the probe
-	ProbeTimeout int `json:"probeTimeout,omitempty"`
+	ProbeTimeout string `json:"probeTimeout,omitempty"`
 	// Interval contains the interval for the probe
-	Interval int `json:"interval,omitempty"`
+	Interval string `json:"interval,omitempty"`
 	// Retry contains the retry count for the probe
 	Retry int `json:"retry,omitempty"`
 	// Attempt contains the total attempt count for the probe
 	Attempt int `json:"attempt,omitempty"`
 	//ProbePollingInterval contains time interval, for which continuous probe should be sleep
 	// after each iteration
-	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
+	ProbePollingInterval string `json:"probePollingInterval,omitempty"`
 	//InitialDelaySeconds time interval for which probe will wait before run
-	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
+	InitialDelay string `json:"initialDelay,omitempty"`
 	// EvaluationTimeout is the timeout window in which the SLO metrics
 	// will be fetched and will be evaluated
-	EvaluationTimeout int `json:"evaluationTimeout,omitempty"`
+	EvaluationTimeout string `json:"evaluationTimeout,omitempty"`
 	// StopOnFailure contains flag to stop/continue experiment execution, if probe fails
 	// it will stop the experiment execution, if provided true
 	// it will continue the experiment execution, if provided false or not provided(default case)
