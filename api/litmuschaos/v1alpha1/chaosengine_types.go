@@ -327,13 +327,13 @@ type SLOProbeInputs struct {
 	// PlatformEndpoint for the monitoring service endpoint
 	PlatformEndpoint string `json:"platformEndpoint"`
 	// SLOIdentifier for fetching the details of the SLO
-	SLOIdentifier string `json:"sloIdentifier,omitempty"`
+	SLOIdentifier string `json:"sloIdentifier"`
 	// InsecureSkipVerify flag to skip certificate checks
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// EvaluationWindow is the time period for which the metrics will be evaluated
-	EvaluationWindow EvaluationWindow `json:"evaluationWindow,omitempty"`
+	EvaluationWindow *EvaluationWindow `json:"evaluationWindow,omitempty"`
 	// SLOSourceMetadata consists of required metadata details to fetch metric data
-	SLOSourceMetadata SLOSourceMetadata `json:"sloSourceMetadata,omitempty"`
+	SLOSourceMetadata SLOSourceMetadata `json:"sloSourceMetadata"`
 	// Comparator check for the correctness of the probe output
 	Comparator ComparatorInfo `json:"comparator"`
 }
@@ -348,19 +348,19 @@ type EvaluationWindow struct {
 
 type SLOSourceMetadata struct {
 	// APITokenSecret for authenticating with the platform service
-	APITokenSecret string `json:"apiTokenSecret,omitempty"`
+	APITokenSecret string `json:"apiTokenSecret"`
 	// Scope required for fetching details
-	Scope Identifier `json:"scope,omitempty"`
+	Scope Identifier `json:"scope"`
 }
 
 // Identifier required for fetching details from the Platform APIs
 type Identifier struct {
 	// AccountIdentifier for account ID
-	AccountIdentifier string `json:"accountIdentifier,omitempty"`
+	AccountIdentifier string `json:"accountIdentifier"`
 	// OrgIdentifier for organization ID
-	OrgIdentifier string `json:"orgIdentifier,omitempty"`
+	OrgIdentifier string `json:"orgIdentifier"`
 	// ProjectIdentifier for project ID
-	ProjectIdentifier string `json:"projectIdentifier,omitempty"`
+	ProjectIdentifier string `json:"projectIdentifier"`
 }
 
 // ComparatorInfo contains the comparator details

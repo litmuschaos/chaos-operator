@@ -2276,10 +2276,18 @@ spec:
                                       type: boolean
                                 sloProbe/inputs:
                                   description: inputs needed for the SLO probe
+                                  required:
+                                    - platformEndpoint
+                                    - sloIdentifier
+                                    - sloSourceMetadata
+                                    - comparator
                                   properties:
                                     comparator:
                                       description: Comparator check for the correctness
                                         of the probe output
+                                      required:
+                                        - criteria
+                                        - value
                                       properties:
                                         criteria:
                                           description: Criteria for matching data it
@@ -2322,6 +2330,9 @@ spec:
                                     sloSourceMetadata:
                                       description: SLOSourceMetadata consists of required
                                         metadata details to fetch metric data
+                                      required:
+                                        - apiTokenSecret
+                                        - scope
                                       properties:
                                         apiTokenSecret:
                                           description: APITokenSecret for authenticating
@@ -2329,6 +2340,10 @@ spec:
                                           type: string
                                         scope:
                                           description: Scope required for fetching details
+                                          required:
+                                            - accountIdentifier
+                                            - orgIdentifier
+                                            - projectIdentifier
                                           properties:
                                             accountIdentifier:
                                               description: AccountIdentifier for account
