@@ -49,7 +49,7 @@ var (
 	ResultCRDName = "chaosresults.litmuschaos.io"
 )
 
-//EngineInfo Related information
+// EngineInfo Related information
 type EngineInfo struct {
 	Instance       *litmuschaosv1alpha1.ChaosEngine
 	AppInfo        litmuschaosv1alpha1.ApplicationParams

@@ -119,7 +119,7 @@ var _ = BeforeSuite(func() {
 	klog.Infoln("Chaos-Operator is in running state")
 })
 
-//BDD Tests to check secondary resources
+// BDD Tests to check secondary resources
 var _ = Describe("BDD on chaos-operator", func() {
 
 	// BDD TEST CASE 1
@@ -505,7 +505,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 })
 
-//Deleting all unused resources
+// Deleting all unused resources
 var _ = AfterSuite(func() {
 
 	//Deleting Pod Delete sa
