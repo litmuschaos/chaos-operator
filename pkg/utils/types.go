@@ -36,7 +36,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-//VolumeOpts is a strcuture for all volume related operations
+// VolumeOpts is a strcuture for all volume related operations
 type VolumeOpts struct {
 	VolumeMounts   []corev1.VolumeMount
 	VolumeBuilders []*volume.Builder
