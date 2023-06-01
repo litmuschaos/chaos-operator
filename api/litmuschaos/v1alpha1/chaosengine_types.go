@@ -247,7 +247,7 @@ type ProbeAttributes struct {
 // K8sProbeInputs contains all the inputs required for k8s probe
 type K8sProbeInputs struct {
 	// group of the resource
-	Group string `json:"group"`
+	Group string `json:"group,omitempty"`
 	// apiversion of the resource
 	Version string `json:"version"`
 	// kind of resource

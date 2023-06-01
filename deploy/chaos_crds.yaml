@@ -350,7 +350,6 @@ spec:
                                 k8sProbe/inputs:
                                   type: object
                                   required:
-                                    - group
                                     - version
                                     - resource
                                     - operation
