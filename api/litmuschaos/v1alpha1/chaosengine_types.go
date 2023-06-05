@@ -430,6 +430,8 @@ type RunProperty struct {
 	// after each iteration
 	ProbePollingInterval string `json:"probePollingInterval,omitempty"`
 	//InitialDelaySeconds time interval for which probe will wait before run
+	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
+	//InitialDelay time interval for which probe will wait before run
 	InitialDelay string `json:"initialDelay,omitempty"`
 	// EvaluationTimeout is the timeout window in which the SLO metrics
 	// will be fetched and will be evaluated
