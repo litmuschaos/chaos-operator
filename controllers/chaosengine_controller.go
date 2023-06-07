@@ -168,6 +168,11 @@ func getChaosRunnerLabels(cr *litmuschaosv1alpha1.ChaosEngine) map[string]string
 
 // newGoRunnerPodForCR defines a new go-based Runner Pod
 func (r *ChaosEngineReconciler) newGoRunnerPodForCR(engine *chaosTypes.EngineInfo) (*corev1.Pod, error) {
+	var experiment litmuschaosv1alpha1.ChaosExperiment
+	if err := r.Client.Get(context.TODO(), types.NamespacedName{Name: engine.Instance.Spec.Experiments[0].Name, Namespace: engine.Instance.Namespace}, &experiment); err != nil {
+		return nil, err
+	}
+
 	engine.VolumeOpts.VolumeOperations(engine.Instance.Spec.Components.Runner.ConfigMaps, engine.Instance.Spec.Components.Runner.Secrets)
 
 	containerForRunner := container.NewBuilder().
@@ -196,6 +201,10 @@ func (r *ChaosEngineReconciler) newGoRunnerPodForCR(engine *chaosTypes.EngineInf
 		containerForRunner.WithResourceRequirements(engine.Instance.Spec.Components.Runner.Resources)
 	}
 
+	if !reflect.DeepEqual(experiment.Spec.Definition.SecurityContext.ContainerSecurityContext, corev1.SecurityContext{}) {
+		containerForRunner.WithSecurityContext(experiment.Spec.Definition.SecurityContext.ContainerSecurityContext)
+	}
+
 	podForRunner := pod.NewBuilder().
 		WithName(engine.Instance.Name + "-runner").
 		WithNamespace(engine.Instance.Namespace).
@@ -219,6 +228,10 @@ func (r *ChaosEngineReconciler) newGoRunnerPodForCR(engine *chaosTypes.EngineInf
 
 	if engine.Instance.Spec.Components.Runner.ImagePullSecrets != nil {
 		podForRunner.WithImagePullSecrets(engine.Instance.Spec.Components.Runner.ImagePullSecrets)
+	}
+
+	if !reflect.DeepEqual(experiment.Spec.Definition.SecurityContext.PodSecurityContext, corev1.PodSecurityContext{}) {
+		podForRunner.WithSecurityContext(experiment.Spec.Definition.SecurityContext.PodSecurityContext)
 	}
 
 	runnerPod, err := podForRunner.Build()
