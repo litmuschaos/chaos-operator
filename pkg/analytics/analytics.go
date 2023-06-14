@@ -24,7 +24,7 @@ import (
 
 const (
 	// ClientID contains TrackingID of the application
-	clientID = "UA-92076314-21"
+	clientID = "G-3ZTFJCYCX9"
 
 	// supported event categories
 
