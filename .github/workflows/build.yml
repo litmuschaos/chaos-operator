@@ -11,7 +11,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.20
+          go-version: 1.20.0
 
       # Checkout to the latest commit
       # On specific directory/path
@@ -82,7 +82,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.20
+          go-version: 1.20.0
 
       # Checkout to the latest commit
       # On specific directory/path
