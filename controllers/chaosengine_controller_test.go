@@ -880,7 +880,6 @@ func TestStartReqLogger(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			req := startReqLogger(mock.request)
-			req.Info("erqw")
 			if mock.isErr && req != nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}

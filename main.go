@@ -73,7 +73,7 @@ func main() {
 
 	namespace, found := os.LookupEnv("WATCH_NAMESPACE")
 	if !found {
-		setupLog.Error(errors.New("WATCH NAMESPACE not set."), "failed to get watch namespace")
+		setupLog.Error(errors.New("WATCH_NAMESPACE env is not set"), "failed to get watch namespace")
 		os.Exit(1)
 	}
 
