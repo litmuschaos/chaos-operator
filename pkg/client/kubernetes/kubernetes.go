@@ -27,9 +27,9 @@ func CreateClientSet() (*kubernetes.Clientset, error) {
 	if err != nil {
 		return &kubernetes.Clientset{}, err
 	}
-	clientSet, err := kubernetes.NewForConfig(restConfig)
+	dynamicClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return &kubernetes.Clientset{}, err
 	}
-	return clientSet, nil
+	return dynamicClient, nil
 }

@@ -11,9 +11,9 @@ func CreateClientSet() (*dynamic.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	clientSet, err := dynamic.NewForConfig(restConfig)
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
 	}
-	return &clientSet, nil
+	return &dynamicClient, nil
 }
