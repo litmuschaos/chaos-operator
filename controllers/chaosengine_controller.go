@@ -111,7 +111,7 @@ func (r *ChaosEngineReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 
 	// Handling of normal execution of ChaosEngine
 	if engine.Instance.Spec.EngineState == litmuschaosv1alpha1.EngineStateActive && engine.Instance.Status.EngineStatus == litmuschaosv1alpha1.EngineStatusInitialized {
-		return r.reconcileForCreationAndRunning(engine, reqLogger)
+		return r.reconcileForCreationAndRunning(engine, *reqLogger)
 	}
 
 	// Handling Graceful completion of ChaosEngine
@@ -679,11 +679,11 @@ func updateExperimentStatusesForStop(engine *chaosTypes.EngineInfo) {
 	}
 }
 
-func startReqLogger(request reconcile.Request) logr.Logger {
+func startReqLogger(request reconcile.Request) *logr.Logger {
 	reqLogger := chaosTypes.Log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling ChaosEngine")
 
-	return reqLogger
+	return &reqLogger
 }
 
 func (r *ChaosEngineReconciler) updateEngineForComplete(engine *chaosTypes.EngineInfo, isCompleted bool) (bool, error) {
@@ -826,7 +826,7 @@ func isResultCRDAvailable() (bool, error) {
 		Resource: "customresourcedefinitions",
 	}
 
-	resultList, err := (*dynamicClient).Resource(gvr).List(context.Background(), v1.ListOptions{})
+	resultList, err := dynamicClient.Resource(gvr).List(context.Background(), v1.ListOptions{})
 	if err != nil {
 		return false, err
 	}
