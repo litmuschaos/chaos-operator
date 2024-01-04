@@ -2271,6 +2271,8 @@ spec:
                                       type: string
                                     initialDelay:
                                       type: string
+                                    verbosity:
+                                      type: string
                                     stopOnFailure:
                                       type: boolean
                                 sloProbe/inputs:
