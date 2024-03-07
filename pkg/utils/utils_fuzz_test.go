@@ -19,6 +19,7 @@ package utils
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -38,8 +39,19 @@ func FuzzSetEnv(f *testing.F) {
 		if edUpdated == nil {
 			t.Error("nil object not expected")
 		}
-		if key != "" && value != "" && edUpdated != nil && len(edUpdated.ENV) != 1 {
-			t.Errorf("expected env to be available, len %d", len(edUpdated.ENV))
+		if key == "" && edUpdated != nil {
+			assert.Equal(t, 0, len(edUpdated.ENV))
+		}
+		if value == "" && edUpdated != nil {
+			assert.Equal(t, 0, len(edUpdated.ENV))
+		}
+		if key != "" && value != "" && edUpdated != nil {
+			assert.Equal(t, 1, len(edUpdated.ENV))
+		}
+		if key != "" && value != "" && edUpdated != nil && len(edUpdated.ENV) == 1 {
+			env := edUpdated.ENV[0]
+			assert.Equal(t, key, env.Name)
+			assert.Equal(t, value, env.Value)
 		}
 	})
 }
