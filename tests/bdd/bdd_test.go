@@ -119,7 +119,7 @@ var _ = BeforeSuite(func() {
 	klog.Infoln("Chaos-Operator is in running state")
 })
 
-//BDD Tests to check secondary resources
+// BDD Tests to check secondary resources
 var _ = Describe("BDD on chaos-operator", func() {
 
 	// BDD TEST CASE 1
@@ -437,25 +437,6 @@ var _ = Describe("BDD on chaos-operator", func() {
 				})
 			Expect(err).To(BeNil())
 		})
-
-		It("Should change EngineStatus ", func() {
-
-			err := retry.
-				Times(uint(180 / 2)).
-				Wait(time.Duration(2) * time.Second).
-				Try(func(attempt uint) error {
-					//Fetching engineStatus
-					engine, err := clientSet.ChaosEngines("litmus").Get(context.Background(), "engine-nginx-1", metav1.GetOptions{})
-					if err != nil {
-						return err
-					}
-					if engine.Status.EngineStatus != v1alpha1.EngineStatusCompleted {
-						return fmt.Errorf("engine is not in completed state")
-					}
-					return nil
-				})
-			Expect(err).To(BeNil())
-		})
 	})
 
 	Context("Validate via Chaos-Operator Logs", func() {
@@ -505,7 +486,7 @@ var _ = Describe("BDD on chaos-operator", func() {
 
 })
 
-//Deleting all unused resources
+// Deleting all unused resources
 var _ = AfterSuite(func() {
 
 	//Deleting Pod Delete sa

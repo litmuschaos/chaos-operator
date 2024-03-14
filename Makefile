@@ -72,21 +72,21 @@ gofmt-check:
 .PHONY: build-chaos-operator
 build-chaos-operator:
 	@echo "-------------------------"
-	@echo "--> Build go-runner image" 
+	@echo "--> Build go-runner image"
 	@echo "-------------------------"
-	@docker buildx build --file build/Dockerfile --progress plane  --no-cache --platform linux/arm64,linux/amd64 --tag $(DOCKER_REGISTRY)/$(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@docker buildx build --file build/Dockerfile --progress plain  --no-cache --platform linux/arm64,linux/amd64 --tag $(DOCKER_REGISTRY)/$(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 .PHONY: push-chaos-operator
 push-chaos-operator:
 	@echo "------------------------------"
-	@echo "--> Pushing image" 
+	@echo "--> Pushing image"
 	@echo "------------------------------"
-	@docker buildx build --file build/Dockerfile --progress plane --no-cache --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REGISTRY)/$(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@docker buildx build --file build/Dockerfile --progress plain --no-cache --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REGISTRY)/$(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 .PHONY: build-amd64
 build-amd64:
 	@echo "-------------------------"
-	@echo "--> Build go-runner image" 
+	@echo "--> Build go-runner image"
 	@echo "-------------------------"
 	@docker build -f build/Dockerfile  --no-cache -t $(DOCKER_REGISTRY)/$(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .  --build-arg TARGETPLATFORM="linux/amd64"
 
