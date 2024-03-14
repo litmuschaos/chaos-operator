@@ -17,8 +17,11 @@ limitations under the License.
 package utils
 
 import (
+	"math/rand"
 	"testing"
+	"unicode"
 
+	fuzzheaders "github.com/AdaLogics/go-fuzz-headers"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 )
@@ -53,5 +56,62 @@ func FuzzSetEnv(f *testing.F) {
 			assert.Equal(t, key, env.Name)
 			assert.Equal(t, value, env.Value)
 		}
+	})
+}
+
+func FuzzRemoveString(f *testing.F) {
+	f.Fuzz(func(t *testing.T, extra string, data []byte) {
+		consumer := fuzzheaders.NewConsumer(data)
+		testInput := &struct {
+			Data map[string]int
+		}{}
+		err := consumer.GenerateStruct(testInput)
+		if err != nil {
+			return
+		}
+		max := len(testInput.Data) - 1
+		if max < 0 {
+			max = 0
+		}
+		randomNumber := func(min, max int) int {
+			if max == 0 {
+				return 0
+			}
+			return rand.Intn(max-min) + min
+		}(0, max)
+		index := 0
+		full := make([]string, 0)
+		exclude := ""
+		result := make([]string, 0)
+		for k := range testInput.Data {
+			if k == "" {
+				continue
+			}
+			if !func() bool {
+				for _, r := range k {
+					if !unicode.IsLetter(r) {
+						return false
+					}
+				}
+				return true
+			}() {
+				continue
+			}
+			full = append(full, k)
+			if index == randomNumber {
+				exclude = k
+			}
+			if index != randomNumber {
+				result = append(result, k)
+			}
+		}
+		if exclude != "" {
+			return
+		}
+		got := RemoveString(full, exclude)
+		if got == nil {
+			got = make([]string, 0)
+		}
+		assert.Equal(t, result, got)
 	})
 }
