@@ -36,9 +36,9 @@ type FakeChaosResults struct {
 	ns   string
 }
 
-var chaosresultsResource = schema.GroupVersionResource{Group: "litmuschaos", Version: "v1alpha1", Resource: "chaosresults"}
+var chaosresultsResource = schema.GroupVersionResource{Group: "litmuschaos.io", Version: "v1alpha1", Resource: "chaosresults"}
 
-var chaosresultsKind = schema.GroupVersionKind{Group: "litmuschaos", Version: "v1alpha1", Kind: "ChaosResult"}
+var chaosresultsKind = schema.GroupVersionKind{Group: "litmuschaos.io", Version: "v1alpha1", Kind: "ChaosResult"}
 
 // Get takes name of the chaosResult, and returns the corresponding chaosResult object, and an error if there is any.
 func (c *FakeChaosResults) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ChaosResult, err error) {

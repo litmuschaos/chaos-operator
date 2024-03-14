@@ -302,6 +302,8 @@ type SourceDetails struct {
 	Privileged bool `json:"privileged,omitempty"`
 	// NodeSelector for the source pod
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// Tolerations for the source pod
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 	// Volumes for the source pod
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
 	// VolumesMount for the source pod
@@ -436,6 +438,8 @@ type RunProperty struct {
 	// EvaluationTimeout is the timeout window in which the SLO metrics
 	// will be fetched and will be evaluated
 	EvaluationTimeout string `json:"evaluationTimeout,omitempty"`
+	// Verbosity contains flags for type of logging while running the Continuous and onChaos Probes
+	Verbosity string `json:"verbosity,omitempty"`
 	// StopOnFailure contains flag to stop/continue experiment execution, if probe fails
 	// it will stop the experiment execution, if provided true
 	// it will continue the experiment execution, if provided false or not provided(default case)

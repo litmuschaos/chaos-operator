@@ -329,6 +329,11 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 								},
 							},
 						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "pod-delete",
+							},
+						},
 					},
 				},
 
@@ -353,6 +358,11 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 									"args1",
 									"args2",
 								},
+							},
+						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "pod-delete",
 							},
 						},
 					},
@@ -382,6 +392,11 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 								},
 							},
 						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "pod-delete",
+							},
+						},
 					},
 				},
 
@@ -409,6 +424,11 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 								},
 							},
 						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "pod-delete",
+							},
+						},
 					},
 				},
 
@@ -421,6 +441,13 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 			engine: chaosTypes.EngineInfo{
 				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
+					Spec: v1alpha1.ChaosEngineSpec{
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "pod-delete",
+							},
+						},
+					},
 				},
 				AppExperiments: []string{"exp-1"},
 			},
@@ -435,6 +462,11 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 					},
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "pod-delete",
+							},
+						},
 					},
 				},
 
@@ -451,6 +483,11 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 					},
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "pod-delete",
+							},
+						},
 					},
 				},
 
@@ -472,6 +509,11 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 								Image: "",
 							},
 						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "pod-delete",
+							},
+						},
 					},
 				},
 
@@ -483,6 +525,15 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
+			exp := v1alpha1.ChaosExperiment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-delete",
+					Namespace: "test",
+				},
+			}
+			if err := r.Client.Create(context.TODO(), &exp); err != nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
 			_, err := r.newGoRunnerPodForCR(&mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
@@ -959,6 +1010,11 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 								Image: "fake-runner-image",
 							},
 						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
 					},
 				},
 
@@ -978,6 +1034,11 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 						Components: v1alpha1.ComponentParams{
 							Runner: v1alpha1.RunnerInfo{
 								Image: "fake-runner-image",
+							},
+						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
 							},
 						},
 					},
@@ -1002,6 +1063,11 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 								Image: "fake-runner-image",
 							},
 						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
 					},
 				},
 
@@ -1024,6 +1090,11 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 								Image: "fake-runner-image",
 							},
 						},
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
 					},
 				},
 
@@ -1036,6 +1107,13 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 			engine: chaosTypes.EngineInfo{
 				Instance: &v1alpha1.ChaosEngine{
 					ObjectMeta: metav1.ObjectMeta{},
+					Spec: v1alpha1.ChaosEngineSpec{
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
+					},
 				},
 
 				AppExperiments: []string{"exp-1"},
@@ -1051,6 +1129,11 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 					},
 					Spec: v1alpha1.ChaosEngineSpec{
 						ChaosServiceAccount: "fake-serviceAccount",
+						Experiments: []v1alpha1.ExperimentList{
+							{
+								Name: "exp-1",
+							},
+						},
 					},
 				},
 
@@ -1099,6 +1182,15 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
+			exp := v1alpha1.ChaosExperiment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exp-1",
+					Namespace: "test",
+				},
+			}
+			if err := r.Client.Create(context.TODO(), &exp); err != nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
 			reqLogger := chaosTypes.Log.WithValues()
 			err := r.checkEngineRunnerPod(&mock.engine, reqLogger)
 			if mock.isErr && err == nil {
@@ -1506,6 +1598,15 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
+			exp := v1alpha1.ChaosExperiment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exp-1",
+					Namespace: "test",
+				},
+			}
+			if err := r.Client.Create(context.TODO(), &exp); err != nil {
+				t.Fatalf("Test %q failed: expected error not to be nil", name)
+			}
 			reqLogger := chaosTypes.Log.WithValues()
 			_, err := r.reconcileForCreationAndRunning(&mock.engine, reqLogger)
 			if mock.isErr && err == nil {
@@ -1534,11 +1635,18 @@ func CreateFakeClient(t *testing.T) *ChaosEngineReconciler {
 		},
 	}
 
+	exp := &v1alpha1.ChaosExperiment{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: make(map[string]string),
+			Name:   "dummyexp",
+		},
+	}
+
 	chaosResultList := &v1alpha1.ChaosResultList{
 		Items: []v1alpha1.ChaosResult{},
 	}
 
-	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, engineR, chaosResultList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, engineR, chaosResultList, exp)
 
 	recorder := record.NewFakeRecorder(1024)
 
