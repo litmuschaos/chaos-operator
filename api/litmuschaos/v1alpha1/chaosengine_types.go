@@ -200,10 +200,18 @@ type RunnerInfo struct {
 // ExperimentList defines information about chaos experiments defined in the chaos engine
 // These experiments are "pulled" as versioned charts from a "hub"
 type ExperimentList struct {
-	//Name of the chaos experiment
+	// Name of the chaos experiment
 	Name string `json:"name"`
-	//Holds properties of an experiment listed in the engine
+	// Holds properties of an experiment listed in the engine
 	Spec ExperimentAttributes `json:"spec"`
+	// Image of the runner pod
+	Image string `json:"image,omitempty"`
+	// ImagePullPolicy for runner pod
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty"`
+	// Command for runner
+	Command []string `json:"command,omitempty"`
+	// Args of runner
+	Args []string `json:"args,omitempty"`
 }
 
 // ExperimentAttributes defines attributes of experiments
@@ -458,6 +466,12 @@ type ExperimentComponents struct {
 	StatusCheckTimeouts        StatusCheckTimeout            `json:"statusCheckTimeouts,omitempty"`
 	Resources                  corev1.ResourceRequirements   `json:"resources,omitempty"`
 	Tolerations                []corev1.Toleration           `json:"tolerations,omitempty"`
+	// SecurityContext holds security configuration that will be applied to a container
+	SecurityContext SecurityContext `json:"securityContext,omitempty"`
+	// HostPID is need to be provided in the chaos pod
+	HostPID bool `json:"hostPID,omitempty"`
+	// HostFileVolume defines the host directory/file to be mounted
+	HostFileVolumes []HostFile `json:"hostFileVolumes,omitempty"`
 }
 
 // StatusCheckTimeout contains Delay and timeouts for the status checks
