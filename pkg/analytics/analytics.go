@@ -57,5 +57,5 @@ func TriggerAnalytics() error {
 	if err := client.Send(ga.NewEvent(category, action).Label(label)); err != nil {
 		return fmt.Errorf("analytics event sending failed, error: %s", err)
 	}
-	return err
+	return nil
 }
