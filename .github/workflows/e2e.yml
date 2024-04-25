@@ -104,7 +104,7 @@ jobs:
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
-          go test components/operator/admin-mode_test.go -v -count=1
+          go test components/operator/reconcile-resiliency_test.go -v -count=1
         env:
           KUBECONFIG: /home/runner/.kube/config           
 
@@ -152,7 +152,7 @@ jobs:
         with:
           comment-id: "${{ github.event.comment.id }}"
           body: |
-            **Test Result:** No test found
+            **Test Result:** No test found try /run-e2e-all
             **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})
           reactions: eyes
         env: 
