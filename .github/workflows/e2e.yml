@@ -78,7 +78,7 @@ jobs:
       - name: Getting litmus-e2e repository
         run: |
           cd ${GOPATH}/src/github.com/litmuschaos/
-          git clone https://github.com/litmuschaos/litmus-e2e.git -b generic
+          git clone https://github.com/litmuschaos/litmus-e2e.git
 
       - name: Install LitmusChaos
         run: | 
