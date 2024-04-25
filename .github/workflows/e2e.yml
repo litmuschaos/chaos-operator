@@ -152,7 +152,7 @@ jobs:
         with:
           comment-id: "${{ github.event.comment.id }}"
           body: |
-            **Test Result:** No test found
+            **Test Result:** No test found try /run-e2e-all
             **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})
           reactions: eyes
         env: 
