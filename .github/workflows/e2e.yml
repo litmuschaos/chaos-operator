@@ -78,7 +78,7 @@ jobs:
       - name: Getting litmus-e2e repository
         run: |
           cd ${GOPATH}/src/github.com/litmuschaos/
-          git clone https://github.com/litmuschaos/litmus-e2e.git
+          git clone https://github.com/uditgaurav/litmus-e2e.git -b fix_test_cases
 
       - name: Install LitmusChaos
         run: | 
@@ -95,7 +95,7 @@ jobs:
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
-          go test operator/admin-mode_test.go -v -count=1
+          go test components/operator/admin-mode_test.go -v -count=1
         env:
           KUBECONFIG: /home/runner/.kube/config           
 
@@ -104,7 +104,7 @@ jobs:
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
-          go test operator/reconcile-resiliency_test.go -v -count=1
+          go test components/operator/admin-mode_test.go -v -count=1
         env:
           KUBECONFIG: /home/runner/.kube/config           
 
