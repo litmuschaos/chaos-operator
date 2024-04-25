@@ -91,7 +91,7 @@ jobs:
           KUBECONFIG: /home/runner/.kube/config 
  
       - name: Run Admin mode test
-        if: startsWith(github.event.comment.body, '/run-e2e-admin-mode') || startsWith(github.event.comment.body, '/run-e2e-all')
+        if: startsWith(github.event.comment.body, '/run-e2e-admin-mode') || startsWith(github.event.comment.body, '/run-e2e-all') || startsWith(github.event.comment.body, '/run-e2e')
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
@@ -100,7 +100,7 @@ jobs:
           KUBECONFIG: /home/runner/.kube/config           
 
       - name: Run Reconcile Resiliency test
-        if: startsWith(github.event.comment.body, '/run-e2e-reconcile-resiliency') || startsWith(github.event.comment.body, '/run-e2e-all')
+        if: startsWith(github.event.comment.body, '/run-e2e-reconcile-resiliency') || startsWith(github.event.comment.body, '/run-e2e-all') || startsWith(github.event.comment.body, '/run-e2e')
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
@@ -111,7 +111,7 @@ jobs:
       - name: Check the test run
         if: |
          startsWith(github.event.comment.body, '/run-e2e-admin-mode') || startsWith(github.event.comment.body, '/run-e2e-reconcile-resiliency') ||
-         startsWith(github.event.comment.body, '/run-e2e-all')
+         startsWith(github.event.comment.body, '/run-e2e-all') || startsWith(github.event.comment.body, '/run-e2e')
         run: |
           echo ::set-env name=TEST_RUN::true
         env:
