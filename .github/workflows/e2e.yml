@@ -65,8 +65,10 @@ jobs:
  
       - name: Configuring and testing kind Installation
         run: |
-          kubectl cluster-info --context kind-kind
-          kind get kubeconfig --internal >$HOME/.kube/config
+          kubectl cluster-info
+          kubectl get pods -n kube-system
+          echo "current-context:" $(kubectl config current-context)
+          echo "environment-kubeconfig:" ${KUBECONFIG}
           kubectl get nodes
 
       - name: Load image on the nodes of the cluster
