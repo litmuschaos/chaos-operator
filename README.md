@@ -8,7 +8,6 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2597079b1b5240d3866a6deb4112a2f2)](https://www.codacy.com/manual/litmuschaos/chaos-operator?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=litmuschaos/chaos-operator&amp;utm_campaign=Badge_Grade)
 [![Go Report Card](https://goreportcard.com/badge/github.com/litmuschaos/chaos-operator)](https://goreportcard.com/report/github.com/litmuschaos/chaos-operator)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5290/badge)](https://bestpractices.coreinfrastructure.org/projects/5290)
-[![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-operator?branch=master)](https://bettercodehub.com/)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-operator.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-operator?ref=badge_shield)
 [![codecov](https://codecov.io/gh/litmuschaos/chaos-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/litmuschaos/chaos-operator)
 [![YouTube Channel](https://img.shields.io/badge/YouTube-Subscribe-red)](https://www.youtube.com/channel/UCa57PMqmz_j0wnteRa9nCaw)
