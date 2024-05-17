@@ -22,6 +22,9 @@ import (
 
 // RemoveString removes a particular string from a slice of strings
 func RemoveString(slice []string, s string) (result []string) {
+	if len(slice) == 0 {
+		return
+	}
 	for _, item := range slice {
 		if item == s {
 			continue
@@ -33,7 +36,7 @@ func RemoveString(slice []string, s string) (result []string) {
 
 // SetEnv sets the env inside envDetails struct
 func (envDetails *ENVDetails) SetEnv(key, value string) *ENVDetails {
-	if value != "" {
+	if key != "" && value != "" {
 		envDetails.ENV = append(envDetails.ENV, corev1.EnvVar{
 			Name:  key,
 			Value: value,

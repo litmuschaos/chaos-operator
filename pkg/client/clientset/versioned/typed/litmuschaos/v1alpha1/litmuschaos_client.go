@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -31,7 +31,7 @@ type LitmuschaosV1alpha1Interface interface {
 	ChaosResultsGetter
 }
 
-// LitmuschaosV1alpha1Client is used to interact with features provided by the litmuschaos.io group.
+// LitmuschaosV1alpha1Client is used to interact with features provided by the litmuschaos group.
 type LitmuschaosV1alpha1Client struct {
 	restClient rest.Interface
 }

@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/setup-go@v2
         with:
-          go-version: '^1.13.1'
+          go-version: 1.20.0
  
       - name: Setting up GOPATH 
         run: |
@@ -61,12 +61,14 @@ jobs:
       - name: Installing Prerequisites (KinD Cluster)
         uses: engineerd/setup-kind@v0.5.0
         with:
-            version: "v0.7.0"
+            version: "v0.22.0"
  
       - name: Configuring and testing kind Installation
         run: |
-          kubectl cluster-info --context kind-kind
-          kind get kubeconfig --internal >$HOME/.kube/config
+          kubectl cluster-info
+          kubectl get pods -n kube-system
+          echo "current-context:" $(kubectl config current-context)
+          echo "environment-kubeconfig:" ${KUBECONFIG}
           kubectl get nodes
 
       - name: Load image on the nodes of the cluster
@@ -76,7 +78,7 @@ jobs:
       - name: Getting litmus-e2e repository
         run: |
           cd ${GOPATH}/src/github.com/litmuschaos/
-          git clone https://github.com/litmuschaos/litmus-e2e.git -b generic
+          git clone https://github.com/litmuschaos/litmus-e2e.git -b master
 
       - name: Install LitmusChaos
         run: | 
@@ -93,7 +95,7 @@ jobs:
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
-          go test operator/admin-mode_test.go -v -count=1
+          go test components/operator/admin-mode_test.go -v -count=1
         env:
           KUBECONFIG: /home/runner/.kube/config           
 
@@ -102,7 +104,7 @@ jobs:
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
-          go test operator/reconcile-resiliency_test.go -v -count=1
+          go test components/operator/reconcile-resiliency_test.go -v -count=1
         env:
           KUBECONFIG: /home/runner/.kube/config           
 
@@ -150,7 +152,7 @@ jobs:
         with:
           comment-id: "${{ github.event.comment.id }}"
           body: |
-            **Test Result:** No test found
+            **Test Result:** No test found try /run-e2e-all
             **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})
           reactions: eyes
         env: 

@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,32 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// NOTE: Boilerplate only.  Ignore this file.
-
-// Package v1alpha1 contains API Schema definitions for the litmuschaos v1alpha1 API group
-// +k8s:deepcopy-gen=package,register
+// Package v1alpha1 contains API Schema definitions for the litmuschaos.io v1alpha1 API group
+// +kubebuilder:object:generate=true
 // +groupName=litmuschaos.io
 package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
-
-// GroupName is the name of api group for the custom resources
-const GroupName = "litmuschaos.io"
-
-// GroupVersion is the version of api group for the custom resources
-const GroupVersion = "v1alpha1"
 
 var (
 	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: GroupVersion}
+	SchemeGroupVersion = schema.GroupVersion{Group: "litmuschaos.io", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
 
-	// AddToScheme collects functions that add things to a scheme.
+	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 

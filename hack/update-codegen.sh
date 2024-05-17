@@ -23,14 +23,14 @@ if [[ -z $GOPATH ]]; then
 fi
 
 if [[ ! -d "${GOPATH}/src/k8s.io/code-generator" ]]; then
-  echo ">>>>>> k8s.io/code-generator of v0.15.12 missing from GOPATH"
-  echo ">>>>>> Cloning https://github.com/kubernetes/code-generator with tag v0.15.12 under '${GOPATH}/src/k8s.io'"
-  git clone -b v0.15.12 https://github.com/kubernetes/code-generator ${GOPATH}/src/k8s.io/code-generator
+  echo ">>>>>> k8s.io/code-generator of v0.20.0 missing from GOPATH"
+  echo ">>>>>> Cloning https://github.com/kubernetes/code-generator with tag v0.20.0 under '${GOPATH}/src/k8s.io'"
+  git clone -b v0.20.0 https://github.com/kubernetes/code-generator ${GOPATH}/src/k8s.io/code-generator
 fi
 # Switching to v0.15.12 if already cloned
-git --git-dir=${GOPATH}/src/k8s.io/code-generator/.git  --work-tree=${GOPATH}/src/k8s.io/code-generator checkout v0.15.12
+git --git-dir=${GOPATH}/src/k8s.io/code-generator/.git  --work-tree=${GOPATH}/src/k8s.io/code-generator checkout v0.20.0
 
 ${GOPATH}/src/k8s.io/code-generator/generate-groups.sh client,lister,informer \
-  github.com/litmuschaos/chaos-operator/pkg/client github.com/litmuschaos/chaos-operator/pkg/apis \
-  litmuschaos:v1alpha1 
+  github.com/litmuschaos/chaos-operator/pkg/client github.com/litmuschaos/chaos-operator/api \
+  litmuschaos:v1alpha1
 

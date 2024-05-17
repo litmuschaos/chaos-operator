@@ -19,9 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	versioned "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/litmuschaos/chaos-operator/pkg/client/informers/externalversions/internalinterfaces"
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/listers/litmuschaos/v1alpha1"
@@ -61,13 +62,13 @@ func NewFilteredChaosResultInformer(client versioned.Interface, namespace string
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.LitmuschaosV1alpha1().ChaosResults(namespace).List(options)
+				return client.LitmuschaosV1alpha1().ChaosResults(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.LitmuschaosV1alpha1().ChaosResults(namespace).Watch(options)
+				return client.LitmuschaosV1alpha1().ChaosResults(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&litmuschaosv1alpha1.ChaosResult{},

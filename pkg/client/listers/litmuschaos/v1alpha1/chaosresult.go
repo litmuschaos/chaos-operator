@@ -19,15 +19,17 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 )
 
 // ChaosResultLister helps list ChaosResults.
+// All objects returned here must be treated as read-only.
 type ChaosResultLister interface {
 	// List lists all ChaosResults in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.ChaosResult, err error)
 	// ChaosResults returns an object that can list and get ChaosResults.
 	ChaosResults(namespace string) ChaosResultNamespaceLister
@@ -58,10 +60,13 @@ func (s *chaosResultLister) ChaosResults(namespace string) ChaosResultNamespaceL
 }
 
 // ChaosResultNamespaceLister helps list and get ChaosResults.
+// All objects returned here must be treated as read-only.
 type ChaosResultNamespaceLister interface {
 	// List lists all ChaosResults in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.ChaosResult, err error)
 	// Get retrieves the ChaosResult from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.ChaosResult, error)
 	ChaosResultNamespaceListerExpansion
 }

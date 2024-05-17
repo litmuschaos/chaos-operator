@@ -35,15 +35,21 @@ spec:
           image: litmuschaos/chaos-operator:ci
           command:
           - chaos-operator
+          args:
+          - -leader-elect=true
           imagePullPolicy: IfNotPresent
           env:
             - name: CHAOS_RUNNER_IMAGE
-              value: "litmuschaos/chaos-runner:ci"
+              value: "litmuschaos.docker.scarf.sh/litmuschaos/chaos-runner:ci"
             - name: WATCH_NAMESPACE
               value: ""
             - name: POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: OPERATOR_NAME
               value: "chaos-operator"

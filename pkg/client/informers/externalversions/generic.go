@@ -21,7 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -52,7 +52,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=litmuschaos.io, Version=v1alpha1
+	// Group=litmuschaos, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("chaosengines"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Litmuschaos().V1alpha1().ChaosEngines().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("chaosexperiments"):

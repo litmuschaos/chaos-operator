@@ -3,3 +3,4 @@ build/_output
 *.orig
 .idea/
 coverage.txt
+bin

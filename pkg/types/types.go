@@ -32,47 +32,29 @@ limitations under the License.
 package types
 
 import (
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-
-	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	"github.com/litmuschaos/chaos-operator/pkg/controller/utils"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/pkg/utils"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
-	// AppLabelKey contains the application label key
-	AppLabelKey string
-
-	// DefaultAnnotationCheck contains the default value (true) of the annotationCheck
-	DefaultAnnotationCheck = "false"
-
-	// AppLabelValue contains the application label value
-	AppLabelValue string
 
 	// Log with default name ie: controller_chaosengine
-	Log = logf.Log.WithName("controller_chaosengine")
+	Log = log.Log.WithName("controller_chaosengine")
 
 	// DefaultChaosRunnerImage contains the default value of runner resource
 	DefaultChaosRunnerImage = "litmuschaos/chaos-runner:latest"
 
+	// ResultCRDName contains name of the chaosresult CRD
 	ResultCRDName = "chaosresults.litmuschaos.io"
 )
 
-// ApplicationInfo contains the chaos details for target application
-type ApplicationInfo struct {
-	Namespace          string
-	Label              string
-	ExperimentList     []litmuschaosv1alpha1.ExperimentList
-	ServiceAccountName string
-	Kind               string
-}
-
-//EngineInfo Related information
+// EngineInfo Related information
 type EngineInfo struct {
 	Instance       *litmuschaosv1alpha1.ChaosEngine
-	AppInfo        *ApplicationInfo
-	ConfigMaps     []v1alpha1.ConfigMap
-	Secrets        []v1alpha1.Secret
+	AppInfo        litmuschaosv1alpha1.ApplicationParams
+	Selectors      *litmuschaosv1alpha1.Selector
+	Targets        string
 	VolumeOpts     utils.VolumeOpts
 	AppExperiments []string
 }

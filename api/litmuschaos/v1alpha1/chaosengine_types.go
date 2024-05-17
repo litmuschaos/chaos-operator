@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,14 +22,14 @@ import (
 )
 
 // ChaosEngineSpec defines the desired state of ChaosEngine
-// +k8s:openapi-gen=true
 // ChaosEngineSpec describes a user-facing custom resource which is used by developers
 // to create a chaos profile
 type ChaosEngineSpec struct {
-	//Appinfo contains deployment details of AUT
+	//Appinfo contains the AUT details
 	Appinfo ApplicationParams `json:"appinfo,omitempty"`
-	//AnnotationCheck defines whether annotation check is allowed or not. It can be true or false
-	AnnotationCheck string `json:"annotationCheck,omitempty"`
+	//DefaultHealthCheck defines whether default health checks should be executed or not. It can be true or false
+	// default value is true
+	DefaultHealthCheck bool `json:"defaultHealthCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Components contains the image, imagePullPolicy, arguments, and commands of runner
@@ -44,6 +44,8 @@ type ChaosEngineSpec struct {
 	EngineState EngineState `json:"engineState"`
 	// TerminationGracePeriodSeconds contains terminationGracePeriod for the chaos resources
 	TerminationGracePeriodSeconds int64 `json:"terminationGracePeriodSeconds,omitempty"`
+	// Selectors contains the target application details
+	Selectors *Selector `json:"selectors,omitempty"`
 }
 
 // EngineState provides interface for all supported strings in spec.EngineState
@@ -98,8 +100,6 @@ const (
 )
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
-// +k8s:openapi-gen=true
-
 // ChaosEngineStatus derives information about status of individual experiments
 type ChaosEngineStatus struct {
 	//EngineStatus is a typed string to support limited values for ChaosEngine Status
@@ -119,10 +119,52 @@ type ApplicationParams struct {
 	AppKind string `json:"appkind,omitempty"`
 }
 
+type Selector struct {
+	Workloads []Workload `json:"workloads,omitempty"`
+	Pods      []Pod      `json:"pods,omitempty"`
+}
+
+type WorkloadKind string
+
+const (
+	WorkloadDeployment       WorkloadKind = "deployment"
+	WorkloadStatefulSet      WorkloadKind = "statefulset"
+	WorkloadDaemonSet        WorkloadKind = "daemonSet"
+	WorkloadDeploymentConfig WorkloadKind = "deploymentconfig"
+	WorkloadRollout          WorkloadKind = "rollout"
+)
+
+type Workload struct {
+	Kind      WorkloadKind `json:"kind"`
+	Namespace string       `json:"namespace"`
+	Names     string       `json:"names,omitempty"`
+	Labels    string       `json:"labels,omitempty"`
+}
+
+type Pod struct {
+	Namespace string `json:"namespace"`
+	Names     string `json:"names"`
+}
+
 // ComponentParams defines information about the runner
 type ComponentParams struct {
-	//Contains informations of the the runner pod
+	//Contains information of the runner pod
 	Runner RunnerInfo `json:"runner"`
+	// Contains information of the sidecar
+	Sidecar []Sidecar `json:"sidecar,omitempty"`
+}
+
+type Sidecar struct {
+	//Image of the sidecar container
+	Image string `json:"image"`
+	//ImagePullPolicy of the sidecar container
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+	// Secrets for the sidecar container
+	Secrets []Secret `json:"secrets,omitempty"`
+	// EnvFrom for the sidecar container
+	EnvFrom []corev1.EnvFromSource `json:"envFrom"`
+	// ENV contains ENV passed to the sidecar container
+	ENV []corev1.EnvVar `json:"env,omitempty"`
 }
 
 // RunnerInfo defines the information of the runnerinfo pod
@@ -141,6 +183,8 @@ type RunnerInfo struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// Runner Annotations that needs to be provided in the pod for pod that is getting created
 	RunnerAnnotation map[string]string `json:"runnerAnnotations,omitempty"`
+	// RunnerLabels labels for the runner pod
+	RunnerLabels map[string]string `json:"runnerLabels,omitempty"`
 	// NodeSelector for runner pod
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// ConfigMaps for runner pod
@@ -177,22 +221,24 @@ type ExperimentAttributes struct {
 // ProbeAttributes contains details of probe, which can be applied on the experiments
 type ProbeAttributes struct {
 	// Name of probe
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// Type of probe
-	Type string `json:"type,omitempty"`
+	Type string `json:"type"`
 	// inputs needed for the k8s probe
-	K8sProbeInputs K8sProbeInputs `json:"k8sProbe/inputs,omitempty"`
+	K8sProbeInputs *K8sProbeInputs `json:"k8sProbe/inputs,omitempty"`
 	// inputs needed for the http probe
-	HTTPProbeInputs HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
+	HTTPProbeInputs *HTTPProbeInputs `json:"httpProbe/inputs,omitempty"`
 	// inputs needed for the cmd probe
-	CmdProbeInputs CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
+	CmdProbeInputs *CmdProbeInputs `json:"cmdProbe/inputs,omitempty"`
 	// inputs needed for the prometheus probe
-	PromProbeInputs PromProbeInputs `json:"promProbe/inputs,omitempty"`
+	PromProbeInputs *PromProbeInputs `json:"promProbe/inputs,omitempty"`
+	// inputs needed for the SLO probe
+	SLOProbeInputs *SLOProbeInputs `json:"sloProbe/inputs,omitempty"`
 	// RunProperty contains timeout, retry and interval for the probe
-	RunProperties RunProperty `json:"runProperties,omitempty"`
+	RunProperties RunProperty `json:"runProperties"`
 	// mode for k8s probe
 	// it can be SOT, EOT, Edge
-	Mode string `json:"mode,omitempty"`
+	Mode string `json:"mode"`
 	// Data contains the manifest/data for the resource, which need to be created
 	// it supported for create operation only
 	Data string `json:"data,omitempty"`
@@ -203,9 +249,11 @@ type K8sProbeInputs struct {
 	// group of the resource
 	Group string `json:"group,omitempty"`
 	// apiversion of the resource
-	Version string `json:"version,omitempty"`
+	Version string `json:"version"`
 	// kind of resource
-	Resource string `json:"resource,omitempty"`
+	Resource string `json:"resource"`
+	// ResourceNames to get the resources using their list of comma separated names
+	ResourceNames string `json:"resourceNames,omitempty"`
 	// namespace of the resource
 	Namespace string `json:"namespace,omitempty"`
 	// fieldselector to get the resource using fields selector
@@ -214,30 +262,107 @@ type K8sProbeInputs struct {
 	LabelSelector string `json:"labelSelector,omitempty"`
 	// Operation performed by the k8s probe
 	// it can be create, delete, present, absent
-	Operation string `json:"operation,omitempty"`
+	Operation string `json:"operation"`
 }
 
-//CmdProbeInputs contains all the inputs required for cmd probe
+// CmdProbeInputs contains all the inputs required for cmd probe
 type CmdProbeInputs struct {
 	// Command need to be executed for the probe
-	Command string `json:"command,omitempty"`
+	Command string `json:"command"`
 	// Comparator check for the correctness of the probe output
-	Comparator ComparatorInfo `json:"comparator,omitempty"`
+	Comparator ComparatorInfo `json:"comparator"`
 	// The source where we have to run the command
-	// It can be a image or inline(inside experiment itself)
-	Source string `json:"source,omitempty"`
+	// It will run in inline(inside experiment itself) mode if source is nil
+	Source *SourceDetails `json:"source,omitempty"`
 }
 
-//PromProbeInputs contains all the inputs required for prometheus probe
+// SourceDetails contains source details of the cmdProbe
+type SourceDetails struct {
+	// Image for the source pod
+	Image string `json:"image"`
+	// HostNetwork define the hostNetwork of the external pod
+	// it supports boolean values and default value is false
+	HostNetwork bool `json:"hostNetwork,omitempty"`
+	// InheritInputs defined to inherit experiment pod attributes(ENV, volumes, and volumeMounts) into probe pod
+	// it supports boolean values and default value is false
+	InheritInputs bool `json:"inheritInputs,omitempty"`
+	// Args for the source pod
+	Args []string `json:"args,omitempty"`
+	// ENVList contains ENV passed to the source pod
+	ENVList []corev1.EnvVar `json:"env,omitempty"`
+	// Labels for the source pod
+	Labels map[string]string `json:"labels,omitempty"`
+	// Annotations for the source pod
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Command for the source pod
+	Command []string `json:"command,omitempty"`
+	// ImagePullPolicy for the source pod
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+	// Privileged for the source pod
+	Privileged bool `json:"privileged,omitempty"`
+	// NodeSelector for the source pod
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// Tolerations for the source pod
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+	// Volumes for the source pod
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+	// VolumesMount for the source pod
+	VolumesMount []corev1.VolumeMount `json:"volumeMount,omitempty"`
+	//ImagePullSecrets for source pod
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+}
+
+// PromProbeInputs contains all the inputs required for prometheus probe
 type PromProbeInputs struct {
 	// Endpoint for the prometheus probe
-	Endpoint string `json:"endpoint,omitempty"`
-	// Query to get promethus metrices
+	Endpoint string `json:"endpoint"`
+	// Query to get promethus metrics
 	Query string `json:"query,omitempty"`
 	// QueryPath contains filePath, which contains prometheus query
 	QueryPath string `json:"queryPath,omitempty"`
 	// Comparator check for the correctness of the probe output
-	Comparator ComparatorInfo `json:"comparator,omitempty"`
+	Comparator ComparatorInfo `json:"comparator"`
+}
+
+// SLOProbeInputs contains all the inputs required for SLO probe
+type SLOProbeInputs struct {
+	// PlatformEndpoint for the monitoring service endpoint
+	PlatformEndpoint string `json:"platformEndpoint"`
+	// SLOIdentifier for fetching the details of the SLO
+	SLOIdentifier string `json:"sloIdentifier"`
+	// InsecureSkipVerify flag to skip certificate checks
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
+	// EvaluationWindow is the time period for which the metrics will be evaluated
+	EvaluationWindow *EvaluationWindow `json:"evaluationWindow,omitempty"`
+	// SLOSourceMetadata consists of required metadata details to fetch metric data
+	SLOSourceMetadata SLOSourceMetadata `json:"sloSourceMetadata"`
+	// Comparator check for the correctness of the probe output
+	Comparator ComparatorInfo `json:"comparator"`
+}
+
+// EvaluationWindow is the time period for which the SLO probe will work
+type EvaluationWindow struct {
+	// Start time of evaluation
+	EvaluationStartTime int `json:"evaluationStartTime,omitempty"`
+	// End time of evaluation
+	EvaluationEndTime int `json:"evaluationEndTime,omitempty"`
+}
+
+type SLOSourceMetadata struct {
+	// APITokenSecret for authenticating with the platform service
+	APITokenSecret string `json:"apiTokenSecret"`
+	// Scope required for fetching details
+	Scope Identifier `json:"scope"`
+}
+
+// Identifier required for fetching details from the Platform APIs
+type Identifier struct {
+	// AccountIdentifier for account ID
+	AccountIdentifier string `json:"accountIdentifier"`
+	// OrgIdentifier for organization ID
+	OrgIdentifier string `json:"orgIdentifier"`
+	// ProjectIdentifier for project ID
+	ProjectIdentifier string `json:"projectIdentifier"`
 }
 
 // ComparatorInfo contains the comparator details
@@ -248,36 +373,34 @@ type ComparatorInfo struct {
 	// Criteria for matching data
 	// it supports >=, <=, ==, >, <, != for int and float
 	// it supports equal, notEqual, contains for string
-	Criteria string `json:"criteria,omitempty"`
+	Criteria string `json:"criteria"`
 	// Value contains relative value for criteria
-	Value string `json:"value,omitempty"`
+	Value string `json:"value"`
 }
 
-//HTTPProbeInputs contains all the inputs required for http probe
+// HTTPProbeInputs contains all the inputs required for http probe
 type HTTPProbeInputs struct {
 	// URL which needs to curl, to check the status
-	URL string `json:"url,omitempty"`
+	URL string `json:"url"`
 	// InsecureSkipVerify flag to skip certificate checks
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// Method define the http method, it can be get or post
-	Method HTTPMethod `json:"method,omitempty"`
-	// ResponseTimeout contains the http response timeout
-	ResponseTimeout int `json:"responseTimeout,omitempty"`
+	Method HTTPMethod `json:"method"`
 }
 
 // HTTPMethod define the http method details
 type HTTPMethod struct {
-	Get  GetMethod  `json:"get,omitempty"`
-	Post PostMethod `json:"post,omitempty"`
+	Get  *GetMethod  `json:"get,omitempty"`
+	Post *PostMethod `json:"post,omitempty"`
 }
 
 // GetMethod define the http Get method
 type GetMethod struct {
 	// Criteria for matching data
 	// it supports  == != operations
-	Criteria string `json:"criteria,omitempty"`
+	Criteria string `json:"criteria"`
 	// Value contains relative value for criteria
-	ResponseCode string `json:"responseCode,omitempty"`
+	ResponseCode string `json:"responseCode"`
 }
 
 // PostMethod define the http Post method
@@ -290,24 +413,33 @@ type PostMethod struct {
 	BodyPath string `json:"bodyPath,omitempty"`
 	// Criteria for matching data
 	// it supports  == != operations
-	Criteria string `json:"criteria,omitempty"`
+	Criteria string `json:"criteria"`
 	// Value contains relative value for criteria
-	ResponseCode string `json:"responseCode,omitempty"`
+	ResponseCode string `json:"responseCode"`
 }
 
-//RunProperty contains timeout, retry and interval for the probe
+// RunProperty contains timeout, retry and interval for the probe
 type RunProperty struct {
 	//ProbeTimeout contains timeout for the probe
-	ProbeTimeout int `json:"probeTimeout,omitempty"`
-	// Interval contains the inverval for the probe
-	Interval int `json:"interval,omitempty"`
+	ProbeTimeout string `json:"probeTimeout"`
+	// Interval contains the interval for the probe
+	Interval string `json:"interval"`
 	// Retry contains the retry count for the probe
 	Retry int `json:"retry,omitempty"`
+	// Attempt contains the total attempt count for the probe
+	Attempt int `json:"attempt,omitempty"`
 	//ProbePollingInterval contains time interval, for which continuous probe should be sleep
 	// after each iteration
-	ProbePollingInterval int `json:"probePollingInterval,omitempty"`
+	ProbePollingInterval string `json:"probePollingInterval,omitempty"`
 	//InitialDelaySeconds time interval for which probe will wait before run
 	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`
+	//InitialDelay time interval for which probe will wait before run
+	InitialDelay string `json:"initialDelay,omitempty"`
+	// EvaluationTimeout is the timeout window in which the SLO metrics
+	// will be fetched and will be evaluated
+	EvaluationTimeout string `json:"evaluationTimeout,omitempty"`
+	// Verbosity contains flags for type of logging while running the Continuous and onChaos Probes
+	Verbosity string `json:"verbosity,omitempty"`
 	// StopOnFailure contains flag to stop/continue experiment execution, if probe fails
 	// it will stop the experiment execution, if provided true
 	// it will continue the experiment execution, if provided false or not provided(default case)
@@ -353,10 +485,10 @@ type ExperimentStatuses struct {
 
 // +genclient
 // +resource:path=chaosengine
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
 
 // ChaosEngine is the Schema for the chaosengines API
-// +k8s:openapi-gen=true
 type ChaosEngine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -365,8 +497,9 @@ type ChaosEngine struct {
 	Status ChaosEngineStatus `json:"status,omitempty"`
 }
 
+//+kubebuilder:object:root=true
+
 // ChaosEngineList contains a list of ChaosEngine
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ChaosEngineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
