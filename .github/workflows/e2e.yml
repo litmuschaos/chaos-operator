@@ -2,13 +2,13 @@ name: ChaosOperator-E2E-pipeline
 on:
   issue_comment:
     types: [created]
- 
+
 jobs:
   Tests:
     if: contains(github.event.comment.html_url, '/pull/') && startsWith(github.event.comment.body, '/run-e2e')
     runs-on: ubuntu-latest
     steps:
- 
+
       - name: Notification for e2e Start
         uses: peter-evans/create-or-update-comment@v1
         with:
@@ -19,13 +19,13 @@ jobs:
 
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.20.0
- 
-      - name: Setting up GOPATH 
+          go-version: 1.22
+
+      - name: Setting up GOPATH
         run: |
           echo ::set-env name=GOPATH::${GITHUB_WORKSPACE}/go
         env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: true          
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
       #Using the last commit id of pull request
       - uses: octokit/request-action@v2.x
@@ -36,20 +36,20 @@ jobs:
           pull_number: ${{ github.event.issue.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
- 
+
       - name: set commit to output
         id: getcommit
         run: | 
            prsha=$(echo $response | jq '.[-1].sha'  | tr -d '"')
-           echo "::set-output name=sha::$prsha" 
-        env: 
+           echo "::set-output name=sha::$prsha"
+        env:
           response:  ${{ steps.get_PR_commits.outputs.data }}
-          
+
       - uses: actions/checkout@v2
         with:
           ref: ${{steps.getcommit.outputs.sha}}
           path: go/src/github.com/litmuschaos/chaos-operator
-          
+
       - name: Build docker image
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
@@ -62,7 +62,7 @@ jobs:
         uses: engineerd/setup-kind@v0.5.0
         with:
             version: "v0.22.0"
- 
+
       - name: Configuring and testing kind Installation
         run: |
           kubectl cluster-info
@@ -88,8 +88,8 @@ jobs:
         env:
           OPERATOR_IMAGE: litmuschaos/chaos-operator:ci
           IMAGE_PULL_POLICY: IfNotPresent
-          KUBECONFIG: /home/runner/.kube/config 
- 
+          KUBECONFIG: /home/runner/.kube/config
+
       - name: Run Admin mode test
         if: startsWith(github.event.comment.body, '/run-e2e-admin-mode') || startsWith(github.event.comment.body, '/run-e2e-all')
         run: |
@@ -97,7 +97,7 @@ jobs:
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
           go test components/operator/admin-mode_test.go -v -count=1
         env:
-          KUBECONFIG: /home/runner/.kube/config           
+          KUBECONFIG: /home/runner/.kube/config
 
       - name: Run Reconcile Resiliency test
         if: startsWith(github.event.comment.body, '/run-e2e-reconcile-resiliency') || startsWith(github.event.comment.body, '/run-e2e-all')
@@ -106,7 +106,7 @@ jobs:
           cd ${GOPATH}/src/github.com/litmuschaos/litmus-e2e
           go test components/operator/reconcile-resiliency_test.go -v -count=1
         env:
-          KUBECONFIG: /home/runner/.kube/config           
+          KUBECONFIG: /home/runner/.kube/config
 
       - name: Check the test run
         if: |
@@ -115,7 +115,7 @@ jobs:
         run: |
           echo ::set-env name=TEST_RUN::true
         env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: true          
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
       - name: Check for all the jobs are succeeded
         if: ${{ success() && env.TEST_RUN == 'true' }}
@@ -125,11 +125,11 @@ jobs:
           body: |  
             **Test Result:** All tests are passed
             **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})                        
-           
-          reactions: hooray         
-        env: 
+
+          reactions: hooray
+        env:
           RUN_ID: ${{ github.run_id }}
- 
+
       - name: Check for any job failed
         if: ${{ failure() }}
         uses: peter-evans/create-or-update-comment@v1
@@ -137,15 +137,15 @@ jobs:
           comment-id: "${{ github.event.comment.id }}"
           body: |
             **Test Failed:** Some tests are failed please check
-            **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})            
+            **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})
           reactions: confused
-        env: 
+        env:
           RUN_ID: ${{ github.run_id }}
- 
+
       - name: Deleting KinD cluster
         if: ${{ always() }}
         run: kind delete cluster
- 
+
       - name: Check if any test ran or not
         if: env.TEST_RUN != 'true'
         uses: peter-evans/create-or-update-comment@v1
@@ -155,5 +155,5 @@ jobs:
             **Test Result:** No test found try /run-e2e-all
             **Logs:** [${{ env.RUN_ID }}](https://github.com/litmuschaos/chaos-operator/actions/runs/${{ env.RUN_ID }})
           reactions: eyes
-        env: 
+        env:
           RUN_ID: ${{ github.run_id }}
