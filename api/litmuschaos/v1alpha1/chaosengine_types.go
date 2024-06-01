@@ -208,8 +208,6 @@ type ExperimentList struct {
 
 // ExperimentAttributes defines attributes of experiments
 type ExperimentAttributes struct {
-	//Execution priority of the chaos experiment
-	Rank uint32 `json:"rank"`
 	// It contains env, configmaps, secrets, experimentImage, node selector, custom experiment annotation
 	// which can be provided or overridden from the chaos engine
 	Components ExperimentComponents `json:"components,omitempty"`
