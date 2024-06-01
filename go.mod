@@ -1,6 +1,6 @@
 module github.com/litmuschaos/chaos-operator
 
-go 1.20
+go 1.22
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
