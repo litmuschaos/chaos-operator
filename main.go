@@ -17,27 +17,27 @@ limitations under the License.
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
-	"github.com/litmuschaos/chaos-operator/pkg/analytics"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"os"
 	"runtime"
 	"strings"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
+	litmuschaosiov1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/controllers"
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
+	"github.com/litmuschaos/chaos-operator/pkg/telemetry"
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	schemeruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	litmuschaosiov1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
-	"github.com/litmuschaos/chaos-operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -109,6 +109,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := ctrl.SetupSignalHandler()
+
+	// Set up Observability.
+	shutdown, err := telemetry.InitOTelSDK(ctx)
+	if err != nil {
+		setupLog.Error(err, "unable to set up observability")
+		os.Exit(1)
+	}
+
+	// Handle shutdown properly so nothing leaks.
+	defer func() {
+		err = errors.Join(err, shutdown(ctx))
+	}()
+
 	if err = (&controllers.ChaosEngineReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
@@ -129,7 +143,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
