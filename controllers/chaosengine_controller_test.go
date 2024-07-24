@@ -1621,7 +1621,7 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 
 func CreateFakeClient(t *testing.T) *ChaosEngineReconciler {
 
-	fakeClient := litmusFakeClientset.NewFakeClient()
+	fakeClient := litmusFakeClientset.NewClientBuilder().WithRuntimeObjects().Build()
 	if fakeClient == nil {
 		fmt.Println("litmusClient is not created")
 	}
