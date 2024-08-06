@@ -17,13 +17,15 @@ RUN go env
 RUN CGO_ENABLED=0 go build -buildvcs=false -o /output/chaos-operator -v ./main.go
 
 # Packaging stage
-# Image source: https://github.com/litmuschaos/test-tools/blob/master/custom/hardened-alpine/infra/Dockerfile
-# The base image is non-root (have litmus user) with default litmus directory.
-FROM litmuschaos/infra-alpine
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.4
 
 LABEL maintainer="LitmusChaos"
 
 ENV OPERATOR=/usr/local/bin/chaos-operator
+
 COPY --from=builder /output/chaos-operator ${OPERATOR}
+RUN chown 65534:0 ${OPERATOR} && chmod 755 ${OPERATOR}
+
+USER 65534
 
 ENTRYPOINT ["/usr/local/bin/chaos-operator"]
