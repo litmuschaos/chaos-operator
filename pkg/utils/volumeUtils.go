@@ -71,7 +71,7 @@ func BuildVolumeBuilderForConfigMaps(configMaps []v1alpha1.ConfigMap) []*volume.
 	}
 	for _, v := range configMaps {
 		volumeBuilder := volume.NewBuilder().
-			WithConfigMap(v.Name)
+			WithConfigMap(v.Name, nil)
 		volumeBuilderList = append(volumeBuilderList, volumeBuilder)
 	}
 	return volumeBuilderList
@@ -85,7 +85,7 @@ func BuildVolumeBuilderForSecrets(secrets []v1alpha1.Secret) []*volume.Builder {
 	}
 	for _, v := range secrets {
 		volumeBuilder := volume.NewBuilder().
-			WithSecret(v.Name)
+			WithSecret(v.Name, nil)
 		volumeBuilderList = append(volumeBuilderList, volumeBuilder)
 	}
 	return volumeBuilderList
