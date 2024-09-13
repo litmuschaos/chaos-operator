@@ -11,7 +11,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.20.0
+          go-version: 1.22
 
       # Checkout to the latest commit
       # On specific directory/path
@@ -26,7 +26,7 @@ jobs:
 
       - name: unused-package check
         run: make unused-package-check
-        
+
   trivy:
     needs: pre-checks
     runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
       - name: Build an image from Dockerfile
         run: |
           docker build -f build/Dockerfile -t docker.io/litmuschaos/chaos-operator:${{ github.sha }} . --build-arg TARGETPLATFORM=linux/amd64
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -47,7 +47,7 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'        
+          severity: 'CRITICAL,HIGH'
 
   gitleaks-scan:
     runs-on: ubuntu-latest
@@ -79,9 +79,9 @@ jobs:
           make build-amd64
           docker save -o ${{ github.workspace }}/image.tar litmuschaos/chaos-operator:ci
           chmod +x ${{ github.workspace }}/image.tar
-      
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: myimage
           path: |
@@ -94,7 +94,7 @@ jobs:
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.20.0
+          go-version: 1.22
 
       # Checkout to the latest commit
       # On specific directory/path
@@ -103,7 +103,7 @@ jobs:
 
       #Install and configure a kind cluster
       - name: Installing Prerequisites (K3S Cluster)
-        env: 
+        env:
           KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.20.14-rc1+k3s1 sh -s - --docker --write-kubeconfig-mode 664
@@ -117,15 +117,15 @@ jobs:
           make deps
 
       - name: Download artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: myimage
           path: ${{ github.workspace }}
-          
+
       - name: Load Docker image
         run: |
           docker load --input ${{ github.workspace }}/image.tar
-        shell: bash      
+        shell: bash
 
       - name: Running Go BDD Test
         run: |
