@@ -157,7 +157,7 @@ Check your linting.
  kubectl apply -f ./deploy/rbac.yaml
  kubectl apply -f ./deploy/operator.yaml
  ```
-- Run the chaos by following the [Litmus Docs](https://docs.litmuschaos.io/docs/getting-started/run-your-first-workflow/)
+- Run the chaos by following the [Litmus Docs](https://v1-docs.litmuschaos.io/docs/getstarted#install-chaos-experiments)
 
 - Verify the changes
 
