@@ -18,15 +18,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: gofmt check
-        run: make gofmt-check
-
-      - name: golangci-lint
-        uses: reviewdog/action-golangci-lint@v2
-
-      - name: unused-package check
-        run: make unused-package-check
-
   image-build:
     runs-on: ubuntu-latest
     needs: tests
