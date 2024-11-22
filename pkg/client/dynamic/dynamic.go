@@ -6,7 +6,7 @@ import (
 )
 
 // CreateClientSet returns a Dynamic Kubernetes ClientSet
-func CreateClientSet() (*dynamic.Interface, error) {
+func CreateClientSet() (dynamic.Interface, error) {
 	restConfig, err := config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -15,5 +15,5 @@ func CreateClientSet() (*dynamic.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &clientSet, nil
+	return clientSet, nil
 }

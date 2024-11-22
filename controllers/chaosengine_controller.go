@@ -19,6 +19,11 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"time"
+
 	"github.com/go-logr/logr"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/chaos-operator/pkg/analytics"
@@ -37,14 +42,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"os"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strings"
-	"time"
 )
 
 const finalizer = "chaosengine.litmuschaos.io/finalizer"
@@ -111,7 +112,7 @@ func (r *ChaosEngineReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 
 	// Handling of normal execution of ChaosEngine
 	if engine.Instance.Spec.EngineState == litmuschaosv1alpha1.EngineStateActive && engine.Instance.Status.EngineStatus == litmuschaosv1alpha1.EngineStatusInitialized {
-		return r.reconcileForCreationAndRunning(engine, reqLogger)
+		return r.reconcileForCreationAndRunning(engine, *reqLogger)
 	}
 
 	// Handling Graceful completion of ChaosEngine
@@ -679,11 +680,11 @@ func updateExperimentStatusesForStop(engine *chaosTypes.EngineInfo) {
 	}
 }
 
-func startReqLogger(request reconcile.Request) logr.Logger {
+func startReqLogger(request reconcile.Request) *logr.Logger {
 	reqLogger := chaosTypes.Log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling ChaosEngine")
 
-	return reqLogger
+	return &reqLogger
 }
 
 func (r *ChaosEngineReconciler) updateEngineForComplete(engine *chaosTypes.EngineInfo, isCompleted bool) (bool, error) {
@@ -826,7 +827,7 @@ func isResultCRDAvailable() (bool, error) {
 		Resource: "customresourcedefinitions",
 	}
 
-	resultList, err := (*dynamicClient).Resource(gvr).List(context.Background(), v1.ListOptions{})
+	resultList, err := dynamicClient.Resource(gvr).List(context.Background(), v1.ListOptions{})
 	if err != nil {
 		return false, err
 	}

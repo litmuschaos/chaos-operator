@@ -19,11 +19,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/litmuschaos/chaos-operator/pkg/analytics"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/litmuschaos/chaos-operator/pkg/analytics"
+	"github.com/pkg/errors"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -71,9 +72,9 @@ func main() {
 
 	printVersion()
 
-	namespace, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		setupLog.Error(err, "failed to get watch namespace")
+	namespace, found := os.LookupEnv("WATCH_NAMESPACE")
+	if !found {
+		setupLog.Error(errors.New("WATCH_NAMESPACE env is not set"), "failed to get watch namespace")
 		os.Exit(1)
 	}
 
