@@ -17,7 +17,7 @@ RUN go env
 RUN CGO_ENABLED=0 go build -buildvcs=false -o /output/chaos-operator -v ./main.go
 
 # Packaging stage
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.4
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
 
 LABEL maintainer="LitmusChaos"
 
