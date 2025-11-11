@@ -135,10 +135,11 @@ const (
 )
 
 type Workload struct {
-	Kind      WorkloadKind `json:"kind"`
-	Namespace string       `json:"namespace"`
-	Names     string       `json:"names,omitempty"`
-	Labels    string       `json:"labels,omitempty"`
+	Kind           WorkloadKind `json:"kind"`
+	Namespace      string        `json:"namespace"`
+	Names          string        `json:"names,omitempty"`
+	Labels         string        `json:"labels,omitempty"`
+	LabelMatchMode string        `json:"labelMatchMode,omitempty"`
 }
 
 type Pod struct {
