@@ -117,6 +117,8 @@ type ApplicationParams struct {
 	Applabel string `json:"applabel,omitempty"`
 	//kind of application
 	AppKind string `json:"appkind,omitempty"`
+	//LabelMatchMode specifies how to match labels (union or intersection)
+	LabelMatchMode string `json:"labelMatchMode,omitempty"`
 }
 
 type Selector struct {

@@ -646,7 +646,13 @@ func getTargets(engine *chaosTypes.EngineInfo) string {
 					filter = w.Labels
 				}
 
-				target := strings.Join([]string{string(w.Kind), w.Namespace, fmt.Sprintf("[%v]", filter)}, ":")
+				// Set label match mode, default to "union" if not specified
+				labelMatchMode := "union"
+				if w.LabelMatchMode != "" {
+					labelMatchMode = w.LabelMatchMode
+				}
+
+				target := strings.Join([]string{string(w.Kind), w.Namespace, fmt.Sprintf("[%v]", filter), labelMatchMode}, ":")
 				targets = append(targets, target)
 			}
 			return strings.Join(targets, ";")
@@ -666,7 +672,14 @@ func getTargets(engine *chaosTypes.EngineInfo) string {
 	if engine.AppInfo.AppKind == "" {
 		engine.AppInfo.AppKind = "KIND"
 	}
-	return strings.Join([]string{engine.AppInfo.AppKind, engine.AppInfo.Appns, fmt.Sprintf("[%v]", engine.AppInfo.Applabel)}, ":")
+
+	// Set label match mode for AppInfo, default to "union" if not specified
+	labelMatchMode := "union"
+	if engine.AppInfo.LabelMatchMode != "" {
+		labelMatchMode = engine.AppInfo.LabelMatchMode
+	}
+
+	return strings.Join([]string{engine.AppInfo.AppKind, engine.AppInfo.Appns, fmt.Sprintf("[%v]", engine.AppInfo.Applabel), labelMatchMode}, ":")
 }
 
 // updateExperimentStatusesForStop updates ChaosEngine.Status.Experiment with Abort Status.
