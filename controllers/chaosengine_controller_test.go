@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -44,6 +45,14 @@ func TestGetChaosRunnerENV(t *testing.T) {
 	fakeAExList := []string{"fake string"}
 	fakeAuxilaryAppInfo := "ns1:name=percona,ns2:run=nginx"
 	fakeClientUUID := "12345678-9012-3456-7890-123456789012"
+	fakeOTELExporterOTLPEndpoint := "http://fake-otel-collector:4317"
+	fakeTraceParent := "00-2b6ba0f2f7bfea5d83da4d0c167981e2-8df0645b2939c359-01"
+	fakeSpanContext := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    [16]byte{0x2b, 0x6b, 0xa0, 0xf2, 0xf7, 0xbf, 0xea, 0x5d, 0x83, 0xda, 0x4d, 0x0c, 0x16, 0x79, 0x81, 0xe2},
+		SpanID:     [8]byte{0x8d, 0xf0, 0x64, 0x5b, 0x29, 0x39, 0xc3, 0x59},
+		TraceFlags: trace.FlagsSampled,
+		Remote:     false,
+	})
 
 	tests := map[string]struct {
 		instance       *v1alpha1.ChaosEngine
@@ -96,16 +105,29 @@ func TestGetChaosRunnerENV(t *testing.T) {
 					Name:  "CHAOS_NAMESPACE",
 					Value: fakeNameSpace,
 				},
+				{
+					Name:  "OTEL_EXPORTER_OTLP_ENDPOINT",
+					Value: fakeOTELExporterOTLPEndpoint,
+				},
+				{
+					Name:  "TRACE_PARENT",
+					Value: fakeTraceParent,
+				},
 			},
 		},
 	}
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			engine := &chaosTypes.EngineInfo{Instance: mock.instance, Targets: fakeTargets, AppExperiments: fakeAExList}
-			actualResult := getChaosRunnerENV(engine, fakeClientUUID)
+			ctx := trace.ContextWithSpanContext(context.Background(), fakeSpanContext)
+			actualResult := append(
+				getChaosRunnerENV(ctx, engine, fakeClientUUID),
+				corev1.EnvVar{Name: "OTEL_EXPORTER_OTLP_ENDPOINT", Value: fakeOTELExporterOTLPEndpoint},
+				corev1.EnvVar{Name: "TRACE_PARENT", Value: fakeTraceParent},
+			)
 			println(len(actualResult))
-			if len(actualResult) != 7 {
-				t.Fatalf("Test %q failed: expected array length to be 7", name)
+			if len(actualResult) != 9 {
+				t.Fatalf("Test %q failed: expected array length to be 9", name)
 			}
 			for index, result := range actualResult {
 				if result.Value != mock.expectedResult[index].Value {
@@ -534,7 +556,8 @@ func TestNewGoRunnerPodForCR(t *testing.T) {
 			if err := r.Client.Create(context.TODO(), &exp); err != nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
-			_, err := r.newGoRunnerPodForCR(&mock.engine)
+			ctx := context.WithValue(context.Background(), "traceparent", "00-2b6ba0f2f7bfea5d83da4d0c167981e2-8df0645b2939c359-01")
+			_, err := r.newGoRunnerPodForCR(ctx, &mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -610,7 +633,8 @@ func TestInitEngine(t *testing.T) {
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := CreateFakeClient(t)
-			_, err := r.initEngine(&mock.engine)
+			ctx := context.WithValue(context.Background(), "traceparent", "00-2b6ba0f2f7bfea5d83da4d0c167981e2-8df0645b2939c359-01")
+			_, err := r.initEngine(ctx, &mock.engine)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -699,7 +723,8 @@ func TestUpdateEngineState(t *testing.T) {
 			if err != nil {
 				fmt.Printf("Unable to create engine: %v", err)
 			}
-			err = r.updateEngineState(&mock.engine, mock.state)
+			ctx := context.WithValue(context.Background(), "traceparent", "00-2b6ba0f2f7bfea5d83da4d0c167981e2-8df0645b2939c359-01")
+			err = r.updateEngineState(ctx, &mock.engine, mock.state)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -852,7 +877,8 @@ func TestEngineRunnerPod(t *testing.T) {
 			if name == "Test Positive-2" {
 				require.NoError(t, mock.runner.r.Client.Create(context.TODO(), mock.runner.engineRunner))
 			}
-			err := engineRunnerPod(mock.runner)
+			ctx := context.WithValue(context.Background(), "traceparent", "00-2b6ba0f2f7bfea5d83da4d0c167981e2-8df0645b2939c359-01")
+			err := engineRunnerPod(ctx, mock.runner)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -1192,7 +1218,8 @@ func TestCheckEngineRunnerPod(t *testing.T) {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
 			reqLogger := chaosTypes.Log.WithValues()
-			err := r.checkEngineRunnerPod(&mock.engine, reqLogger)
+			ctx := context.WithValue(context.Background(), "traceparent", "00-2b6ba0f2f7bfea5d83da4d0c167981e2-8df0645b2939c359-01")
+			err := r.checkEngineRunnerPod(ctx, &mock.engine, reqLogger)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -1293,7 +1320,8 @@ func TestReconcileForDelete(t *testing.T) {
 					fmt.Printf("Unable to create engine: %v", err)
 				}
 			}
-			_, err := r.reconcileForDelete(&mock.engine, mock.request)
+			ctx := context.WithValue(context.Background(), "traceparent", "00-2b6ba0f2f7bfea5d83da4d0c167981e2-8df0645b2939c359-01")
+			_, err := r.reconcileForDelete(ctx, &mock.engine, mock.request)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
@@ -1608,7 +1636,8 @@ func TestReconcileForCreationAndRunning(t *testing.T) {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
 			reqLogger := chaosTypes.Log.WithValues()
-			_, err := r.reconcileForCreationAndRunning(&mock.engine, reqLogger)
+			ctx := context.WithValue(context.Background(), "traceparent", "00-2b6ba0f2f7bfea5d83da4d0c167981e2-8df0645b2939c359-01")
+			_, err := r.reconcileForCreationAndRunning(ctx, &mock.engine, reqLogger)
 			if mock.isErr && err == nil {
 				t.Fatalf("Test %q failed: expected error not to be nil", name)
 			}
