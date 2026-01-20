@@ -40,7 +40,7 @@ const (
 	ResultPhaseRunning ResultPhase = "Running"
 	// ResultPhaseCompleted is phase of chaosresult which is in completed state
 	ResultPhaseCompleted ResultPhase = "Completed"
-	// Retained For Backward Compatibility: ResultPhaseCompletedWithError is phase of chaosresult when probe is failed in 3.0beta5
+	// ResultPhaseCompletedWithError Retained For Backward Compatibility: ResultPhaseCompletedWithError is phase of chaosresult when probe is failed in 3.0beta5
 	ResultPhaseCompletedWithError ResultPhase = "Completed_With_Error"
 	// ResultPhaseCompletedWithProbeFailure is phase of chaosresult when probe is failed from 3.0beta6
 	ResultPhaseCompletedWithProbeFailure ResultPhase = "Completed_With_Probe_Failure"
@@ -100,7 +100,7 @@ type TargetDetails struct {
 	ChaosStatus string `json:"chaosStatus,omitempty"`
 }
 
-// ProbeStatus defines information about the status and result of the probes
+// ProbeStatuses ProbeStatus defines information about the status and result of the probes
 type ProbeStatuses struct {
 	// Name defines the name of probe
 	Name string `json:"name,omitempty"`
