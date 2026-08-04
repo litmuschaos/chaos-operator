@@ -1,6 +1,6 @@
 module github.com/litmuschaos/chaos-operator
 
-go 1.22
+go 1.23.0
 
 require (
 	github.com/go-logr/logr v1.4.2
@@ -9,7 +9,7 @@ require (
 	github.com/litmuschaos/elves v0.0.0-20230607095010-c7119636b529
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/oauth2 v0.7.0 // indirect
+	golang.org/x/oauth2 v0.27.0 // indirect
 	k8s.io/api v0.26.15
 	k8s.io/apimachinery v0.26.15
 	k8s.io/client-go v12.0.0+incompatible
@@ -66,7 +66,6 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
@@ -84,7 +83,6 @@ require (
 
 // Pinned to kubernetes-1.26
 replace (
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.14.6
 	github.com/go-logr/logr => github.com/go-logr/logr v1.4.2
 	k8s.io/api => k8s.io/api v0.26.15
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.26.15
@@ -103,6 +101,7 @@ replace (
 	k8s.io/kubelet => k8s.io/kubelet v0.26.15
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.26.15
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.26.15
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.14.6
 )
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
