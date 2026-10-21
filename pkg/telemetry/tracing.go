@@ -52,7 +52,7 @@ func GetMarshalledSpanFromContext(ctx context.Context) string {
 
 	marshalled, err := json.Marshal(carrier)
 	if err != nil {
-		log.Error("unable to marshal span context, err: %s", err)
+		log.Errorf("unable to marshal span context, err: %s", err)
 		return ""
 	}
 	if len(marshalled) >= 1024 {
