@@ -117,6 +117,8 @@ type ApplicationParams struct {
 	Applabel string `json:"applabel,omitempty"`
 	//kind of application
 	AppKind string `json:"appkind,omitempty"`
+	//LabelMatchMode specifies how to match labels (union or intersection)
+	LabelMatchMode string `json:"labelMatchMode,omitempty"`
 }
 
 type Selector struct {
@@ -135,10 +137,11 @@ const (
 )
 
 type Workload struct {
-	Kind      WorkloadKind `json:"kind"`
-	Namespace string       `json:"namespace"`
-	Names     string       `json:"names,omitempty"`
-	Labels    string       `json:"labels,omitempty"`
+	Kind           WorkloadKind `json:"kind"`
+	Namespace      string       `json:"namespace"`
+	Names          string       `json:"names,omitempty"`
+	Labels         string       `json:"labels,omitempty"`
+	LabelMatchMode string       `json:"labelMatchMode,omitempty"`
 }
 
 type Pod struct {

@@ -95,7 +95,7 @@ LOCALBIN ?= $(shell pwd)/bin
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-CONTROLLER_TOOLS_VERSION ?= v0.9.0
+CONTROLLER_TOOLS_VERSION ?= v0.16.5
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
